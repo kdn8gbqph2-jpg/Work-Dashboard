@@ -1,6 +1,15 @@
+using Microsoft.EntityFrameworkCore;
 using Work_Dashboard.Components;
+using Work_Dashboard.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Database ──────────────────────────────────────────────────
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddDbContextFactory<BdaDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
