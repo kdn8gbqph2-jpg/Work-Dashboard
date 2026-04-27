@@ -1,0 +1,75 @@
+@page "/login"
+@attribute [AllowAnonymous]
+
+<PageTitle>Login — BDA Work Dashboard</PageTitle>
+
+<div class="login-wrapper">
+    <div class="login-card shadow-lg">
+
+        @* Logo & Header *@
+        <div class="login-header">
+            <img src="/images/bda-logo.png" alt="BDA Logo" class="login-logo" />
+            <h5 class="org-name">भरतपुर विकास प्राधिकरण</h5>
+            <p class="org-name-en">Bharatpur Development Authority</p>
+            <h6 class="app-title">Work Monitoring Dashboard</h6>
+        </div>
+
+        @* Error Alert *@
+        @if (ShowError)
+        {
+            <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span>Invalid username or password. Please try again.</span>
+            </div>
+        }
+
+        @* Login Form *@
+        <form method="post" action="/account/login">
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+
+            <div class="mb-3">
+                <label for="username" class="form-label fw-semibold">
+                    <i class="bi bi-person me-1"></i>Username
+                </label>
+                <input id="username"
+                       name="username"
+                       type="text"
+                       class="form-control form-control-lg"
+                       placeholder="Enter username"
+                       autocomplete="username"
+                       required autofocus />
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="form-label fw-semibold">
+                    <i class="bi bi-lock me-1"></i>Password
+                </label>
+                <input id="password"
+                       name="password"
+                       type="password"
+                       class="form-control form-control-lg"
+                       placeholder="Enter password"
+                       autocomplete="current-password"
+                       required />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Login
+            </button>
+        </form>
+
+        <p class="login-footer mt-4 mb-0 text-muted text-center small">
+            &copy; @DateTime.Now.Year Bharatpur Development Authority
+        </p>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private bool ShowError => Error == "1";
+}
