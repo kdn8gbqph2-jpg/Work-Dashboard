@@ -1,0 +1,344 @@
+@page "/jen"
+@attribute [Authorize(Roles = "JEN,ADMIN")]
+@rendermode InteractiveServer
+@inject IDbContextFactory<BdaDbContext> DbFactory
+@inject NavigationManager Nav
+@using Microsoft.EntityFrameworkCore
+@using Work_Dashboard.Data
+
+<PageTitle>JEN Dashboard — BDA</PageTitle>
+
+<div class="jen-shell">
+
+    @* ── Sidebar ───────────────────────────────────────────── *@
+    <aside class="jen-sidebar">
+        <div class="sidebar-brand">
+            <img src="/images/bda-logo.png" alt="BDA" class="sidebar-logo" />
+            <div>
+                <div class="sidebar-title">BDA</div>
+                <div class="sidebar-subtitle">Work Dashboard</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item @(ActiveSection == "summary" ? "active" : "")"
+                    @onclick='() => SetSection("summary")'>
+                <i class="bi bi-bar-chart-fill"></i>
+                <span>Work Summary</span>
+            </button>
+            <button class="nav-item @(ActiveSection == "works" ? "active" : "")"
+                    @onclick='() => SetSection("works")'>
+                <i class="bi bi-table"></i>
+                <span>Works List</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <form method="post" action="/account/logout">
+                <button type="submit" class="btn-logout">
+                    <i class="bi bi-box-arrow-left"></i> Logout
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    @* ── Main Content ──────────────────────────────────────── *@
+    <main class="jen-main">
+
+        @* Top Bar *@
+        <div class="jen-topbar">
+            <div>
+                <h5 class="mb-0 fw-bold">
+                    @(ActiveSection == "summary" ? "Work Summary — Category Wise" : "Works List")
+                </h5>
+                <small class="text-muted">Bharatpur Development Authority</small>
+            </div>
+            <div class="topbar-user">
+                <i class="bi bi-person-circle me-1"></i>
+                <AuthorizeView>
+                    <span>@context.User.Identity?.Name</span>
+                </AuthorizeView>
+            </div>
+        </div>
+
+        @if (IsLoading)
+        {
+            <div class="d-flex justify-content-center align-items-center" style="height:60vh">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        }
+        else
+        {
+            @* ── Summary Section ───────────────────────────── *@
+            if (ActiveSection == "summary")
+            {
+                <div class="content-card">
+                    <table class="table table-hover bda-table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:50px">#</th>
+                                <th>Work Category</th>
+                                <th class="text-end">कार्यादेश राशि (लाखों में)</th>
+                                <th class="text-center">Record Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int sn = 1; }
+                            @foreach (var row in SummaryRows)
+                            {
+                                <tr>
+                                    <td class="text-muted">@(sn++)</td>
+                                    <td class="fw-semibold">@row.Category</td>
+                                    <td class="text-end">@row.TotalAmount.ToString("N2")</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary">@row.Count</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="fw-bold table-dark">
+                                <td colspan="2">Total</td>
+                                <td class="text-end">@SummaryRows.Sum(r => r.TotalAmount).ToString("N2")</td>
+                                <td class="text-center">@SummaryRows.Sum(r => r.Count)</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            }
+
+            @* ── Works List Section ────────────────────────── *@
+            if (ActiveSection == "works")
+            {
+                <div class="content-card">
+                    @* Filter Bar *@
+                    <div class="filter-bar">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="fw-semibold text-nowrap mb-0">View:</label>
+                                <select class="form-select form-select-sm filter-select"
+                                        @bind="SelectedFilter" @bind:after="ApplyFilter">
+                                    <option value="ALL">All Works</option>
+                                    <option value="ONGOING">Ongoing Works</option>
+                                    <option value="COMPLETED">Completed Works</option>
+                                    <option value="ANNUAL">Annual Contract Works</option>
+                                </select>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="fw-semibold text-nowrap mb-0">Category:</label>
+                                <select class="form-select form-select-sm filter-select"
+                                        @bind="SelectedCategory" @bind:after="ApplyFilter">
+                                    <option value="">All Categories</option>
+                                    @foreach (var cat in Categories)
+                                    {
+                                        <option value="@cat">@cat</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="ms-auto">
+                                <input class="form-control form-control-sm"
+                                       style="min-width:220px"
+                                       placeholder="🔍 Search work name..."
+                                       @bind="SearchText" @bind:after="ApplyFilter" />
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                Showing <strong>@FilteredWorks.Count</strong> records
+                                @if (SelectedFilter != "ALL")
+                                {
+                                    <span> — <span class="badge @FilterBadgeClass">@FilterLabel</span></span>
+                                }
+                            </small>
+                        </div>
+                    </div>
+
+                    @* Works Table *@
+                    <div class="table-responsive">
+                        <table class="table table-hover bda-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:45px">#</th>
+                                    <th>File No.</th>
+                                    <th style="min-width:280px">Work Name</th>
+                                    <th>JEN</th>
+                                    <th>Contractor</th>
+                                    <th class="text-end">स्वीकृति राशि<br/><small>(लाखों में)</small></th>
+                                    <th class="text-end">कार्यादेश<br/><small>(लाखों में)</small></th>
+                                    <th class="text-center">Start Date</th>
+                                    <th class="text-center">Due Date</th>
+                                    <th class="text-center">Physical<br/>Progress</th>
+                                    <th class="text-center">Financial<br/>Progress</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!FilteredWorks.Any())
+                                {
+                                    <tr>
+                                        <td colspan="12" class="text-center text-muted py-4">
+                                            No records found.
+                                        </td>
+                                    </tr>
+                                }
+                                @{ int idx = 1; }
+                                @foreach (var w in FilteredWorks)
+                                {
+                                    <tr>
+                                        <td class="text-muted">@(idx++)</td>
+                                        <td><small>@w.WorkCode</small></td>
+                                        <td>
+                                            <span class="work-name">@w.WorkName</span>
+                                            @if (w.IsAnnualContract)
+                                            {
+                                                <span class="badge bg-info text-dark ms-1">Annual</span>
+                                            }
+                                        </td>
+                                        <td><small>@(w.AssignedJen?.Name ?? "—")</small></td>
+                                        <td><small>@(w.ContractorName ?? "—")</small></td>
+                                        <td class="text-end">@(w.SanctionedAmount?.ToString("N2") ?? "—")</td>
+                                        <td class="text-end">@(w.AgreementAmount?.ToString("N2") ?? "—")</td>
+                                        <td class="text-center"><small>@(w.StartDate?.ToString("dd/MM/yy") ?? "—")</small></td>
+                                        <td class="text-center"><small>@(w.ExpectedCompletion?.ToString("dd/MM/yy") ?? "—")</small></td>
+                                        <td class="text-center">
+                                            @if (w.ProgressPercent.HasValue)
+                                            {
+                                                <div class="progress-pill">
+                                                    <div class="progress-fill @ProgressColor(w.ProgressPercent.Value)"
+                                                         style="width:@(w.ProgressPercent)%"></div>
+                                                </div>
+                                                <small>@w.ProgressPercent%</small>
+                                            }
+                                            else { <span class="text-muted">—</span> }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (w.FinancialProgressPercent.HasValue)
+                                            {
+                                                <small>@w.FinancialProgressPercent%</small>
+                                            }
+                                            else { <span class="text-muted">—</span> }
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge @StatusBadge(w.Status)">@w.Status</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        }
+    </main>
+</div>
+
+@code {
+    string ActiveSection = "summary";
+    string SelectedFilter  = "ALL";
+    string SelectedCategory = "";
+    string SearchText = "";
+    bool   IsLoading  = true;
+
+    List<Work>       AllWorks      = [];
+    List<Work>       FilteredWorks = [];
+    List<string>     Categories    = [];
+    List<SummaryRow> SummaryRows   = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        IsLoading = false;
+    }
+
+    async Task LoadData()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        AllWorks = await db.Works
+            .Where(w => !w.IsDeleted)
+            .Include(w => w.AssignedJen)
+            .Include(w => w.Category)
+            .OrderByDescending(w => w.CreatedAt)
+            .ToListAsync();
+
+        Categories = AllWorks
+            .Where(w => w.Category != null)
+            .Select(w => w.Category!.CategoryCode)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        SummaryRows = AllWorks
+            .Where(w => !w.IsDeleted)
+            .GroupBy(w => w.Category?.CategoryCode ?? "MISC")
+            .Select(g => new SummaryRow(
+                g.Key,
+                g.Sum(w => w.AgreementAmount ?? 0),
+                g.Count()))
+            .OrderByDescending(r => r.TotalAmount)
+            .ToList();
+
+        ApplyFilter();
+    }
+
+    void SetSection(string section)
+    {
+        ActiveSection = section;
+    }
+
+    void ApplyFilter()
+    {
+        var q = AllWorks.AsEnumerable();
+
+        q = SelectedFilter switch
+        {
+            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract),
+            "COMPLETED" => q.Where(w => w.Status == WorkStatus.COMPLETED),
+            "ANNUAL"    => q.Where(w => w.IsAnnualContract),
+            _           => q
+        };
+
+        if (!string.IsNullOrWhiteSpace(SelectedCategory))
+            q = q.Where(w => w.Category?.CategoryCode == SelectedCategory);
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+            q = q.Where(w => w.WorkName.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+                           || (w.WorkCode ?? "").Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+        FilteredWorks = q.ToList();
+    }
+
+    string FilterLabel => SelectedFilter switch
+    {
+        "ONGOING"   => "Ongoing",
+        "COMPLETED" => "Completed",
+        "ANNUAL"    => "Annual Contract",
+        _           => "All"
+    };
+
+    string FilterBadgeClass => SelectedFilter switch
+    {
+        "ONGOING"   => "bg-warning text-dark",
+        "COMPLETED" => "bg-success",
+        "ANNUAL"    => "bg-info text-dark",
+        _           => "bg-secondary"
+    };
+
+    static string StatusBadge(WorkStatus s) => s switch
+    {
+        WorkStatus.ONGOING   => "bg-warning text-dark",
+        WorkStatus.COMPLETED => "bg-success",
+        WorkStatus.STALLED   => "bg-danger",
+        WorkStatus.CANCELLED => "bg-secondary",
+        _                    => "bg-light text-dark"
+    };
+
+    static string ProgressColor(decimal pct) => pct switch
+    {
+        >= 75 => "progress-fill-green",
+        >= 40 => "progress-fill-orange",
+        _     => "progress-fill-red"
+    };
+
+    record SummaryRow(string Category, decimal TotalAmount, int Count);
+}
