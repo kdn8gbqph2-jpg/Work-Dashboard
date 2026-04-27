@@ -1,0 +1,959 @@
+@page "/admin"
+@attribute [Authorize(Roles = "ADMIN")]
+@rendermode InteractiveServer
+@inject IDbContextFactory<BdaDbContext> DbFactory
+@inject NavigationManager Nav
+@using Microsoft.EntityFrameworkCore
+@using Work_Dashboard.Data
+
+<PageTitle>Admin — BDA Dashboard</PageTitle>
+
+<div class="jen-shell">
+
+    @* ── Sidebar ─────────────────────────────────────────────── *@
+    <aside class="jen-sidebar">
+        <div class="sidebar-brand">
+            <img src="/images/bda-logo.png" alt="BDA" class="sidebar-logo" />
+            <div>
+                <div class="sidebar-title">BDA Admin</div>
+                <div class="sidebar-subtitle">Management Panel</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item @(Section == "overview" ? "active" : "")"
+                    @onclick='() => Section = "overview"'>
+                <i class="bi bi-speedometer2"></i><span>Overview</span>
+            </button>
+            <button class="nav-item @(Section == "users" ? "active" : "")"
+                    @onclick='() => Section = "users"'>
+                <i class="bi bi-people-fill"></i><span>Users</span>
+            </button>
+            <button class="nav-item @(Section == "works" ? "active" : "")"
+                    @onclick='() => Section = "works"'>
+                <i class="bi bi-hammer"></i><span>Works</span>
+            </button>
+            <button class="nav-item @(Section == "tables" ? "active" : "")"
+                    @onclick='() => Section = "tables"'>
+                <i class="bi bi-grid-3x3-gap-fill"></i><span>Custom Tables</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/jen" class="btn-logout d-block text-center mb-2">
+                <i class="bi bi-eye"></i> JEN View
+            </a>
+            <form method="post" action="/account/logout">
+                <button type="submit" class="btn-logout w-100">
+                    <i class="bi bi-box-arrow-left"></i> Logout
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    @* ── Main ───────────────────────────────────────────────── *@
+    <main class="jen-main">
+
+        @* Top Bar *@
+        <div class="jen-topbar">
+            <div>
+                <h5 class="mb-0 fw-bold">@SectionTitle</h5>
+                <small class="text-muted">Bharatpur Development Authority</small>
+            </div>
+            <div class="topbar-user">
+                <i class="bi bi-shield-lock-fill text-warning me-1"></i>
+                <AuthorizeView><span>@context.User.Identity?.Name</span></AuthorizeView>
+            </div>
+        </div>
+
+        @if (IsLoading)
+        {
+            <div class="d-flex justify-content-center align-items-center" style="height:60vh">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        }
+        else
+        {
+            @* ══ OVERVIEW ══════════════════════════════════════ *@
+            if (Section == "overview")
+            {
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card border-start border-4 border-warning">
+                            <div class="stat-label">Total Works</div>
+                            <div class="stat-value">@AllWorks.Count</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card border-start border-4 border-primary">
+                            <div class="stat-label">Ongoing</div>
+                            <div class="stat-value text-primary">
+                                @AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card border-start border-4 border-success">
+                            <div class="stat-label">Completed</div>
+                            <div class="stat-value text-success">
+                                @AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card border-start border-4 border-info">
+                            <div class="stat-label">Annual Contract</div>
+                            <div class="stat-value text-info">
+                                @AllWorks.Count(w => w.IsAnnualContract)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="content-card p-3">
+                            <h6 class="fw-bold mb-3">Category Wise Summary</h6>
+                            <table class="table table-sm bda-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th class="text-end">Amount (लाखों)</th>
+                                        <th class="text-center">Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var g in AllWorks.GroupBy(w => w.Category?.CategoryCode ?? "N/A")
+                                                               .OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
+                                    {
+                                        <tr>
+                                            <td>@g.Key</td>
+                                            <td class="text-end">@g.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
+                                            <td class="text-center"><span class="badge bg-secondary">@g.Count()</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="content-card p-3">
+                            <h6 class="fw-bold mb-3">Fund Source Summary</h6>
+                            <table class="table table-sm bda-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Fund Source</th>
+                                        <th class="text-end">Amount (लाखों)</th>
+                                        <th class="text-center">Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var g in AllWorks.GroupBy(w => w.FundSource?.SourceCode ?? "N/A")
+                                                               .OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
+                                    {
+                                        <tr>
+                                            <td>@g.Key</td>
+                                            <td class="text-end">@g.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
+                                            <td class="text-center"><span class="badge bg-secondary">@g.Count()</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* ══ USERS ══════════════════════════════════════════ *@
+            if (Section == "users")
+            {
+                <div class="content-card">
+                    <div class="filter-bar d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">@Engineers.Count engineer(s)</span>
+                        <button class="btn btn-sm btn-primary" @onclick="OpenAddUser">
+                            <i class="bi bi-person-plus-fill me-1"></i>Add User
+                        </button>
+                    </div>
+                    <table class="table table-hover bda-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th><th>Name</th><th>Username</th>
+                                <th>Role</th><th>Mobile</th>
+                                <th class="text-center">Active</th><th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int ui = 1; }
+                            @foreach (var eng in Engineers)
+                            {
+                                <tr>
+                                    <td class="text-muted">@(ui++)</td>
+                                    <td class="fw-semibold">@eng.Name</td>
+                                    <td><code>@eng.Username</code></td>
+                                    <td>
+                                        <span class="badge @(eng.Role == EngineerRole.ADMIN ? "bg-danger" : "bg-primary")">
+                                            @eng.Role
+                                        </span>
+                                    </td>
+                                    <td>@(eng.Mobile ?? "—")</td>
+                                    <td class="text-center">
+                                        @if (eng.IsActive)
+                                        { <i class="bi bi-check-circle-fill text-success"></i> }
+                                        else
+                                        { <i class="bi bi-x-circle-fill text-danger"></i> }
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-xs btn-outline-primary me-1"
+                                                @onclick="() => OpenEditUser(eng)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-xs @(eng.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                                @onclick="() => ToggleUserActive(eng)">
+                                            <i class="bi @(eng.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @* ══ WORKS ══════════════════════════════════════════ *@
+            if (Section == "works")
+            {
+                <div class="content-card">
+                    <div class="filter-bar">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <select class="form-select form-select-sm filter-select"
+                                    @bind="WorkFilter" @bind:after="FilterWorks">
+                                <option value="ALL">All Works</option>
+                                <option value="ONGOING">Ongoing</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="ANNUAL">Annual Contract</option>
+                            </select>
+                            <input class="form-control form-control-sm" style="min-width:200px"
+                                   placeholder="🔍 Search..." @bind="WorkSearch" @bind:after="FilterWorks" />
+                            <div class="ms-auto">
+                                <button class="btn btn-sm btn-primary" @onclick="OpenAddWork">
+                                    <i class="bi bi-plus-circle-fill me-1"></i>Add Work
+                                </button>
+                            </div>
+                        </div>
+                        <small class="text-muted mt-1 d-block">Showing @FilteredWorks.Count records</small>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover bda-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th><th>File No.</th>
+                                    <th style="min-width:260px">Work Name</th>
+                                    <th>Category</th><th>JEN</th>
+                                    <th class="text-end">कार्यादेश (लाखों)</th>
+                                    <th class="text-center">Progress</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!FilteredWorks.Any())
+                                {
+                                    <tr><td colspan="9" class="text-center text-muted py-4">No records found.</td></tr>
+                                }
+                                @{ int wi = 1; }
+                                @foreach (var w in FilteredWorks)
+                                {
+                                    <tr>
+                                        <td class="text-muted">@(wi++)</td>
+                                        <td><small>@(w.WorkCode ?? "—")</small></td>
+                                        <td>
+                                            <span class="work-name">@w.WorkName</span>
+                                            @if (w.IsAnnualContract)
+                                            { <span class="badge bg-info text-dark ms-1">Annual</span> }
+                                        </td>
+                                        <td><small>@(w.Category?.CategoryCode ?? "—")</small></td>
+                                        <td><small>@(w.AssignedJen?.Name ?? "—")</small></td>
+                                        <td class="text-end">@(w.AgreementAmount?.ToString("N2") ?? "—")</td>
+                                        <td class="text-center">
+                                            @if (w.ProgressPercent.HasValue)
+                                            {
+                                                <div class="progress-pill">
+                                                    <div class="progress-fill @ProgColor(w.ProgressPercent.Value)"
+                                                         style="width:@(w.ProgressPercent)%"></div>
+                                                </div>
+                                                <small>@w.ProgressPercent%</small>
+                                            }
+                                            else { <span class="text-muted">—</span> }
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge @StatusBadge(w.Status)">@w.Status</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-xs btn-outline-primary"
+                                                    @onclick="() => OpenEditWork(w)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            @* ══ CUSTOM TABLES ══════════════════════════════════ *@
+            if (Section == "tables")
+            {
+                <div class="content-card">
+                    <div class="filter-bar d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">@CustomTables.Count custom table(s)</span>
+                        <button class="btn btn-sm btn-primary" @onclick="OpenAddTable">
+                            <i class="bi bi-plus-circle-fill me-1"></i>Create Table
+                        </button>
+                    </div>
+                    <table class="table table-hover bda-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th><th>Table Name</th><th>Description</th>
+                                <th>Linked Work</th><th class="text-center">Columns</th>
+                                <th>Created</th><th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!CustomTables.Any())
+                            {
+                                <tr><td colspan="7" class="text-center text-muted py-4">No custom tables yet.</td></tr>
+                            }
+                            @{ int ti = 1; }
+                            @foreach (var ct in CustomTables)
+                            {
+                                <tr>
+                                    <td class="text-muted">@(ti++)</td>
+                                    <td class="fw-semibold">@ct.TableName</td>
+                                    <td><small class="text-muted">@(ct.Description ?? "—")</small></td>
+                                    <td><small>@(ct.Work?.WorkCode ?? "Standalone")</small></td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary">@ct.Columns.Count(c => !c.IsDeleted)</span>
+                                    </td>
+                                    <td><small>@ct.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-xs btn-outline-primary"
+                                                @onclick="() => OpenEditTable(ct)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </main>
+</div>
+
+@* ══ USER MODAL ═══════════════════════════════════════════════ *@
+@if (ShowUserModal)
+{
+    <div class="modal-overlay" @onclick="CloseUserModal">
+        <div class="modal-box" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold">@(EditingUser.EngineerId == 0 ? "Add User" : "Edit User")</h6>
+                <button class="btn-close" @onclick="CloseUserModal"></button>
+            </div>
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(UserError))
+                {
+                    <div class="alert alert-danger py-2">@UserError</div>
+                }
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Full Name</label>
+                    <input class="form-control" @bind="EditingUser.Name" placeholder="e.g. Anoop Singh" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Username</label>
+                    <input class="form-control" @bind="EditingUser.Username" placeholder="login username" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Password @(EditingUser.EngineerId != 0 ? "(leave blank to keep current)" : "")
+                    </label>
+                    <input type="password" class="form-control" @bind="UserPassword" placeholder="password" />
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Role</label>
+                        <select class="form-select" @bind="EditingUserRoleStr">
+                            <option value="JEN">JEN</option>
+                            <option value="ADMIN">ADMIN</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Mobile</label>
+                        <input class="form-control" @bind="EditingUser.Mobile" placeholder="mobile number" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="CloseUserModal">Cancel</button>
+                <button class="btn btn-primary btn-sm" @onclick="SaveUser">
+                    <i class="bi bi-check2 me-1"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ WORK MODAL ════════════════════════════════════════════════ *@
+@if (ShowWorkModal)
+{
+    <div class="modal-overlay" @onclick="CloseWorkModal">
+        <div class="modal-box modal-box-lg" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold">@(EditingWork.WorkId == 0 ? "Add Work" : "Edit Work")</h6>
+                <button class="btn-close" @onclick="CloseWorkModal"></button>
+            </div>
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(WorkError))
+                {
+                    <div class="alert alert-danger py-2">@WorkError</div>
+                }
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-semibold">Work Name <span class="text-danger">*</span></label>
+                        <textarea class="form-control" rows="2" @bind="EditingWork.WorkName"
+                                  placeholder="Work name in Hindi/English"></textarea>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">File No.</label>
+                        <input class="form-control" @bind="EditingWork.WorkCode" placeholder="e.g. 118/2024-25" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select class="form-select" @bind="EditingWorkCategoryId">
+                            <option value="">— Select —</option>
+                            @foreach (var c in Categories)
+                            {
+                                <option value="@c.CategoryId">@c.CategoryCode</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Fund Source</label>
+                        <select class="form-select" @bind="EditingWorkFundSourceId">
+                            <option value="">— Select —</option>
+                            @foreach (var f in FundSources)
+                            {
+                                <option value="@f.FundSourceId">@f.SourceCode</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Department</label>
+                        <input class="form-control" @bind="EditingWork.Department" placeholder="e.g. BDA, TOURISM" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">JEN</label>
+                        <select class="form-select" @bind="EditingWorkJenId">
+                            <option value="">— Select —</option>
+                            @foreach (var e in JenEngineers)
+                            {
+                                <option value="@e.EngineerId">@e.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Status</label>
+                        <select class="form-select" @bind="EditingWorkStatusStr">
+                            <option value="ONGOING">ONGOING</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="STALLED">STALLED</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Contractor Name</label>
+                        <input class="form-control" @bind="EditingWork.ContractorName" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Contractor Mobile</label>
+                        <input class="form-control" @bind="EditingWork.ContractorMobile" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Sanctioned Amount (लाखों)</label>
+                        <input type="number" step="0.01" class="form-control" @bind="EditingWork.SanctionedAmount" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Agreement Amount (लाखों)</label>
+                        <input type="number" step="0.01" class="form-control" @bind="EditingWork.AgreementAmount" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Start Date</label>
+                        <input type="date" class="form-control" @bind="EditingWork.StartDate" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Expected Completion</label>
+                        <input type="date" class="form-control" @bind="EditingWork.ExpectedCompletion" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Physical Progress %</label>
+                        <input type="number" step="1" min="0" max="100" class="form-control"
+                               @bind="EditingWork.ProgressPercent" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Financial Progress %</label>
+                        <input type="number" step="1" min="0" max="100" class="form-control"
+                               @bind="EditingWork.FinancialProgressPercent" />
+                    </div>
+                    <div class="col-12 mb-2">
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="chkAnnual"
+                                       @bind="EditingWork.IsAnnualContract" />
+                                <label class="form-check-label" for="chkAnnual">Annual Contract</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="chkScheme"
+                                       @bind="EditingWork.IsScheme" />
+                                <label class="form-check-label" for="chkScheme">Scheme (योजना)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="chkCm"
+                                       @bind="EditingWork.IsCmBudget" />
+                                <label class="form-check-label" for="chkCm">CM Budget</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-semibold">Remarks</label>
+                        <textarea class="form-control" rows="2" @bind="EditingWork.Remarks"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="CloseWorkModal">Cancel</button>
+                <button class="btn btn-primary btn-sm" @onclick="SaveWork">
+                    <i class="bi bi-check2 me-1"></i>Save Work
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ CUSTOM TABLE MODAL ════════════════════════════════════════ *@
+@if (ShowTableModal)
+{
+    <div class="modal-overlay" @onclick="CloseTableModal">
+        <div class="modal-box" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold">@(EditingTable.TableId == 0 ? "Create Custom Table" : "Edit Table")</h6>
+                <button class="btn-close" @onclick="CloseTableModal"></button>
+            </div>
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(TableError))
+                {
+                    <div class="alert alert-danger py-2">@TableError</div>
+                }
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Table Name <span class="text-danger">*</span></label>
+                    <input class="form-control" @bind="EditingTable.TableName" placeholder="e.g. Deeg Zone Road Log" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description</label>
+                    <input class="form-control" @bind="EditingTable.Description" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Link to Work <small class="text-muted">(optional — leave blank for standalone)</small>
+                    </label>
+                    <select class="form-select" @bind="EditingTableWorkId">
+                        <option value="">Standalone Register</option>
+                        @foreach (var w in AllWorks.Take(100))
+                        {
+                            <option value="@w.WorkId">[@(w.WorkCode ?? "—")] @w.WorkName[..Math.Min(60, w.WorkName.Length)]</option>
+                        }
+                    </select>
+                </div>
+
+                <hr />
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="fw-semibold mb-0">Columns</label>
+                    <button class="btn btn-xs btn-outline-primary" @onclick="AddColumn">
+                        <i class="bi bi-plus"></i> Add Column
+                    </button>
+                </div>
+                @foreach (var col in NewColumns)
+                {
+                    <div class="d-flex gap-2 mb-2 align-items-center">
+                        <input class="form-control form-control-sm" placeholder="Column name"
+                               @bind="col.ColumnName" style="flex:2" />
+                        <select class="form-select form-select-sm" @bind="col.DataTypeStr" style="flex:1">
+                            <option value="TEXT">Text</option>
+                            <option value="NUMBER">Number</option>
+                            <option value="DATE">Date</option>
+                            <option value="BOOLEAN">Yes/No</option>
+                            <option value="DROPDOWN">Dropdown</option>
+                        </select>
+                        <button class="btn btn-xs btn-outline-danger" @onclick="() => NewColumns.Remove(col)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="CloseTableModal">Cancel</button>
+                <button class="btn btn-primary btn-sm" @onclick="SaveTable">
+                    <i class="bi bi-check2 me-1"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    string Section = "overview";
+    bool   IsLoading = true;
+
+    // Data
+    List<Work>         AllWorks     = [];
+    List<Work>         FilteredWorks = [];
+    List<Engineer>     Engineers    = [];
+    List<WorkCategory> Categories   = [];
+    List<FundSource>   FundSources  = [];
+    List<Engineer>     JenEngineers = [];
+    List<CustomTable>  CustomTables = [];
+
+    // Works filter
+    string WorkFilter = "ALL";
+    string WorkSearch = "";
+
+    // User modal
+    bool       ShowUserModal    = false;
+    Engineer   EditingUser      = new();
+    string     UserPassword     = "";
+    string     EditingUserRoleStr = "JEN";
+    string     UserError        = "";
+
+    // Work modal
+    bool   ShowWorkModal       = false;
+    Work   EditingWork         = new();
+    string EditingWorkStatusStr   = "ONGOING";
+    string EditingWorkCategoryId  = "";
+    string EditingWorkFundSourceId = "";
+    string EditingWorkJenId       = "";
+    string WorkError              = "";
+
+    // Custom table modal
+    bool        ShowTableModal    = false;
+    CustomTable EditingTable      = new();
+    string      EditingTableWorkId = "";
+    List<ColDef> NewColumns       = [];
+    string      TableError        = "";
+
+    string SectionTitle => Section switch
+    {
+        "overview" => "Overview",
+        "users"    => "User Management",
+        "works"    => "Works Management",
+        "tables"   => "Custom Tables",
+        _          => ""
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAll();
+        IsLoading = false;
+    }
+
+    async Task LoadAll()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        AllWorks = await db.Works
+            .Where(w => !w.IsDeleted)
+            .Include(w => w.Category)
+            .Include(w => w.FundSource)
+            .Include(w => w.AssignedJen)
+            .OrderByDescending(w => w.CreatedAt)
+            .ToListAsync();
+
+        Engineers = await db.Engineers
+            .Where(e => !e.IsDeleted)
+            .OrderBy(e => e.Name)
+            .ToListAsync();
+
+        Categories  = await db.WorkCategories.Where(c => c.IsActive).ToListAsync();
+        FundSources = await db.FundSources.Where(f => f.IsActive).ToListAsync();
+        JenEngineers = Engineers.Where(e => e.Role == EngineerRole.JEN).ToList();
+
+        CustomTables = await db.CustomTables
+            .Where(t => !t.IsDeleted)
+            .Include(t => t.Work)
+            .Include(t => t.Columns)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        FilterWorks();
+    }
+
+    void FilterWorks()
+    {
+        var q = AllWorks.AsEnumerable();
+
+        q = WorkFilter switch
+        {
+            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract),
+            "COMPLETED" => q.Where(w => w.Status == WorkStatus.COMPLETED),
+            "ANNUAL"    => q.Where(w => w.IsAnnualContract),
+            _           => q
+        };
+
+        if (!string.IsNullOrWhiteSpace(WorkSearch))
+            q = q.Where(w => w.WorkName.Contains(WorkSearch, StringComparison.OrdinalIgnoreCase)
+                           || (w.WorkCode ?? "").Contains(WorkSearch, StringComparison.OrdinalIgnoreCase));
+
+        FilteredWorks = q.ToList();
+    }
+
+    // ── User CRUD ─────────────────────────────────────────────
+    void OpenAddUser()
+    {
+        EditingUser = new Engineer();
+        UserPassword = "";
+        EditingUserRoleStr = "JEN";
+        UserError = "";
+        ShowUserModal = true;
+    }
+
+    void OpenEditUser(Engineer eng)
+    {
+        EditingUser = new Engineer
+        {
+            EngineerId   = eng.EngineerId,
+            Name         = eng.Name,
+            Username     = eng.Username,
+            PasswordHash = eng.PasswordHash,
+            Role         = eng.Role,
+            Mobile       = eng.Mobile,
+            Email        = eng.Email,
+            IsActive     = eng.IsActive
+        };
+        UserPassword = "";
+        EditingUserRoleStr = eng.Role.ToString();
+        UserError = "";
+        ShowUserModal = true;
+    }
+
+    void CloseUserModal() { ShowUserModal = false; }
+
+    async Task SaveUser()
+    {
+        if (string.IsNullOrWhiteSpace(EditingUser.Name) || string.IsNullOrWhiteSpace(EditingUser.Username))
+        { UserError = "Name and Username are required."; return; }
+
+        if (EditingUser.EngineerId == 0 && string.IsNullOrWhiteSpace(UserPassword))
+        { UserError = "Password is required for new users."; return; }
+
+        EditingUser.Role = Enum.Parse<EngineerRole>(EditingUserRoleStr);
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        if (EditingUser.EngineerId == 0)
+        {
+            EditingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
+            db.Engineers.Add(EditingUser);
+        }
+        else
+        {
+            var existing = await db.Engineers.FindAsync(EditingUser.EngineerId);
+            if (existing is null) return;
+            existing.Name     = EditingUser.Name;
+            existing.Username = EditingUser.Username;
+            existing.Role     = EditingUser.Role;
+            existing.Mobile   = EditingUser.Mobile;
+            existing.Email    = EditingUser.Email;
+            if (!string.IsNullOrWhiteSpace(UserPassword))
+                existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
+        }
+
+        await db.SaveChangesAsync();
+        ShowUserModal = false;
+        await LoadAll();
+    }
+
+    async Task ToggleUserActive(Engineer eng)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var e = await db.Engineers.FindAsync(eng.EngineerId);
+        if (e is not null) { e.IsActive = !e.IsActive; await db.SaveChangesAsync(); }
+        await LoadAll();
+    }
+
+    // ── Work CRUD ─────────────────────────────────────────────
+    void OpenAddWork()
+    {
+        EditingWork            = new Work();
+        EditingWorkStatusStr   = "ONGOING";
+        EditingWorkCategoryId  = "";
+        EditingWorkFundSourceId = "";
+        EditingWorkJenId       = "";
+        WorkError              = "";
+        ShowWorkModal          = true;
+    }
+
+    void OpenEditWork(Work w)
+    {
+        EditingWork = new Work
+        {
+            WorkId                    = w.WorkId,
+            WorkName                  = w.WorkName,
+            WorkCode                  = w.WorkCode,
+            CategoryId                = w.CategoryId,
+            FundSourceId              = w.FundSourceId,
+            Department                = w.Department,
+            AssignedJenId             = w.AssignedJenId,
+            ContractorName            = w.ContractorName,
+            ContractorMobile          = w.ContractorMobile,
+            SanctionedAmount          = w.SanctionedAmount,
+            AgreementAmount           = w.AgreementAmount,
+            ProgressPercent           = w.ProgressPercent,
+            FinancialProgressPercent  = w.FinancialProgressPercent,
+            Status                    = w.Status,
+            IsAnnualContract          = w.IsAnnualContract,
+            IsScheme                  = w.IsScheme,
+            IsCmBudget                = w.IsCmBudget,
+            StartDate                 = w.StartDate,
+            ExpectedCompletion        = w.ExpectedCompletion,
+            Remarks                   = w.Remarks
+        };
+        EditingWorkStatusStr    = w.Status.ToString();
+        EditingWorkCategoryId   = w.CategoryId?.ToString() ?? "";
+        EditingWorkFundSourceId = w.FundSourceId?.ToString() ?? "";
+        EditingWorkJenId        = w.AssignedJenId?.ToString() ?? "";
+        WorkError = "";
+        ShowWorkModal = true;
+    }
+
+    void CloseWorkModal() { ShowWorkModal = false; }
+
+    async Task SaveWork()
+    {
+        if (string.IsNullOrWhiteSpace(EditingWork.WorkName))
+        { WorkError = "Work Name is required."; return; }
+
+        EditingWork.Status       = Enum.Parse<WorkStatus>(EditingWorkStatusStr);
+        EditingWork.CategoryId   = string.IsNullOrEmpty(EditingWorkCategoryId) ? null : int.Parse(EditingWorkCategoryId);
+        EditingWork.FundSourceId = string.IsNullOrEmpty(EditingWorkFundSourceId) ? null : int.Parse(EditingWorkFundSourceId);
+        EditingWork.AssignedJenId = string.IsNullOrEmpty(EditingWorkJenId) ? null : int.Parse(EditingWorkJenId);
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        if (EditingWork.WorkId == 0)
+            db.Works.Add(EditingWork);
+        else
+        {
+            var existing = await db.Works.FindAsync(EditingWork.WorkId);
+            if (existing is null) return;
+            db.Entry(existing).CurrentValues.SetValues(EditingWork);
+        }
+
+        await db.SaveChangesAsync();
+        ShowWorkModal = false;
+        await LoadAll();
+    }
+
+    // ── Custom Table CRUD ─────────────────────────────────────
+    void OpenAddTable()
+    {
+        EditingTable      = new CustomTable();
+        EditingTableWorkId = "";
+        NewColumns        = [new ColDef()];
+        TableError        = "";
+        ShowTableModal    = true;
+    }
+
+    void OpenEditTable(CustomTable ct)
+    {
+        EditingTable       = ct;
+        EditingTableWorkId = ct.WorkId?.ToString() ?? "";
+        NewColumns         = ct.Columns
+            .Where(c => !c.IsDeleted)
+            .Select(c => new ColDef { ColumnName = c.ColumnName, DataTypeStr = c.DataType.ToString() })
+            .ToList();
+        TableError = "";
+        ShowTableModal = true;
+    }
+
+    void CloseTableModal() { ShowTableModal = false; }
+    void AddColumn() => NewColumns.Add(new ColDef());
+
+    async Task SaveTable()
+    {
+        if (string.IsNullOrWhiteSpace(EditingTable.TableName))
+        { TableError = "Table name is required."; return; }
+
+        if (!NewColumns.Any(c => !string.IsNullOrWhiteSpace(c.ColumnName)))
+        { TableError = "Add at least one column."; return; }
+
+        EditingTable.WorkId = string.IsNullOrEmpty(EditingTableWorkId) ? null : int.Parse(EditingTableWorkId);
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        if (EditingTable.TableId == 0)
+        {
+            db.CustomTables.Add(EditingTable);
+            await db.SaveChangesAsync();
+
+            int order = 0;
+            foreach (var col in NewColumns.Where(c => !string.IsNullOrWhiteSpace(c.ColumnName)))
+            {
+                db.CustomColumns.Add(new CustomColumn
+                {
+                    TableId      = EditingTable.TableId,
+                    ColumnName   = col.ColumnName,
+                    DataType     = Enum.Parse<ColumnDataType>(col.DataTypeStr),
+                    DisplayOrder = order++
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            var existing = await db.CustomTables.FindAsync(EditingTable.TableId);
+            if (existing is not null)
+            {
+                existing.TableName   = EditingTable.TableName;
+                existing.Description = EditingTable.Description;
+                existing.WorkId      = EditingTable.WorkId;
+                await db.SaveChangesAsync();
+            }
+        }
+
+        ShowTableModal = false;
+        await LoadAll();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
+    static string StatusBadge(WorkStatus s) => s switch
+    {
+        WorkStatus.ONGOING   => "bg-warning text-dark",
+        WorkStatus.COMPLETED => "bg-success",
+        WorkStatus.STALLED   => "bg-danger",
+        WorkStatus.CANCELLED => "bg-secondary",
+        _                    => "bg-light text-dark"
+    };
+
+    static string ProgColor(decimal pct) => pct switch
+    {
+        >= 75 => "progress-fill-green",
+        >= 40 => "progress-fill-orange",
+        _     => "progress-fill-red"
+    };
+
+    class ColDef
+    {
+        public string ColumnName  { get; set; } = "";
+        public string DataTypeStr { get; set; } = "TEXT";
+    }
+}
