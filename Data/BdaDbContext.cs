@@ -5,21 +5,18 @@ namespace Work_Dashboard.Data;
 
 public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(options)
 {
-    public DbSet<Engineer> Engineers => Set<Engineer>();
-    public DbSet<WorkCategory> WorkCategories => Set<WorkCategory>();
-    public DbSet<FundSource> FundSources => Set<FundSource>();
-    public DbSet<Work> Works => Set<Work>();
+    public DbSet<Engineer>        Engineers        => Set<Engineer>();
+    public DbSet<WorkCategory>    WorkCategories   => Set<WorkCategory>();
+    public DbSet<FundSource>      FundSources      => Set<FundSource>();
+    public DbSet<Work>            Works            => Set<Work>();
     public DbSet<WorkProgressLog> WorkProgressLogs => Set<WorkProgressLog>();
-    public DbSet<AttachmentType> AttachmentTypes => Set<AttachmentType>();
-    public DbSet<AttachmentCategory> AttachmentCategories => Set<AttachmentCategory>();
-    public DbSet<Attachment> Attachments => Set<Attachment>();
-    public DbSet<DriveFolder> DriveFolders => Set<DriveFolder>();
-    public DbSet<GoogleOAuthToken> GoogleOAuthTokens => Set<GoogleOAuthToken>();
-    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-    public DbSet<CustomTable> CustomTables => Set<CustomTable>();
-    public DbSet<CustomColumn> CustomColumns => Set<CustomColumn>();
-    public DbSet<CustomRow> CustomRows => Set<CustomRow>();
-    public DbSet<CustomCell> CustomCells => Set<CustomCell>();
+    public DbSet<WorkRemark>      WorkRemarks      => Set<WorkRemark>();
+    public DbSet<AttachmentType>      AttachmentTypes      => Set<AttachmentType>();
+    public DbSet<AttachmentCategory>  AttachmentCategories => Set<AttachmentCategory>();
+    public DbSet<Attachment>          Attachments          => Set<Attachment>();
+    public DbSet<DriveFolder>         DriveFolders         => Set<DriveFolder>();
+    public DbSet<GoogleOAuthToken>    GoogleOAuthTokens    => Set<GoogleOAuthToken>();
+    public DbSet<AuditLog>            AuditLogs            => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -110,6 +107,22 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
             e.HasOne(x => x.AssignedAen).WithMany(x => x.AenWorks).HasForeignKey(x => x.AssignedAenId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.AssignedExen).WithMany(x => x.ExenWorks).HasForeignKey(x => x.AssignedExenId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.CreatedByEngineer).WithMany().HasForeignKey(x => x.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── work_remarks ─────────────────────────────────────────
+        mb.Entity<WorkRemark>(e =>
+        {
+            e.ToTable("work_remarks");
+            e.HasKey(x => x.RemarkId);
+            e.Property(x => x.RemarkId).HasColumnName("remark_id");
+            e.Property(x => x.WorkId).HasColumnName("work_id");
+            e.Property(x => x.Content).HasColumnName("content").HasColumnType("text");
+            e.Property(x => x.AuthorName).HasColumnName("author_name").HasMaxLength(150);
+            e.Property(x => x.AuthorId).HasColumnName("author_id");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+
+            e.HasOne(x => x.Work).WithMany().HasForeignKey(x => x.WorkId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Author).WithMany().HasForeignKey(x => x.AuthorId).OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── work_progress_log ────────────────────────────────────
@@ -222,72 +235,6 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
             e.Property(x => x.ChangedAt).HasColumnName("changed_at");
             e.Property(x => x.Details).HasColumnName("details").HasColumnType("json");
             e.HasOne(x => x.ChangedByEngineer).WithMany().HasForeignKey(x => x.ChangedBy).OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // ── custom_tables ────────────────────────────────────────
-        mb.Entity<CustomTable>(e =>
-        {
-            e.ToTable("custom_tables");
-            e.HasKey(x => x.TableId);
-            e.Property(x => x.TableId).HasColumnName("table_id");
-            e.Property(x => x.TableName).HasColumnName("table_name").HasMaxLength(200);
-            e.Property(x => x.Description).HasColumnName("description");
-            e.Property(x => x.WorkId).HasColumnName("work_id");
-            e.Property(x => x.CreatedBy).HasColumnName("created_by");
-            e.Property(x => x.IsDeleted).HasColumnName("is_deleted");
-            e.Property(x => x.CreatedAt).HasColumnName("created_at");
-            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-
-            e.HasOne(x => x.Work).WithMany(x => x.CustomTables).HasForeignKey(x => x.WorkId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(x => x.CreatedByEngineer).WithMany(x => x.CustomTables).HasForeignKey(x => x.CreatedBy).OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // ── custom_columns ───────────────────────────────────────
-        mb.Entity<CustomColumn>(e =>
-        {
-            e.ToTable("custom_columns");
-            e.HasKey(x => x.ColumnId);
-            e.Property(x => x.ColumnId).HasColumnName("column_id");
-            e.Property(x => x.TableId).HasColumnName("table_id");
-            e.Property(x => x.ColumnName).HasColumnName("column_name").HasMaxLength(100);
-            e.Property(x => x.DataType).HasColumnName("data_type").HasConversion<string>();
-            e.Property(x => x.DisplayOrder).HasColumnName("display_order");
-            e.Property(x => x.IsRequired).HasColumnName("is_required");
-            e.Property(x => x.DropdownOptions).HasColumnName("dropdown_options").HasColumnType("json");
-            e.Property(x => x.IsDeleted).HasColumnName("is_deleted");
-
-            e.HasOne(x => x.Table).WithMany(x => x.Columns).HasForeignKey(x => x.TableId).OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ── custom_rows ──────────────────────────────────────────
-        mb.Entity<CustomRow>(e =>
-        {
-            e.ToTable("custom_rows");
-            e.HasKey(x => x.RowId);
-            e.Property(x => x.RowId).HasColumnName("row_id");
-            e.Property(x => x.TableId).HasColumnName("table_id");
-            e.Property(x => x.CreatedBy).HasColumnName("created_by");
-            e.Property(x => x.CreatedAt).HasColumnName("created_at");
-            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-            e.Property(x => x.IsDeleted).HasColumnName("is_deleted");
-
-            e.HasOne(x => x.Table).WithMany(x => x.Rows).HasForeignKey(x => x.TableId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.CreatedByEngineer).WithMany(x => x.CustomRows).HasForeignKey(x => x.CreatedBy).OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // ── custom_cells ─────────────────────────────────────────
-        mb.Entity<CustomCell>(e =>
-        {
-            e.ToTable("custom_cells");
-            e.HasKey(x => x.CellId);
-            e.Property(x => x.CellId).HasColumnName("cell_id");
-            e.Property(x => x.RowId).HasColumnName("row_id");
-            e.Property(x => x.ColumnId).HasColumnName("column_id");
-            e.Property(x => x.Value).HasColumnName("value");
-            e.HasIndex(x => new { x.RowId, x.ColumnId }).IsUnique();
-
-            e.HasOne(x => x.Row).WithMany(x => x.Cells).HasForeignKey(x => x.RowId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.Column).WithMany(x => x.Cells).HasForeignKey(x => x.ColumnId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

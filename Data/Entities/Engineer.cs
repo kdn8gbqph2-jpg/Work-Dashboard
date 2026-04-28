@@ -1,6 +1,6 @@
 namespace Work_Dashboard.Data.Entities;
 
-public enum EngineerRole { ADMIN, JEN }
+public enum EngineerRole { ADMIN, JEN, AEN, XEN }
 
 public class Engineer
 {
@@ -20,6 +20,4 @@ public class Engineer
     public ICollection<Work> AenWorks { get; set; } = [];
     public ICollection<Work> ExenWorks { get; set; } = [];
     public ICollection<WorkProgressLog> ProgressLogs { get; set; } = [];
-    public ICollection<CustomTable> CustomTables { get; set; } = [];
-    public ICollection<CustomRow> CustomRows { get; set; } = [];
 }

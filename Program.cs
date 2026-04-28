@@ -58,6 +58,13 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// ── Seed CSV data (once; guard inside SeedAsync) ─────────────
+using (var scope = app.Services.CreateScope())
+{
+    var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<BdaDbContext>>();
+    await Work_Dashboard.Data.DataSeeder.SeedAsync(factory);
+}
+
 // ── Pipeline ──────────────────────────────────────────────────
 if (!app.Environment.IsDevelopment())
 {

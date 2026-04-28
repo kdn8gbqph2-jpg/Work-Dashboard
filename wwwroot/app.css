@@ -24,6 +24,13 @@ h1:focus {
     font-weight: 700;
     line-height: 1;
     color: #1a2e44;
+    margin-bottom: 0.35rem;
+}
+
+.stat-card small {
+    font-size: 0.75rem !important;
+    color: #6c757d;
+    display: block;
 }
 
 /* ── Modal overlay ───────────────────────────────────────── */
@@ -293,6 +300,17 @@ h1:focus {
 .progress-fill-orange { background: #f97316; }
 .progress-fill-red    { background: #ef4444; }
 
+/* Remarks cell — clamp to 3 lines */
+.remarks-cell {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.45;
+    max-width: 240px;
+    color: #495057;
+}
+
 /* ── Login Page ──────────────────────────────────────────── */
 .login-wrapper {
     min-height: 100vh;
@@ -356,6 +374,90 @@ h1:focus {
     transition: background-color 0.2s;
 }
 
+/* ── Settings sub-nav ────────────────────────────────────── */
+.settings-subnav {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #e9ecef;
+    background: #f8f9fa;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+}
+
+.settings-tab {
+    padding: 0.7rem 1.1rem;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.settings-tab:hover {
+    background: rgba(0,0,0,0.04);
+    color: #1a2e44;
+}
+
+.settings-tab.active {
+    color: #f97316;
+    border-bottom-color: #f97316;
+    font-weight: 600;
+    background: #fff;
+}
+
+/* ── Remarks styles ──────────────────────────────────────── */
+.remarks-scroll {
+    max-height: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-right: 4px;
+}
+
+.remarks-scroll::-webkit-scrollbar { width: 4px; }
+.remarks-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+.remarks-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+.remark-entry {
+    background: #f8f9fa;
+    border-left: 3px solid #0d6efd;
+    border-radius: 0 6px 6px 0;
+    padding: 0.5rem 0.75rem;
+}
+
+.remark-static {
+    background: #fff8e1;
+    border-left: 3px solid #f97316;
+    border-radius: 0 6px 6px 0;
+    padding: 0.5rem 0.75rem;
+}
+
+.remark-meta {
+    display: flex;
+    align-items: center;
+    font-size: 0.78rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.remark-content {
+    font-size: 0.85rem;
+    color: #212529;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.remark-add-box {
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+}
+
 .login-card .btn-primary:hover {
     background-color: #245280;
     border-color: #245280;
@@ -390,3 +492,415 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+/* ── Ref Dropdown Panels (Settings) ─────────────────────── */
+.ref-dropdown-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.ref-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border: 1.5px solid #dee2e6;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+}
+
+.ref-trigger:hover {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+}
+
+.ref-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 200;
+    background: #fff;
+    border: 1.5px solid #e9ecef;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    min-width: 520px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+}
+
+.ref-panel::-webkit-scrollbar { width: 5px; }
+.ref-panel::-webkit-scrollbar-track { background: #f1f1f1; }
+.ref-panel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+.ref-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.83rem;
+    border-bottom: 1px solid #f4f4f4;
+    transition: background 0.1s;
+}
+
+.ref-row:last-child { border-bottom: none; }
+.ref-row:hover { background: #fafafa; }
+
+.ref-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    background: #fff9f0;
+    border-bottom: 1px solid #f4f4f4;
+}
+
+.ref-add-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem;
+    background: #f8f9fa;
+    border-top: 1px dashed #dee2e6;
+}
+
+.ref-add-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.5rem 0.85rem;
+    border: none;
+    border-top: 1px dashed #dee2e6;
+    background: transparent;
+    font-size: 0.82rem;
+    color: #6c757d;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    text-align: left;
+}
+
+.ref-add-trigger:hover {
+    background: #fdf6f0;
+    color: #f97316;
+}
+
+/* ── Works Stat Cards ────────────────────────────────────── */
+.wstat-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.wstat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.wstat-icon-blue   { background: #e8f0fe; color: #2563eb; }
+.wstat-icon-orange { background: #fff3e0; color: #f97316; }
+.wstat-icon-green  { background: #e8f8f0; color: #16a34a; }
+.wstat-icon-red    { background: #fee2e2; color: #dc2626; }
+
+.wstat-label {
+    font-size: 0.78rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.wstat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #1a2e44;
+}
+
+.wstat-sub {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+}
+
+/* ── Works Filter Bar ────────────────────────────────────── */
+.works-filter-bar {
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fafafa;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.28rem 0.6rem;
+}
+
+.filter-group-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.filter-select-sm {
+    border: none;
+    outline: none;
+    box-shadow: none;
+    padding: 0 1.4rem 0 0.15rem;
+    font-size: 0.82rem;
+    min-width: 70px;
+    background-color: transparent;
+    cursor: pointer;
+    color: #495057;
+    appearance: auto;
+    -webkit-appearance: auto;
+    font-family: inherit;
+}
+
+.filter-daterange {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.28rem 0.7rem;
+    font-size: 0.82rem;
+}
+
+.filter-date-input {
+    border: none;
+    outline: none;
+    font-size: 0.82rem;
+    color: #495057;
+    background: transparent;
+    width: 110px;
+}
+
+.filter-date-input::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.btn-filter-reset {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.32rem 0.75rem;
+    font-size: 0.82rem;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.btn-filter-reset:hover {
+    border-color: #f97316;
+    color: #f97316;
+}
+
+/* ── Works Table Styles ──────────────────────────────────── */
+.work-name-cell {
+    font-size: 0.87rem;
+    line-height: 1.35;
+    color: #1a2e44;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 300px;
+}
+
+.work-fileno {
+    font-size: 0.75rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.badge-annual {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    background: #cff4fc;
+    color: #055160;
+}
+
+/* Status pill */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: currentColor;
+}
+
+.status-pill-ongoing   { background: #fff3cd; color: #92400e; }
+.status-pill-completed { background: #d1fae5; color: #065f46; }
+.status-pill-stalled   { background: #fee2e2; color: #991b1b; }
+.status-pill-cancelled { background: #f3f4f6; color: #374151; }
+
+.eng-name {
+    font-size: 0.83rem;
+    color: #374151;
+}
+
+.remark-preview {
+    font-size: 0.82rem;
+    color: #374151;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.45;
+    max-width: 240px;
+}
+
+.btn-read-more {
+    background: none;
+    border: none;
+    color: #2563eb;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0;
+    cursor: pointer;
+    margin-top: 0.15rem;
+}
+
+.btn-read-more:hover { text-decoration: underline; }
+
+/* Action buttons */
+.action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+}
+
+.action-btn-view  { border-color: #2563eb; color: #2563eb; }
+.action-btn-view:hover  { background: #2563eb; color: #fff; }
+.action-btn-chat  { border-color: #6c757d; color: #6c757d; }
+.action-btn-chat:hover  { background: #6c757d; color: #fff; }
+.action-btn-edit  { border-color: #16a34a; color: #16a34a; }
+.action-btn-edit:hover  { background: #16a34a; color: #fff; }
+
+/* ── Settings Accordion Panels ──────────────────────────── */
+.settings-panel-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    overflow: hidden;
+}
+
+.settings-panel-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    font-size: 0.88rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+    border-bottom: 1px solid transparent;
+}
+
+.settings-panel-trigger:hover {
+    background: #fdf6f0;
+}
+
+.settings-panel-trigger[aria-expanded="true"],
+.settings-panel-card:has(.settings-panel-body) .settings-panel-trigger {
+    border-bottom-color: #e9ecef;
+    background: #fdf6f0;
+}
+
+.settings-panel-body {
+    border-top: 1px solid #e9ecef;
+}
+
+/* ── Work Detail Modal ───────────────────────────────────── */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem 1.2rem;
+}
+
+.detail-grid.detail-grid-1col {
+    grid-template-columns: 1fr;
+}
+
+.detail-label {
+    font-size: 0.73rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.1rem;
+}
+
+.detail-val {
+    font-size: 0.88rem;
+    color: #1a2e44;
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.detail-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #f97316;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid #f4ebe3;
+    padding-bottom: 0.3rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.detail-section-title:first-child { margin-top: 0; }

@@ -1,16 +1,17 @@
 @page "/jen"
-@attribute [Authorize(Roles = "JEN,ADMIN")]
+@attribute [Authorize(Roles = "JEN,ADMIN,AEN,XEN")]
 @rendermode InteractiveServer
 @inject IDbContextFactory<BdaDbContext> DbFactory
 @inject NavigationManager Nav
 @using Microsoft.EntityFrameworkCore
 @using Work_Dashboard.Data
+@using System.Security.Claims
 
 <PageTitle>JEN Dashboard — BDA</PageTitle>
 
 <div class="jen-shell">
 
-    @* ── Sidebar ───────────────────────────────────────────── *@
+    @* ── Sidebar ───────────────────────────────────────────────────── *@
     <aside class="jen-sidebar">
         <div class="sidebar-brand">
             <img src="/images/bda-logo.png" alt="BDA" class="sidebar-logo" />
@@ -34,18 +35,20 @@
         </nav>
 
         <div class="sidebar-footer">
+            <button class="btn-logout w-100 mb-2" @onclick="OpenPasswordModal">
+                <i class="bi bi-key-fill"></i> Change Password
+            </button>
             <form method="post" action="/account/logout">
-                <button type="submit" class="btn-logout">
+                <button type="submit" class="btn-logout w-100">
                     <i class="bi bi-box-arrow-left"></i> Logout
                 </button>
             </form>
         </div>
     </aside>
 
-    @* ── Main Content ──────────────────────────────────────── *@
+    @* ── Main Content ──────────────────────────────────────────────── *@
     <main class="jen-main">
 
-        @* Top Bar *@
         <div class="jen-topbar">
             <div>
                 <h5 class="mb-0 fw-bold">
@@ -69,7 +72,7 @@
         }
         else
         {
-            @* ── Summary Section ───────────────────────────── *@
+            @* ── Summary Section ─────────────────────────────────── *@
             if (ActiveSection == "summary")
             {
                 <div class="content-card">
@@ -107,7 +110,7 @@
                 </div>
             }
 
-            @* ── Works List Section ────────────────────────── *@
+            @* ── Works List Section ───────────────────────────────── *@
             if (ActiveSection == "works")
             {
                 <div class="content-card">
@@ -158,27 +161,21 @@
                         <table class="table table-hover bda-table mb-0">
                             <thead>
                                 <tr>
-                                    <th style="width:45px">#</th>
-                                    <th>File No.</th>
-                                    <th style="min-width:280px">Work Name</th>
-                                    <th>JEN</th>
-                                    <th>Contractor</th>
-                                    <th class="text-end">स्वीकृति राशि<br/><small>(लाखों में)</small></th>
-                                    <th class="text-end">कार्यादेश<br/><small>(लाखों में)</small></th>
-                                    <th class="text-center">Start Date</th>
-                                    <th class="text-center">Due Date</th>
-                                    <th class="text-center">Physical<br/>Progress</th>
-                                    <th class="text-center">Financial<br/>Progress</th>
-                                    <th class="text-center">Status</th>
+                                    <th style="width:40px">#</th>
+                                    <th style="min-width:260px">Work Name</th>
+                                    <th style="min-width:90px">Status</th>
+                                    <th style="min-width:110px">JEN</th>
+                                    <th style="min-width:110px">AEN</th>
+                                    <th style="min-width:110px">XEN</th>
+                                    <th style="min-width:220px">Latest Remark</th>
+                                    <th style="width:100px" class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if (!FilteredWorks.Any())
                                 {
                                     <tr>
-                                        <td colspan="12" class="text-center text-muted py-4">
-                                            No records found.
-                                        </td>
+                                        <td colspan="8" class="text-center text-muted py-4">No records found.</td>
                                     </tr>
                                 }
                                 @{ int idx = 1; }
@@ -186,40 +183,47 @@
                                 {
                                     <tr>
                                         <td class="text-muted">@(idx++)</td>
-                                        <td><small>@w.WorkCode</small></td>
                                         <td>
-                                            <span class="work-name">@w.WorkName</span>
-                                            @if (w.IsAnnualContract)
+                                            <span class="work-name fw-semibold">@w.WorkName</span>
+                                            @if (!string.IsNullOrWhiteSpace(w.WorkCode))
                                             {
-                                                <span class="badge bg-info text-dark ms-1">Annual</span>
+                                                <br/><small class="text-muted">@w.WorkCode</small>
                                             }
+                                        </td>
+                                        <td>
+                                            <span class="badge @StatusBadge(w.Status)" style="font-size:0.72rem">@w.Status</span>
                                         </td>
                                         <td><small>@(w.AssignedJen?.Name ?? "—")</small></td>
-                                        <td><small>@(w.ContractorName ?? "—")</small></td>
-                                        <td class="text-end">@(w.SanctionedAmount?.ToString("N2") ?? "—")</td>
-                                        <td class="text-end">@(w.AgreementAmount?.ToString("N2") ?? "—")</td>
-                                        <td class="text-center"><small>@(w.StartDate?.ToString("dd/MM/yy") ?? "—")</small></td>
-                                        <td class="text-center"><small>@(w.ExpectedCompletion?.ToString("dd/MM/yy") ?? "—")</small></td>
-                                        <td class="text-center">
-                                            @if (w.ProgressPercent.HasValue)
+                                        <td><small>@(w.AssignedAen?.Name ?? "—")</small></td>
+                                        <td><small>@(w.AssignedExen?.Name ?? "—")</small></td>
+                                        <td>
+                                            @if (LatestRemarksMap.TryGetValue(w.WorkId, out var lr))
                                             {
-                                                <div class="progress-pill">
-                                                    <div class="progress-fill @ProgressColor(w.ProgressPercent.Value)"
-                                                         style="width:@(w.ProgressPercent)%"></div>
-                                                </div>
-                                                <small>@w.ProgressPercent%</small>
+                                                <small class="remarks-cell d-block">@lr.Content</small>
+                                                <small class="text-muted" style="font-size:0.7rem">
+                                                    — @lr.AuthorName, @lr.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                                                </small>
                                             }
-                                            else { <span class="text-muted">—</span> }
+                                            else if (!string.IsNullOrWhiteSpace(w.Remarks))
+                                            {
+                                                <small class="remarks-cell d-block text-muted">@w.Remarks</small>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
                                         </td>
                                         <td class="text-center">
-                                            @if (w.FinancialProgressPercent.HasValue)
-                                            {
-                                                <small>@w.FinancialProgressPercent%</small>
-                                            }
-                                            else { <span class="text-muted">—</span> }
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge @StatusBadge(w.Status)">@w.Status</span>
+                                            <div class="d-flex gap-1 justify-content-center">
+                                                <button class="btn btn-xs btn-outline-secondary" title="Work Details"
+                                                        @onclick="() => OpenDetail(w)">
+                                                    <i class="bi bi-info-circle"></i>
+                                                </button>
+                                                <button class="btn btn-xs btn-outline-primary" title="View / Add Remarks"
+                                                        @onclick="() => OpenRemarks(w)">
+                                                    <i class="bi bi-chat-dots"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -232,17 +236,314 @@
     </main>
 </div>
 
+@* ══ WORK DETAIL MODAL ════════════════════════════════════════ *@
+@if (ShowDetailModal && DetailWork != null)
+{
+    <div class="modal-overlay" @onclick="CloseDetail">
+        <div class="modal-box" style="max-width:680px;max-height:90vh" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <div>
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-info-circle me-1 text-primary"></i>Work Details</h6>
+                    <small class="text-muted">@DetailWork.WorkName[..Math.Min(80, DetailWork.WorkName.Length)]</small>
+                </div>
+                <button class="btn-close" @onclick="CloseDetail"></button>
+            </div>
+            <div class="modal-box-body">
+
+                <p class="detail-section-title">Basic Information</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Work Name</div>
+                        <div class="detail-val">@DetailWork.WorkName</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">File No. / Work Code</div>
+                        <div class="detail-val">@(DetailWork.WorkCode ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Category</div>
+                        <div class="detail-val">@(DetailWork.Category?.CategoryName ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Fund Source</div>
+                        <div class="detail-val">@(DetailWork.FundSource?.SourceName ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Department</div>
+                        <div class="detail-val">@(DetailWork.Department ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Status</div>
+                        <div class="detail-val">
+                            <span class="badge @StatusBadge(DetailWork.Status)">@DetailWork.Status</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Scheme</div>
+                        <div class="detail-val">@(DetailWork.IsScheme ? "Yes" : "No")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">CM Budget</div>
+                        <div class="detail-val">@(DetailWork.IsCmBudget ? "Yes" : "No")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Annual Contract</div>
+                        <div class="detail-val">@(DetailWork.IsAnnualContract ? "Yes" : "No")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Location / Ward</div>
+                        <div class="detail-val">
+                            @(DetailWork.Location ?? "—")
+                            @if (!string.IsNullOrWhiteSpace(DetailWork.WardNumber))
+                            { <span class="text-muted"> (Ward @DetailWork.WardNumber)</span> }
+                        </div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Engineers</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">JEN</div>
+                        <div class="detail-val">@(DetailWork.AssignedJen?.Name ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">AEN</div>
+                        <div class="detail-val">@(DetailWork.AssignedAen?.Name ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Executive Engineer (XEN)</div>
+                        <div class="detail-val">@(DetailWork.AssignedExen?.Name ?? "—")</div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Financial</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Sanctioned Amount (Lakh)</div>
+                        <div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Agreement Amount (Lakh)</div>
+                        <div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Expenditure (Lakh)</div>
+                        <div class="detail-val">@(DetailWork.Expenditure?.ToString("N2") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Payment Status</div>
+                        <div class="detail-val">@(DetailWork.PaymentStatus ?? "—")</div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Progress</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Physical Progress</div>
+                        <div class="detail-val">
+                            @if (DetailWork.ProgressPercent.HasValue)
+                            {
+                                <div class="progress-pill mb-1">
+                                    <div class="progress-fill @ProgressColor(DetailWork.ProgressPercent.Value)"
+                                         style="width:@(DetailWork.ProgressPercent)%"></div>
+                                </div>
+                                @($"{DetailWork.ProgressPercent}%")
+                            }
+                            else { <span>—</span> }
+                        </div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Financial Progress</div>
+                        <div class="detail-val">@(DetailWork.FinancialProgressPercent.HasValue ? $"{DetailWork.FinancialProgressPercent}%" : "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Start Date</div>
+                        <div class="detail-val">@(DetailWork.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Expected Completion</div>
+                        <div class="detail-val">@(DetailWork.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Actual Completion</div>
+                        <div class="detail-val">@(DetailWork.ActualCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Contractor</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Contractor Name</div>
+                        <div class="detail-val">@(DetailWork.ContractorName ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Contractor Mobile</div>
+                        <div class="detail-val">@(DetailWork.ContractorMobile ?? "—")</div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(DetailWork.Remarks))
+                {
+                    <p class="detail-section-title">Original Remarks</p>
+                    <div class="remark-static">
+                        <div class="remark-content">@DetailWork.Remarks</div>
+                    </div>
+                }
+
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="CloseDetail">Close</button>
+                <button class="btn btn-outline-primary btn-sm" @onclick="async () => { var w = DetailWork!; CloseDetail(); await OpenRemarks(w); }">
+                    <i class="bi bi-chat-dots me-1"></i>View Remarks
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ REMARKS MODAL ════════════════════════════════════════════ *@
+@if (ShowRemarksModal && RemarksWork != null)
+{
+    <div class="modal-overlay" @onclick="CloseRemarks">
+        <div class="modal-box modal-box-lg" style="max-width:600px;max-height:85vh" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <div>
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-1 text-primary"></i>Remarks</h6>
+                    <small class="text-muted">@RemarksWork.WorkName[..Math.Min(70, RemarksWork.WorkName.Length)]</small>
+                </div>
+                <button class="btn-close" @onclick="CloseRemarks"></button>
+            </div>
+            <div class="modal-box-body" style="display:flex;flex-direction:column;gap:0.75rem">
+
+                @* Static original remarks *@
+                @if (!string.IsNullOrWhiteSpace(RemarksWork.Remarks))
+                {
+                    <div class="remark-static">
+                        <div class="remark-meta">
+                            <i class="bi bi-file-earmark-text me-1"></i>
+                            <strong>Original Record</strong>
+                            <span class="ms-auto text-muted" style="font-size:0.73rem">Imported from sheet</span>
+                        </div>
+                        <div class="remark-content">@RemarksWork.Remarks</div>
+                    </div>
+                }
+
+                @* Dynamic timestamped remarks *@
+                @if (RemarksList.Any())
+                {
+                    <div class="remarks-scroll">
+                        @foreach (var r in RemarksList)
+                        {
+                            <div class="remark-entry">
+                                <div class="remark-meta">
+                                    <i class="bi bi-person-circle me-1 text-primary"></i>
+                                    <strong>@r.AuthorName</strong>
+                                    <span class="ms-auto text-muted" style="font-size:0.73rem">
+                                        @r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    </span>
+                                </div>
+                                <div class="remark-content">@r.Content</div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (string.IsNullOrWhiteSpace(RemarksWork.Remarks))
+                {
+                    <div class="text-center text-muted py-2">
+                        <i class="bi bi-chat-dots" style="font-size:2rem;opacity:0.3"></i>
+                        <p class="mt-1 mb-0">No remarks yet. Be the first to add one.</p>
+                    </div>
+                }
+
+                @* Add remark form *@
+                <div class="remark-add-box">
+                    <label class="fw-semibold mb-1 d-block" style="font-size:0.85rem">Add Remark</label>
+                    @if (!string.IsNullOrEmpty(RemarkError))
+                    { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
+                    <textarea class="form-control form-control-sm" rows="3"
+                              placeholder="Type your remark here…"
+                              @bind="NewRemarkText"></textarea>
+                    <div class="d-flex justify-content-end mt-2">
+                        <button class="btn btn-sm btn-primary" @onclick="AddRemark">
+                            <i class="bi bi-send-fill me-1"></i>Add Remark
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ CHANGE PASSWORD MODAL ═════════════════════════════════════ *@
+@if (ShowPasswordModal)
+{
+    <div class="modal-overlay" @onclick="ClosePasswordModal">
+        <div class="modal-box" style="max-width:380px" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-key-fill me-1"></i>Change Password</h6>
+                <button class="btn-close" @onclick="ClosePasswordModal"></button>
+            </div>
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(PwdError))   { <div class="alert alert-danger py-2">@PwdError</div> }
+                @if (!string.IsNullOrEmpty(PwdSuccess)) { <div class="alert alert-success py-2">@PwdSuccess</div> }
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Current Password</label>
+                    <input type="password" class="form-control" @bind="PwdCurrent" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">New Password</label>
+                    <input type="password" class="form-control" @bind="PwdNew" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Confirm New Password</label>
+                    <input type="password" class="form-control" @bind="PwdConfirm" />
+                </div>
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="ClosePasswordModal">Close</button>
+                <button class="btn btn-primary btn-sm" @onclick="ChangePassword">
+                    <i class="bi bi-check2 me-1"></i>Update Password
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
-    string ActiveSection = "summary";
-    string SelectedFilter  = "ALL";
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    string ActiveSection    = "summary";
+    string SelectedFilter   = "ALL";
     string SelectedCategory = "";
-    string SearchText = "";
-    bool   IsLoading  = true;
+    string SearchText       = "";
+    bool   IsLoading        = true;
 
     List<Work>       AllWorks      = [];
     List<Work>       FilteredWorks = [];
     List<string>     Categories    = [];
     List<SummaryRow> SummaryRows   = [];
+
+    Dictionary<int, WorkRemark> LatestRemarksMap = [];
+
+    // Work detail modal
+    bool  ShowDetailModal = false;
+    Work? DetailWork      = null;
+
+    // Remarks modal
+    bool             ShowRemarksModal = false;
+    Work?            RemarksWork      = null;
+    List<WorkRemark> RemarksList      = [];
+    string           NewRemarkText    = "";
+    string           RemarkError      = "";
+
+    // Password change modal
+    bool   ShowPasswordModal = false;
+    string PwdCurrent        = "";
+    string PwdNew            = "";
+    string PwdConfirm        = "";
+    string PwdError          = "";
+    string PwdSuccess        = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -257,9 +558,20 @@
         AllWorks = await db.Works
             .Where(w => !w.IsDeleted)
             .Include(w => w.AssignedJen)
+            .Include(w => w.AssignedAen)
+            .Include(w => w.AssignedExen)
             .Include(w => w.Category)
+            .Include(w => w.FundSource)
             .OrderByDescending(w => w.CreatedAt)
             .ToListAsync();
+
+        // Latest remark per work
+        var allRemarks = await db.WorkRemarks
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+        LatestRemarksMap = allRemarks
+            .GroupBy(r => r.WorkId)
+            .ToDictionary(g => g.Key, g => g.Last());
 
         Categories = AllWorks
             .Where(w => w.Category != null)
@@ -269,7 +581,6 @@
             .ToList();
 
         SummaryRows = AllWorks
-            .Where(w => !w.IsDeleted)
             .GroupBy(w => w.Category?.CategoryCode ?? "MISC")
             .Select(g => new SummaryRow(
                 g.Key,
@@ -281,10 +592,7 @@
         ApplyFilter();
     }
 
-    void SetSection(string section)
-    {
-        ActiveSection = section;
-    }
+    void SetSection(string section) => ActiveSection = section;
 
     void ApplyFilter()
     {
@@ -308,6 +616,99 @@
         FilteredWorks = q.ToList();
     }
 
+    // ── Detail Modal ──────────────────────────────────────────
+    void OpenDetail(Work w) { DetailWork = w; ShowDetailModal = true; }
+    void CloseDetail()      { ShowDetailModal = false; DetailWork = null; }
+
+    // ── Remarks ───────────────────────────────────────────────
+    async Task OpenRemarks(Work w)
+    {
+        RemarksWork   = w;
+        NewRemarkText = "";
+        RemarkError   = "";
+        await using var db = await DbFactory.CreateDbContextAsync();
+        RemarksList = await db.WorkRemarks
+            .Where(r => r.WorkId == w.WorkId)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+        ShowRemarksModal = true;
+    }
+
+    void CloseRemarks()
+    {
+        ShowRemarksModal = false;
+        RemarksWork = null;
+    }
+
+    async Task AddRemark()
+    {
+        if (string.IsNullOrWhiteSpace(NewRemarkText))
+        { RemarkError = "Remark cannot be empty."; return; }
+
+        var auth        = await AuthState!;
+        var authorName  = auth.User.Identity?.Name ?? "Unknown";
+        var authorIdStr = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        int? authorId   = authorIdStr is not null ? int.Parse(authorIdStr) : null;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var remark = new WorkRemark
+        {
+            WorkId     = RemarksWork!.WorkId,
+            Content    = NewRemarkText.Trim(),
+            AuthorName = authorName,
+            AuthorId   = authorId,
+            CreatedAt  = DateTime.UtcNow
+        };
+        db.WorkRemarks.Add(remark);
+        await db.SaveChangesAsync();
+
+        // Update the map so the table refreshes too
+        LatestRemarksMap[RemarksWork.WorkId] = remark;
+
+        NewRemarkText = "";
+        RemarkError   = "";
+        RemarksList = await db.WorkRemarks
+            .Where(r => r.WorkId == RemarksWork!.WorkId)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+    }
+
+    // ── Password Change ───────────────────────────────────────
+    void OpenPasswordModal()
+    {
+        PwdCurrent = PwdNew = PwdConfirm = PwdError = PwdSuccess = "";
+        ShowPasswordModal = true;
+    }
+
+    void ClosePasswordModal() => ShowPasswordModal = false;
+
+    async Task ChangePassword()
+    {
+        PwdError = PwdSuccess = "";
+        if (string.IsNullOrWhiteSpace(PwdCurrent) || string.IsNullOrWhiteSpace(PwdNew))
+        { PwdError = "All fields are required."; return; }
+        if (PwdNew != PwdConfirm)
+        { PwdError = "New passwords do not match."; return; }
+        if (PwdNew.Length < 6)
+        { PwdError = "Password must be at least 6 characters."; return; }
+
+        var auth  = await AuthState!;
+        var idStr = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (idStr is null) { PwdError = "Session error. Please re-login."; return; }
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var eng = await db.Engineers.FindAsync(int.Parse(idStr));
+        if (eng is null) { PwdError = "Account not found."; return; }
+        if (!BCrypt.Net.BCrypt.Verify(PwdCurrent, eng.PasswordHash))
+        { PwdError = "Current password is incorrect."; return; }
+
+        eng.PasswordHash = BCrypt.Net.BCrypt.HashPassword(PwdNew);
+        await db.SaveChangesAsync();
+        PwdSuccess = "Password updated successfully.";
+        PwdCurrent = PwdNew = PwdConfirm = "";
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
     string FilterLabel => SelectedFilter switch
     {
         "ONGOING"   => "Ongoing",

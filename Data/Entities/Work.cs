@@ -44,5 +44,4 @@ public class Work
     public Engineer? CreatedByEngineer { get; set; }
     public ICollection<WorkProgressLog> ProgressLogs { get; set; } = [];
     public DriveFolder? DriveFolder { get; set; }
-    public ICollection<CustomTable> CustomTables { get; set; } = [];
 }

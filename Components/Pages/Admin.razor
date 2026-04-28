@@ -1,3 +1,4 @@
+
 @page "/admin"
 @attribute [Authorize(Roles = "ADMIN")]
 @rendermode InteractiveServer
@@ -5,6 +6,7 @@
 @inject NavigationManager Nav
 @using Microsoft.EntityFrameworkCore
 @using Work_Dashboard.Data
+@using System.Security.Claims
 
 <PageTitle>Admin — BDA Dashboard</PageTitle>
 
@@ -21,28 +23,24 @@
         </div>
 
         <nav class="sidebar-nav">
-            <button class="nav-item @(Section == "overview" ? "active" : "")"
-                    @onclick='() => Section = "overview"'>
+            <button class="nav-item @(Section == "overview"  ? "active" : "")" @onclick='() => Section = "overview"'>
                 <i class="bi bi-speedometer2"></i><span>Overview</span>
             </button>
-            <button class="nav-item @(Section == "users" ? "active" : "")"
-                    @onclick='() => Section = "users"'>
+            <button class="nav-item @(Section == "users"     ? "active" : "")" @onclick='() => Section = "users"'>
                 <i class="bi bi-people-fill"></i><span>Users</span>
             </button>
-            <button class="nav-item @(Section == "works" ? "active" : "")"
-                    @onclick='() => Section = "works"'>
+            <button class="nav-item @(Section == "works"     ? "active" : "")" @onclick='() => Section = "works"'>
                 <i class="bi bi-hammer"></i><span>Works</span>
             </button>
-            <button class="nav-item @(Section == "tables" ? "active" : "")"
-                    @onclick='() => Section = "tables"'>
-                <i class="bi bi-grid-3x3-gap-fill"></i><span>Custom Tables</span>
+            <button class="nav-item @(Section == "settings"  ? "active" : "")" @onclick='() => Section = "settings"'>
+                <i class="bi bi-gear-fill"></i><span>Settings</span>
             </button>
         </nav>
 
         <div class="sidebar-footer">
-            <a href="/jen" class="btn-logout d-block text-center mb-2">
-                <i class="bi bi-eye"></i> JEN View
-            </a>
+            <button class="btn-logout w-100 mb-2" @onclick="OpenPasswordModal">
+                <i class="bi bi-key-fill"></i> Change Password
+            </button>
             <form method="post" action="/account/logout">
                 <button type="submit" class="btn-logout w-100">
                     <i class="bi bi-box-arrow-left"></i> Logout
@@ -54,7 +52,6 @@
     @* ── Main ───────────────────────────────────────────────── *@
     <main class="jen-main">
 
-        @* Top Bar *@
         <div class="jen-topbar">
             <div>
                 <h5 class="mb-0 fw-bold">@SectionTitle</h5>
@@ -74,6 +71,7 @@
         }
         else
         {
+
             @* ══ OVERVIEW ══════════════════════════════════════ *@
             if (Section == "overview")
             {
@@ -87,44 +85,30 @@
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-primary">
                             <div class="stat-label">Ongoing</div>
-                            <div class="stat-value text-primary">
-                                @AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)
-                            </div>
+                            <div class="stat-value text-primary">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-success">
                             <div class="stat-label">Completed</div>
-                            <div class="stat-value text-success">
-                                @AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)
-                            </div>
+                            <div class="stat-value text-success">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-info">
                             <div class="stat-label">Annual Contract</div>
-                            <div class="stat-value text-info">
-                                @AllWorks.Count(w => w.IsAnnualContract)
-                            </div>
+                            <div class="stat-value text-info">@AllWorks.Count(w => w.IsAnnualContract)</div>
                         </div>
                     </div>
                 </div>
-
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="content-card p-3">
                             <h6 class="fw-bold mb-3">Category Wise Summary</h6>
                             <table class="table table-sm bda-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Category</th>
-                                        <th class="text-end">Amount (लाखों)</th>
-                                        <th class="text-center">Count</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr><th>Category</th><th class="text-end">Amount (लाखों)</th><th class="text-center">Count</th></tr></thead>
                                 <tbody>
-                                    @foreach (var g in AllWorks.GroupBy(w => w.Category?.CategoryCode ?? "N/A")
-                                                               .OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
+                                    @foreach (var g in AllWorks.GroupBy(w => w.Category?.CategoryCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
                                     {
                                         <tr>
                                             <td>@g.Key</td>
@@ -140,16 +124,9 @@
                         <div class="content-card p-3">
                             <h6 class="fw-bold mb-3">Fund Source Summary</h6>
                             <table class="table table-sm bda-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Fund Source</th>
-                                        <th class="text-end">Amount (लाखों)</th>
-                                        <th class="text-center">Count</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr><th>Fund Source</th><th class="text-end">Amount (लाखों)</th><th class="text-center">Count</th></tr></thead>
                                 <tbody>
-                                    @foreach (var g in AllWorks.GroupBy(w => w.FundSource?.SourceCode ?? "N/A")
-                                                               .OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
+                                    @foreach (var g in AllWorks.GroupBy(w => w.FundSource?.SourceCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
                                     {
                                         <tr>
                                             <td>@g.Key</td>
@@ -176,11 +153,7 @@
                     </div>
                     <table class="table table-hover bda-table mb-0">
                         <thead>
-                            <tr>
-                                <th>#</th><th>Name</th><th>Username</th>
-                                <th>Role</th><th>Mobile</th>
-                                <th class="text-center">Active</th><th class="text-center">Actions</th>
-                            </tr>
+                            <tr><th>#</th><th>Name</th><th>Username</th><th>Role</th><th>Mobile</th><th class="text-center">Active</th><th class="text-center">Edit</th></tr>
                         </thead>
                         <tbody>
                             @{ int ui = 1; }
@@ -190,26 +163,19 @@
                                     <td class="text-muted">@(ui++)</td>
                                     <td class="fw-semibold">@eng.Name</td>
                                     <td><code>@eng.Username</code></td>
-                                    <td>
-                                        <span class="badge @(eng.Role == EngineerRole.ADMIN ? "bg-danger" : "bg-primary")">
-                                            @eng.Role
-                                        </span>
-                                    </td>
+                                    <td><span class="badge @RoleBadge(eng.Role)">@eng.Role</span></td>
                                     <td>@(eng.Mobile ?? "—")</td>
                                     <td class="text-center">
-                                        @if (eng.IsActive)
-                                        { <i class="bi bi-check-circle-fill text-success"></i> }
-                                        else
-                                        { <i class="bi bi-x-circle-fill text-danger"></i> }
+                                        <div class="form-check d-flex justify-content-center mb-0">
+                                            <input class="form-check-input" type="checkbox"
+                                                   checked="@eng.IsActive"
+                                                   @onchange="() => ToggleUserActive(eng)"
+                                                   title="@(eng.IsActive ? "Active – click to deactivate" : "Inactive – click to activate")" />
+                                        </div>
                                     </td>
                                     <td class="text-center">
-                                        <button class="btn btn-xs btn-outline-primary me-1"
-                                                @onclick="() => OpenEditUser(eng)">
+                                        <button class="btn btn-xs btn-outline-primary" @onclick="() => OpenEditUser(eng)">
                                             <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-xs @(eng.IsActive ? "btn-outline-warning" : "btn-outline-success")"
-                                                @onclick="() => ToggleUserActive(eng)">
-                                            <i class="bi @(eng.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -222,77 +188,208 @@
             @* ══ WORKS ══════════════════════════════════════════ *@
             if (Section == "works")
             {
+                @* ── Stat Cards ── *@
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="wstat-card">
+                            <div class="wstat-icon wstat-icon-blue">
+                                <i class="bi bi-briefcase-fill"></i>
+                            </div>
+                            <div>
+                                <div class="wstat-label">Total Works</div>
+                                <div class="wstat-value">@AllWorks.Count</div>
+                                <div class="wstat-sub">All works</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="wstat-card">
+                            <div class="wstat-icon wstat-icon-orange">
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                            <div>
+                                <div class="wstat-label">Ongoing Works</div>
+                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING)</div>
+                                <div class="wstat-sub">In Progress</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="wstat-card">
+                            <div class="wstat-icon wstat-icon-green">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div>
+                                <div class="wstat-label">Completed Works</div>
+                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</div>
+                                <div class="wstat-sub">Completed</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="wstat-card">
+                            <div class="wstat-icon wstat-icon-red">
+                                <i class="bi bi-exclamation-circle-fill"></i>
+                            </div>
+                            <div>
+                                <div class="wstat-label">Delayed Works</div>
+                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.STALLED)</div>
+                                <div class="wstat-sub">Delayed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Filter Bar + Table ── *@
                 <div class="content-card">
-                    <div class="filter-bar">
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <select class="form-select form-select-sm filter-select"
-                                    @bind="WorkFilter" @bind:after="FilterWorks">
-                                <option value="ALL">All Works</option>
-                                <option value="ONGOING">Ongoing</option>
-                                <option value="COMPLETED">Completed</option>
-                                <option value="ANNUAL">Annual Contract</option>
-                            </select>
-                            <input class="form-control form-control-sm" style="min-width:200px"
-                                   placeholder="🔍 Search..." @bind="WorkSearch" @bind:after="FilterWorks" />
+                    <div class="works-filter-bar">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+
+                            @* Status *@
+                            <div class="filter-group">
+                                <span class="filter-group-label">Status</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkFilter" @bind:after="FilterWorks">
+                                    <option value="ALL">All</option>
+                                    <option value="ONGOING">Ongoing</option>
+                                    <option value="COMPLETED">Completed</option>
+                                    <option value="STALLED">Stalled</option>
+                                </select>
+                            </div>
+
+                            @* JEN *@
+                            <div class="filter-group">
+                                <span class="filter-group-label">JEN</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkJenFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    @foreach (var e in JenEngineers)
+                                    { <option value="@e.EngineerId">@e.Name</option> }
+                                </select>
+                            </div>
+
+                            @* AEN *@
+                            <div class="filter-group">
+                                <span class="filter-group-label">AEN</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkAenFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    @foreach (var e in AenEngineers)
+                                    { <option value="@e.EngineerId">@e.Name</option> }
+                                </select>
+                            </div>
+
+                            @* XEN *@
+                            <div class="filter-group">
+                                <span class="filter-group-label">XEN</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkXenFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    @foreach (var e in XenEngineers)
+                                    { <option value="@e.EngineerId">@e.Name</option> }
+                                </select>
+                            </div>
+
+                            @* Date Range *@
+                            <div class="filter-daterange">
+                                <i class="bi bi-calendar3 text-muted me-1"></i>
+                                <input type="date" class="filter-date-input" placeholder="Start date"
+                                       value="@WorkStartDateFilter"
+                                       @onchange="@((ChangeEventArgs e) => { WorkStartDateFilter = e?.Value?.ToString() ?? ""; FilterWorks(); })" />
+                                <span class="text-muted mx-1">—</span>
+                                <input type="date" class="filter-date-input" placeholder="End date"
+                                       value="@WorkEndDateFilter"
+                                       @onchange="@((ChangeEventArgs e) => { WorkEndDateFilter = e?.Value?.ToString() ?? ""; FilterWorks(); })" />
+                            </div>
+
+                            @* Reset *@
+                            <button class="btn-filter-reset" @onclick="ResetWorkFilters">
+                                <i class="bi bi-arrow-clockwise"></i> Reset
+                            </button>
+
+                            @* Add Work *@
                             <div class="ms-auto">
-                                <button class="btn btn-sm btn-primary" @onclick="OpenAddWork">
-                                    <i class="bi bi-plus-circle-fill me-1"></i>Add Work
+                                <button class="btn btn-sm btn-primary px-3" @onclick="OpenAddWork">
+                                    <i class="bi bi-plus-lg me-1"></i>Add Work
                                 </button>
                             </div>
                         </div>
-                        <small class="text-muted mt-1 d-block">Showing @FilteredWorks.Count records</small>
                     </div>
+
+                    @* ── Works Table ── *@
                     <div class="table-responsive">
                         <table class="table table-hover bda-table mb-0">
                             <thead>
                                 <tr>
-                                    <th>#</th><th>File No.</th>
-                                    <th style="min-width:260px">Work Name</th>
-                                    <th>Category</th><th>JEN</th>
-                                    <th class="text-end">कार्यादेश (लाखों)</th>
-                                    <th class="text-center">Progress</th>
-                                    <th class="text-center">Status</th>
-                                    <th class="text-center">Actions</th>
+                                    <th style="width:44px">#</th>
+                                    <th style="min-width:260px">Work Name / File No.</th>
+                                    <th style="min-width:110px">Status</th>
+                                    <th style="min-width:110px">JEN</th>
+                                    <th style="min-width:100px">AEN</th>
+                                    <th style="min-width:100px">XEN</th>
+                                    <th style="min-width:220px">Latest Remark</th>
+                                    <th class="text-center" style="min-width:100px">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if (!FilteredWorks.Any())
                                 {
-                                    <tr><td colspan="9" class="text-center text-muted py-4">No records found.</td></tr>
+                                    <tr><td colspan="8" class="text-center text-muted py-5">No records found.</td></tr>
                                 }
                                 @{ int wi = 1; }
                                 @foreach (var w in FilteredWorks)
                                 {
+                                    var lr = LatestRemarksMap.GetValueOrDefault(w.WorkId);
+                                    var remarkText = lr?.Content ?? (string.IsNullOrWhiteSpace(w.Remarks) ? null : w.Remarks);
                                     <tr>
-                                        <td class="text-muted">@(wi++)</td>
-                                        <td><small>@(w.WorkCode ?? "—")</small></td>
+                                        <td class="text-muted fw-medium">@(wi++)</td>
                                         <td>
-                                            <span class="work-name">@w.WorkName</span>
-                                            @if (w.IsAnnualContract)
-                                            { <span class="badge bg-info text-dark ms-1">Annual</span> }
+                                            <div class="fw-semibold work-name-cell">@w.WorkName</div>
+                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                                @if (w.WorkCode != null)
+                                                {
+                                                    <span class="work-fileno"><i class="bi bi-folder2 me-1"></i>@w.WorkCode</span>
+                                                }
+                                                @if (w.IsAnnualContract)
+                                                {
+                                                    <span class="badge badge-annual">Annual</span>
+                                                }
+                                            </div>
                                         </td>
-                                        <td><small>@(w.Category?.CategoryCode ?? "—")</small></td>
-                                        <td><small>@(w.AssignedJen?.Name ?? "—")</small></td>
-                                        <td class="text-end">@(w.AgreementAmount?.ToString("N2") ?? "—")</td>
-                                        <td class="text-center">
-                                            @if (w.ProgressPercent.HasValue)
+                                        <td>
+                                            <span class="status-pill status-pill-@w.Status.ToString().ToLower()">
+                                                <span class="status-dot"></span>@StatusLabel(w.Status)
+                                            </span>
+                                        </td>
+                                        <td><span class="eng-name">@(w.AssignedJen?.Name ?? "—")</span></td>
+                                        <td><span class="eng-name">@(w.AssignedAen?.Name ?? "—")</span></td>
+                                        <td><span class="eng-name">@(w.AssignedExen?.Name ?? "—")</span></td>
+                                        <td>
+                                            @if (remarkText != null)
                                             {
-                                                <div class="progress-pill">
-                                                    <div class="progress-fill @ProgColor(w.ProgressPercent.Value)"
-                                                         style="width:@(w.ProgressPercent)%"></div>
-                                                </div>
-                                                <small>@w.ProgressPercent%</small>
+                                                <div class="remark-preview">@remarkText</div>
+                                                <button class="btn-read-more" @onclick="async () => await OpenRemarks(w)">Read more</button>
                                             }
-                                            else { <span class="text-muted">—</span> }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge @StatusBadge(w.Status)">@w.Status</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <button class="btn btn-xs btn-outline-primary"
-                                                    @onclick="() => OpenEditWork(w)">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
+                                            <div class="d-flex gap-1 justify-content-center">
+                                                <button class="action-btn action-btn-view" title="View Details"
+                                                        @onclick="() => OpenDetail(w)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="action-btn action-btn-chat" title="Remarks"
+                                                        @onclick="() => OpenRemarks(w)">
+                                                    <i class="bi bi-chat-dots"></i>
+                                                </button>
+                                                <button class="action-btn action-btn-edit" title="Edit"
+                                                        @onclick="() => OpenEditWork(w)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -302,51 +399,221 @@
                 </div>
             }
 
-            @* ══ CUSTOM TABLES ══════════════════════════════════ *@
-            if (Section == "tables")
+            @* ══ SETTINGS ═══════════════════════════════════════ *@
+            if (Section == "settings")
             {
-                <div class="content-card">
-                    <div class="filter-bar d-flex justify-content-between align-items-center">
-                        <span class="fw-semibold">@CustomTables.Count custom table(s)</span>
-                        <button class="btn btn-sm btn-primary" @onclick="OpenAddTable">
-                            <i class="bi bi-plus-circle-fill me-1"></i>Create Table
-                        </button>
-                    </div>
-                    <table class="table table-hover bda-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>#</th><th>Table Name</th><th>Description</th>
-                                <th>Linked Work</th><th class="text-center">Columns</th>
-                                <th>Created</th><th class="text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!CustomTables.Any())
+                <div class="row g-3 align-items-start">
+
+                    @* ── Categories panel ── *@
+                    <div class="col-md-6">
+                        <div class="settings-panel-card">
+                            <button class="settings-panel-trigger" @onclick="() => ShowCatsPanel = !ShowCatsPanel">
+                                <i class="bi bi-tags-fill text-primary"></i>
+                                <span class="fw-semibold">Categories</span>
+                                <span class="badge bg-secondary ms-1">@Categories.Count</span>
+                                <i class="bi bi-chevron-@(ShowCatsPanel ? "up" : "down") ms-auto"></i>
+                            </button>
+                            @if (ShowCatsPanel)
                             {
-                                <tr><td colspan="7" class="text-center text-muted py-4">No custom tables yet.</td></tr>
-                            }
-                            @{ int ti = 1; }
-                            @foreach (var ct in CustomTables)
-                            {
-                                <tr>
-                                    <td class="text-muted">@(ti++)</td>
-                                    <td class="fw-semibold">@ct.TableName</td>
-                                    <td><small class="text-muted">@(ct.Description ?? "—")</small></td>
-                                    <td><small>@(ct.Work?.WorkCode ?? "Standalone")</small></td>
-                                    <td class="text-center">
-                                        <span class="badge bg-secondary">@ct.Columns.Count(c => !c.IsDeleted)</span>
-                                    </td>
-                                    <td><small>@ct.CreatedAt.ToString("dd/MM/yyyy")</small></td>
-                                    <td class="text-center">
-                                        <button class="btn btn-xs btn-outline-primary"
-                                                @onclick="() => OpenEditTable(ct)">
-                                            <i class="bi bi-pencil"></i>
+                                <div class="settings-panel-body">
+                                    @foreach (var cat in Categories)
+                                    {
+                                        @if (InlineEditCatId == cat.CategoryId)
+                                        {
+                                            <div class="ref-row ref-edit-row">
+                                                <input class="form-control form-control-sm me-1" @bind="InlineEditCatCode"
+                                                       placeholder="Code" style="width:80px;text-transform:uppercase" />
+                                                <input class="form-control form-control-sm me-1" @bind="InlineEditCatName"
+                                                       placeholder="Full name" />
+                                                <button class="btn btn-xs btn-success me-1" @onclick="SaveInlineCategory">✓</button>
+                                                <button class="btn btn-xs btn-secondary" @onclick="() => InlineEditCatId = 0">✕</button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="ref-row">
+                                                <input class="form-check-input me-2 flex-shrink-0" type="checkbox"
+                                                       checked="@cat.IsActive"
+                                                       @onchange="() => ToggleCategoryActive(cat)"
+                                                       title="@(cat.IsActive ? "Active – click to deactivate" : "Inactive – click to activate")" />
+                                                <span class="badge @CatBadge(cat.CategoryCode) me-2">@cat.CategoryCode</span>
+                                                <span class="flex-grow-1 @(!cat.IsActive ? "text-muted text-decoration-line-through" : "")">@cat.CategoryName</span>
+                                                <span class="badge bg-light text-dark border me-2" style="font-size:0.7rem">
+                                                    @AllWorks.Count(w => w.CategoryId == cat.CategoryId) works
+                                                </span>
+                                                <button class="btn btn-xs btn-link text-muted p-0" title="Edit"
+                                                        @onclick="() => StartEditCategory(cat)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    }
+                                    @if (ShowInlineAddCat)
+                                    {
+                                        <div class="ref-add-row">
+                                            <input class="form-control form-control-sm me-1" @bind="NewCatCode"
+                                                   placeholder="Code e.g. ROAD" style="width:100px;text-transform:uppercase" />
+                                            <input class="form-control form-control-sm me-1" @bind="NewCatName"
+                                                   placeholder="Full name" />
+                                            <button class="btn btn-xs btn-success me-1" @onclick="SaveInlineNewCategory">Save</button>
+                                            <button class="btn btn-xs btn-secondary" @onclick="() => { ShowInlineAddCat = false; NewCatCode = NewCatName = string.Empty; }">✕</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="ref-add-trigger" @onclick="OpenAddCat">
+                                            <i class="bi bi-plus-circle me-1"></i> Add New Category
                                         </button>
-                                    </td>
-                                </tr>
+                                    }
+                                    @if (!string.IsNullOrEmpty(CatError))
+                                    { <div class="px-3 pb-2"><small class="text-danger">@CatError</small></div> }
+                                </div>
                             }
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
+
+                    @* ── Fund Sources panel ── *@
+                    <div class="col-md-6">
+                        <div class="settings-panel-card">
+                            <button class="settings-panel-trigger" @onclick="() => ShowFsPanel = !ShowFsPanel">
+                                <i class="bi bi-cash-stack text-success"></i>
+                                <span class="fw-semibold">Fund Sources</span>
+                                <span class="badge bg-secondary ms-1">@FundSources.Count</span>
+                                <i class="bi bi-chevron-@(ShowFsPanel ? "up" : "down") ms-auto"></i>
+                            </button>
+                            @if (ShowFsPanel)
+                            {
+                                <div class="settings-panel-body">
+                                    @foreach (var fs in FundSources)
+                                    {
+                                        @if (InlineEditFsId == fs.FundSourceId)
+                                        {
+                                            <div class="ref-row ref-edit-row">
+                                                <input class="form-control form-control-sm me-1" @bind="InlineEditFsCode"
+                                                       placeholder="Code" style="width:80px;text-transform:uppercase" />
+                                                <input class="form-control form-control-sm me-1" @bind="InlineEditFsName"
+                                                       placeholder="Full name" />
+                                                <button class="btn btn-xs btn-success me-1" @onclick="SaveInlineFundSource">✓</button>
+                                                <button class="btn btn-xs btn-secondary" @onclick="() => InlineEditFsId = 0">✕</button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="ref-row">
+                                                <input class="form-check-input me-2 flex-shrink-0" type="checkbox"
+                                                       checked="@fs.IsActive"
+                                                       @onchange="() => ToggleFundSourceActive(fs)"
+                                                       title="@(fs.IsActive ? "Active – click to deactivate" : "Inactive – click to activate")" />
+                                                <code class="me-2 text-primary">@fs.SourceCode</code>
+                                                <span class="flex-grow-1 @(!fs.IsActive ? "text-muted text-decoration-line-through" : "")">@fs.SourceName</span>
+                                                <span class="badge bg-light text-dark border me-2" style="font-size:0.7rem">
+                                                    @AllWorks.Count(w => w.FundSourceId == fs.FundSourceId) works
+                                                </span>
+                                                <button class="btn btn-xs btn-link text-muted p-0" title="Edit"
+                                                        @onclick="() => StartEditFundSource(fs)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    }
+                                    @if (ShowInlineAddFs)
+                                    {
+                                        <div class="ref-add-row">
+                                            <input class="form-control form-control-sm me-1" @bind="NewFsCode"
+                                                   placeholder="Code e.g. BDA" style="width:100px;text-transform:uppercase" />
+                                            <input class="form-control form-control-sm me-1" @bind="NewFsName"
+                                                   placeholder="Full name" />
+                                            <button class="btn btn-xs btn-success me-1" @onclick="SaveInlineNewFundSource">Save</button>
+                                            <button class="btn btn-xs btn-secondary" @onclick="() => { ShowInlineAddFs = false; NewFsCode = NewFsName = string.Empty; }">✕</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="ref-add-trigger" @onclick="OpenAddFs">
+                                            <i class="bi bi-plus-circle me-1"></i> Add New Fund Source
+                                        </button>
+                                    }
+                                    @if (!string.IsNullOrEmpty(FsError))
+                                    { <div class="px-3 pb-2"><small class="text-danger">@FsError</small></div> }
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* ── Departments panel ── *@
+                    <div class="col-md-6">
+                        <div class="settings-panel-card">
+                            <button class="settings-panel-trigger" @onclick="() => ShowDeptPanel = !ShowDeptPanel">
+                                <i class="bi bi-building text-warning"></i>
+                                <span class="fw-semibold">Departments</span>
+                                <span class="badge bg-secondary ms-1">@DeptList.Count</span>
+                                <i class="bi bi-chevron-@(ShowDeptPanel ? "up" : "down") ms-auto"></i>
+                            </button>
+                            @if (ShowDeptPanel)
+                            {
+                                <div class="settings-panel-body">
+                                    @foreach (var dept in DeptList)
+                                    {
+                                        <div class="ref-row">
+                                            <i class="bi bi-building me-2 text-muted"></i>
+                                            <span class="flex-grow-1 fw-medium">@dept.Name</span>
+                                            <span class="badge bg-light text-dark border" style="font-size:0.7rem">
+                                                @AllWorks.Count(w => w.Department == dept.Name) works
+                                            </span>
+                                        </div>
+                                    }
+                                    @if (ShowInlineAddDept)
+                                    {
+                                        <div class="ref-add-row">
+                                            <input class="form-control form-control-sm me-1" @bind="NewDeptName"
+                                                   placeholder="Department name" />
+                                            <button class="btn btn-xs btn-success me-1" @onclick="SaveNewDepartment">Save</button>
+                                            <button class="btn btn-xs btn-secondary" @onclick="() => { ShowInlineAddDept = false; NewDeptName = string.Empty; }">✕</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="ref-add-trigger" @onclick="OpenAddDept">
+                                            <i class="bi bi-plus-circle me-1"></i> Add Department
+                                        </button>
+                                    }
+                                    @if (!string.IsNullOrEmpty(DeptError))
+                                    { <div class="px-3 pb-2"><small class="text-danger">@DeptError</small></div> }
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* ── Status reference panel ── *@
+                    <div class="col-md-6">
+                        <div class="settings-panel-card">
+                            <button class="settings-panel-trigger" @onclick="() => ShowStatusPanel = !ShowStatusPanel">
+                                <i class="bi bi-circle-half text-info"></i>
+                                <span class="fw-semibold">Work Statuses</span>
+                                <span class="badge bg-secondary ms-1">4</span>
+                                <i class="bi bi-chevron-@(ShowStatusPanel ? "up" : "down") ms-auto"></i>
+                            </button>
+                            @if (ShowStatusPanel)
+                            {
+                                <div class="settings-panel-body">
+                                    @foreach (var (status, desc, badge) in StatusDefs)
+                                    {
+                                        <div class="ref-row">
+                                            <span class="badge @badge me-3" style="min-width:90px;font-size:0.78rem">@status</span>
+                                            <span class="flex-grow-1 text-muted" style="font-size:0.83rem">@desc</span>
+                                            <span class="badge bg-light text-dark border" style="font-size:0.7rem">
+                                                @AllWorks.Count(w => w.Status.ToString() == status) works
+                                            </span>
+                                        </div>
+                                    }
+                                    <div class="px-3 py-2">
+                                        <small class="text-muted fst-italic">Statuses are fixed system values and cannot be modified.</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
                 </div>
             }
         }
@@ -363,35 +630,34 @@
                 <button class="btn-close" @onclick="CloseUserModal"></button>
             </div>
             <div class="modal-box-body">
-                @if (!string.IsNullOrEmpty(UserError))
-                {
-                    <div class="alert alert-danger py-2">@UserError</div>
-                }
+                @if (!string.IsNullOrEmpty(UserError)) { <div class="alert alert-danger py-2">@UserError</div> }
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Full Name</label>
-                    <input class="form-control" @bind="EditingUser.Name" placeholder="e.g. Anoop Singh" />
+                    <input class="form-control" @bind="EditingUser.Name" />
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Username</label>
-                    <input class="form-control" @bind="EditingUser.Username" placeholder="login username" />
+                    <input class="form-control" @bind="EditingUser.Username" />
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">
-                        Password @(EditingUser.EngineerId != 0 ? "(leave blank to keep current)" : "")
+                        Password @(EditingUser.EngineerId != 0 ? "(blank = keep current)" : "")
                     </label>
-                    <input type="password" class="form-control" @bind="UserPassword" placeholder="password" />
+                    <input type="password" class="form-control" @bind="UserPassword" />
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">Role</label>
                         <select class="form-select" @bind="EditingUserRoleStr">
-                            <option value="JEN">JEN</option>
+                            <option value="JEN">JEN (Junior Engineer)</option>
+                            <option value="AEN">AEN (Asst. Engineer)</option>
+                            <option value="XEN">XEN (Exec. Engineer)</option>
                             <option value="ADMIN">ADMIN</option>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">Mobile</label>
-                        <input class="form-control" @bind="EditingUser.Mobile" placeholder="mobile number" />
+                        <input class="form-control" @bind="EditingUser.Mobile" />
                     </div>
                 </div>
             </div>
@@ -405,7 +671,7 @@
     </div>
 }
 
-@* ══ WORK MODAL ════════════════════════════════════════════════ *@
+@* ══ WORK EDIT MODAL ══════════════════════════════════════════ *@
 @if (ShowWorkModal)
 {
     <div class="modal-overlay" @onclick="CloseWorkModal">
@@ -415,38 +681,28 @@
                 <button class="btn-close" @onclick="CloseWorkModal"></button>
             </div>
             <div class="modal-box-body">
-                @if (!string.IsNullOrEmpty(WorkError))
-                {
-                    <div class="alert alert-danger py-2">@WorkError</div>
-                }
+                @if (!string.IsNullOrEmpty(WorkError)) { <div class="alert alert-danger py-2">@WorkError</div> }
                 <div class="row">
                     <div class="col-12 mb-3">
                         <label class="form-label fw-semibold">Work Name <span class="text-danger">*</span></label>
-                        <textarea class="form-control" rows="2" @bind="EditingWork.WorkName"
-                                  placeholder="Work name in Hindi/English"></textarea>
+                        <textarea class="form-control" rows="2" @bind="EditingWork.WorkName"></textarea>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">File No.</label>
-                        <input class="form-control" @bind="EditingWork.WorkCode" placeholder="e.g. 118/2024-25" />
+                        <input class="form-control" @bind="EditingWork.WorkCode" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Category</label>
                         <select class="form-select" @bind="EditingWorkCategoryId">
                             <option value="">— Select —</option>
-                            @foreach (var c in Categories)
-                            {
-                                <option value="@c.CategoryId">@c.CategoryCode</option>
-                            }
+                            @foreach (var c in Categories) { <option value="@c.CategoryId">@c.CategoryCode — @c.CategoryName</option> }
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Fund Source</label>
                         <select class="form-select" @bind="EditingWorkFundSourceId">
                             <option value="">— Select —</option>
-                            @foreach (var f in FundSources)
-                            {
-                                <option value="@f.FundSourceId">@f.SourceCode</option>
-                            }
+                            @foreach (var f in FundSources) { <option value="@f.FundSourceId">@f.SourceCode — @f.SourceName</option> }
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">
@@ -457,10 +713,21 @@
                         <label class="form-label fw-semibold">JEN</label>
                         <select class="form-select" @bind="EditingWorkJenId">
                             <option value="">— Select —</option>
-                            @foreach (var e in JenEngineers)
-                            {
-                                <option value="@e.EngineerId">@e.Name</option>
-                            }
+                            @foreach (var e in JenEngineers) { <option value="@e.EngineerId">@e.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">AEN</label>
+                        <select class="form-select" @bind="EditingWorkAenId">
+                            <option value="">— Select —</option>
+                            @foreach (var e in AenEngineers) { <option value="@e.EngineerId">@e.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">XEN</label>
+                        <select class="form-select" @bind="EditingWorkXenId">
+                            <option value="">— Select —</option>
+                            @foreach (var e in XenEngineers) { <option value="@e.EngineerId">@e.Name</option> }
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">
@@ -498,35 +765,30 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Physical Progress %</label>
-                        <input type="number" step="1" min="0" max="100" class="form-control"
-                               @bind="EditingWork.ProgressPercent" />
+                        <input type="number" step="1" min="0" max="100" class="form-control" @bind="EditingWork.ProgressPercent" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Financial Progress %</label>
-                        <input type="number" step="1" min="0" max="100" class="form-control"
-                               @bind="EditingWork.FinancialProgressPercent" />
+                        <input type="number" step="1" min="0" max="100" class="form-control" @bind="EditingWork.FinancialProgressPercent" />
                     </div>
                     <div class="col-12 mb-2">
                         <div class="d-flex gap-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="chkAnnual"
-                                       @bind="EditingWork.IsAnnualContract" />
+                                <input class="form-check-input" type="checkbox" id="chkAnnual" @bind="EditingWork.IsAnnualContract" />
                                 <label class="form-check-label" for="chkAnnual">Annual Contract</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="chkScheme"
-                                       @bind="EditingWork.IsScheme" />
+                                <input class="form-check-input" type="checkbox" id="chkScheme" @bind="EditingWork.IsScheme" />
                                 <label class="form-check-label" for="chkScheme">Scheme (योजना)</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="chkCm"
-                                       @bind="EditingWork.IsCmBudget" />
+                                <input class="form-check-input" type="checkbox" id="chkCm" @bind="EditingWork.IsCmBudget" />
                                 <label class="form-check-label" for="chkCm">CM Budget</label>
                             </div>
                         </div>
                     </div>
                     <div class="col-12 mb-3">
-                        <label class="form-label fw-semibold">Remarks</label>
+                        <label class="form-label fw-semibold">Static Remarks</label>
                         <textarea class="form-control" rows="2" @bind="EditingWork.Remarks"></textarea>
                     </div>
                 </div>
@@ -541,70 +803,173 @@
     </div>
 }
 
-@* ══ CUSTOM TABLE MODAL ════════════════════════════════════════ *@
-@if (ShowTableModal)
+@* ══ WORK DETAIL MODAL ════════════════════════════════════════ *@
+@if (ShowDetailModal && DetailWork != null)
 {
-    <div class="modal-overlay" @onclick="CloseTableModal">
-        <div class="modal-box" @onclick:stopPropagation>
+    <div class="modal-overlay" @onclick="CloseDetail">
+        <div class="modal-box modal-box-lg" style="max-width:680px" @onclick:stopPropagation>
             <div class="modal-box-header">
-                <h6 class="mb-0 fw-bold">@(EditingTable.TableId == 0 ? "Create Custom Table" : "Edit Table")</h6>
-                <button class="btn-close" @onclick="CloseTableModal"></button>
+                <div>
+                    <h6 class="mb-0 fw-bold">Work Details</h6>
+                    @if (DetailWork.WorkCode != null)
+                    { <small class="text-muted">📁 @DetailWork.WorkCode</small> }
+                </div>
+                <button class="btn-close" @onclick="CloseDetail"></button>
             </div>
             <div class="modal-box-body">
-                @if (!string.IsNullOrEmpty(TableError))
-                {
-                    <div class="alert alert-danger py-2">@TableError</div>
-                }
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Table Name <span class="text-danger">*</span></label>
-                    <input class="form-control" @bind="EditingTable.TableName" placeholder="e.g. Deeg Zone Road Log" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Description</label>
-                    <input class="form-control" @bind="EditingTable.Description" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        Link to Work <small class="text-muted">(optional — leave blank for standalone)</small>
-                    </label>
-                    <select class="form-select" @bind="EditingTableWorkId">
-                        <option value="">Standalone Register</option>
-                        @foreach (var w in AllWorks.Take(100))
-                        {
-                            <option value="@w.WorkId">[@(w.WorkCode ?? "—")] @w.WorkName[..Math.Min(60, w.WorkName.Length)]</option>
-                        }
-                    </select>
-                </div>
-
-                <hr />
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label class="fw-semibold mb-0">Columns</label>
-                    <button class="btn btn-xs btn-outline-primary" @onclick="AddColumn">
-                        <i class="bi bi-plus"></i> Add Column
-                    </button>
-                </div>
-                @foreach (var col in NewColumns)
-                {
-                    <div class="d-flex gap-2 mb-2 align-items-center">
-                        <input class="form-control form-control-sm" placeholder="Column name"
-                               @bind="col.ColumnName" style="flex:2" />
-                        <select class="form-select form-select-sm" @bind="col.DataTypeStr" style="flex:1">
-                            <option value="TEXT">Text</option>
-                            <option value="NUMBER">Number</option>
-                            <option value="DATE">Date</option>
-                            <option value="BOOLEAN">Yes/No</option>
-                            <option value="DROPDOWN">Dropdown</option>
-                        </select>
-                        <button class="btn btn-xs btn-outline-danger" @onclick="() => NewColumns.Remove(col)">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                <p class="fw-semibold mb-3" style="font-size:0.95rem">@DetailWork.WorkName</p>
+                <div class="row g-2 detail-grid">
+                    <div class="col-sm-6"><span class="detail-label">Category</span>
+                        @if (DetailWork.Category != null) { <span class="badge @CatBadge(DetailWork.Category.CategoryCode)">@DetailWork.Category.CategoryCode</span> }
+                        else { <span class="detail-val">—</span> }
                     </div>
-                }
+                    <div class="col-sm-6"><span class="detail-label">Status</span>
+                        <span class="badge @StatusBadge(DetailWork.Status)">@DetailWork.Status</span>
+                    </div>
+                    <div class="col-sm-6"><span class="detail-label">Department</span><span class="detail-val">@(DetailWork.Department ?? "—")</span></div>
+                    <div class="col-sm-6"><span class="detail-label">Fund Source</span><span class="detail-val">@(DetailWork.FundSource?.SourceCode ?? "—")</span></div>
+                    <div class="col-sm-4"><span class="detail-label">JEN</span><span class="detail-val">@(DetailWork.AssignedJen?.Name ?? "—")</span></div>
+                    <div class="col-sm-4"><span class="detail-label">AEN</span><span class="detail-val">@(DetailWork.AssignedAen?.Name ?? "—")</span></div>
+                    <div class="col-sm-4"><span class="detail-label">XEN</span><span class="detail-val">@(DetailWork.AssignedExen?.Name ?? "—")</span></div>
+                    <div class="col-sm-6"><span class="detail-label">Contractor</span><span class="detail-val">@(DetailWork.ContractorName ?? "—")</span></div>
+                    <div class="col-sm-6"><span class="detail-label">Mobile</span><span class="detail-val">@(DetailWork.ContractorMobile ?? "—")</span></div>
+                    <div class="col-sm-6"><span class="detail-label">Sanctioned (लाखों)</span><span class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</span></div>
+                    <div class="col-sm-6"><span class="detail-label">Agreement (लाखों)</span><span class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</span></div>
+                    <div class="col-sm-6"><span class="detail-label">Start Date</span><span class="detail-val">@(DetailWork.StartDate?.ToString("dd/MM/yyyy") ?? "—")</span></div>
+                    <div class="col-sm-6"><span class="detail-label">Expected Completion</span><span class="detail-val">@(DetailWork.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</span></div>
+                    <div class="col-sm-4"><span class="detail-label">Physical Progress</span>
+                        <span class="detail-val">
+                            @if (DetailWork.ProgressPercent.HasValue)
+                            {
+                                <div class="progress-pill mt-1" style="max-width:100px;display:inline-block;width:100%">
+                                    <div class="progress-fill @ProgColor(DetailWork.ProgressPercent.Value)" style="width:@(DetailWork.ProgressPercent)%"></div>
+                                </div>
+                                <text> @DetailWork.ProgressPercent%</text>
+                            }
+                            else { <text>—</text> }
+                        </span>
+                    </div>
+                    <div class="col-sm-4"><span class="detail-label">Financial Progress</span><span class="detail-val">@(DetailWork.FinancialProgressPercent.HasValue ? $"{DetailWork.FinancialProgressPercent}%" : "—")</span></div>
+                    <div class="col-sm-4">
+                        <span class="detail-label">Flags</span>
+                        <span class="detail-val">
+                            @if (DetailWork.IsScheme)        { <span class="badge bg-primary me-1" style="font-size:0.65rem">Scheme</span> }
+                            @if (DetailWork.IsCmBudget)      { <span class="badge bg-success me-1" style="font-size:0.65rem">CM Budget</span> }
+                            @if (DetailWork.IsAnnualContract){ <span class="badge bg-info text-dark" style="font-size:0.65rem">Annual</span> }
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(DetailWork.Remarks))
+                    {
+                        <div class="col-12">
+                            <span class="detail-label">Remarks</span>
+                            <div class="detail-val mt-1" style="white-space:pre-wrap;background:#f8f9fa;border-radius:6px;padding:0.5rem 0.75rem;font-size:0.82rem">@DetailWork.Remarks</div>
+                        </div>
+                    }
+                </div>
             </div>
             <div class="modal-box-footer">
-                <button class="btn btn-secondary btn-sm" @onclick="CloseTableModal">Cancel</button>
-                <button class="btn btn-primary btn-sm" @onclick="SaveTable">
-                    <i class="bi bi-check2 me-1"></i>Save
+                <button class="btn btn-secondary btn-sm" @onclick="CloseDetail">Close</button>
+                <button class="btn btn-outline-secondary btn-sm me-auto" @onclick="async () => { var w = DetailWork!; CloseDetail(); await OpenRemarks(w); }">
+                    <i class="bi bi-chat-dots me-1"></i>View Remarks
+                </button>
+                <button class="btn btn-primary btn-sm" @onclick="() => { CloseDetail(); OpenEditWork(DetailWork!); }">
+                    <i class="bi bi-pencil me-1"></i>Edit
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ REMARKS MODAL ════════════════════════════════════════════ *@
+@if (ShowRemarksModal && RemarksWork != null)
+{
+    <div class="modal-overlay" @onclick="CloseRemarks">
+        <div class="modal-box modal-box-lg" style="max-width:600px;max-height:85vh" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <div>
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-1 text-primary"></i>Remarks</h6>
+                    <small class="text-muted">@RemarksWork.WorkName[..Math.Min(70, RemarksWork.WorkName.Length)]</small>
+                </div>
+                <button class="btn-close" @onclick="CloseRemarks"></button>
+            </div>
+            <div class="modal-box-body" style="display:flex;flex-direction:column;gap:0.75rem">
+                @if (!string.IsNullOrWhiteSpace(RemarksWork.Remarks))
+                {
+                    <div class="remark-static">
+                        <div class="remark-meta">
+                            <i class="bi bi-file-earmark-text me-1"></i><strong>Original Record</strong>
+                            <span class="ms-auto text-muted" style="font-size:0.73rem">Imported from sheet</span>
+                        </div>
+                        <div class="remark-content">@RemarksWork.Remarks</div>
+                    </div>
+                }
+                @if (RemarksList.Any())
+                {
+                    <div class="remarks-scroll">
+                        @foreach (var r in RemarksList)
+                        {
+                            <div class="remark-entry">
+                                <div class="remark-meta">
+                                    <i class="bi bi-person-circle me-1 text-primary"></i>
+                                    <strong>@r.AuthorName</strong>
+                                    <span class="ms-auto text-muted" style="font-size:0.73rem">@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                                <div class="remark-content">@r.Content</div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (string.IsNullOrWhiteSpace(RemarksWork.Remarks))
+                {
+                    <div class="text-center text-muted py-2">
+                        <i class="bi bi-chat-dots" style="font-size:2rem;opacity:0.3"></i>
+                        <p class="mt-1 mb-0">No remarks yet.</p>
+                    </div>
+                }
+                <div class="remark-add-box">
+                    <label class="fw-semibold mb-1 d-block" style="font-size:0.85rem">Add Remark</label>
+                    @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
+                    <textarea class="form-control form-control-sm" rows="3" placeholder="Type your remark here…" @bind="NewRemarkText"></textarea>
+                    <div class="d-flex justify-content-end mt-2">
+                        <button class="btn btn-sm btn-primary" @onclick="AddRemark">
+                            <i class="bi bi-send-fill me-1"></i>Add Remark
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ CHANGE PASSWORD MODAL ═════════════════════════════════════ *@
+@if (ShowPasswordModal)
+{
+    <div class="modal-overlay" @onclick="ClosePasswordModal">
+        <div class="modal-box" style="max-width:380px" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-key-fill me-1"></i>Change Password</h6>
+                <button class="btn-close" @onclick="ClosePasswordModal"></button>
+            </div>
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(PwdError))   { <div class="alert alert-danger py-2">@PwdError</div> }
+                @if (!string.IsNullOrEmpty(PwdSuccess)) { <div class="alert alert-success py-2">@PwdSuccess</div> }
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Current Password</label>
+                    <input type="password" class="form-control" @bind="PwdCurrent" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">New Password</label>
+                    <input type="password" class="form-control" @bind="PwdNew" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Confirm New Password</label>
+                    <input type="password" class="form-control" @bind="PwdConfirm" />
+                </div>
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="ClosePasswordModal">Close</button>
+                <button class="btn btn-primary btn-sm" @onclick="ChangePassword">
+                    <i class="bi bi-check2 me-1"></i>Update Password
                 </button>
             </div>
         </div>
@@ -612,51 +977,113 @@
 }
 
 @code {
-    string Section = "overview";
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    string Section   = "overview";
     bool   IsLoading = true;
 
-    // Data
-    List<Work>         AllWorks     = [];
+    // ── Data ──────────────────────────────────────────────────
+    List<Work>         AllWorks      = [];
     List<Work>         FilteredWorks = [];
-    List<Engineer>     Engineers    = [];
-    List<WorkCategory> Categories   = [];
-    List<FundSource>   FundSources  = [];
-    List<Engineer>     JenEngineers = [];
-    List<CustomTable>  CustomTables = [];
+    List<Engineer>     Engineers     = [];
+    List<WorkCategory> Categories    = [];
+    List<FundSource>   FundSources   = [];
+    List<Engineer>     JenEngineers  = [];
+    List<Engineer>     AenEngineers  = [];
+    List<Engineer>     XenEngineers  = [];
+    Dictionary<int, WorkRemark> LatestRemarksMap = [];
 
-    // Works filter
-    string WorkFilter = "ALL";
-    string WorkSearch = "";
+    // ── Works filter ──────────────────────────────────────────
+    string WorkFilter       = "ALL";
+    string WorkJenFilter    = "";
+    string WorkAenFilter    = "";
+    string WorkXenFilter    = "";
+    string WorkStartDateFilter = "";
+    string WorkEndDateFilter   = "";
 
-    // User modal
-    bool       ShowUserModal    = false;
-    Engineer   EditingUser      = new();
-    string     UserPassword     = "";
-    string     EditingUserRoleStr = "JEN";
-    string     UserError        = "";
+    // ── User modal ────────────────────────────────────────────
+    bool     ShowUserModal      = false;
+    Engineer EditingUser        = new();
+    string   UserPassword       = "";
+    string   EditingUserRoleStr = "JEN";
+    string   UserError          = "";
 
-    // Work modal
-    bool   ShowWorkModal       = false;
-    Work   EditingWork         = new();
-    string EditingWorkStatusStr   = "ONGOING";
-    string EditingWorkCategoryId  = "";
+    // ── Work modal ────────────────────────────────────────────
+    bool   ShowWorkModal         = false;
+    Work   EditingWork           = new();
+    string EditingWorkStatusStr    = "ONGOING";
+    string EditingWorkCategoryId   = "";
     string EditingWorkFundSourceId = "";
-    string EditingWorkJenId       = "";
-    string WorkError              = "";
+    string EditingWorkJenId        = "";
+    string EditingWorkAenId        = "";
+    string EditingWorkXenId        = "";
+    string WorkError               = "";
 
-    // Custom table modal
-    bool        ShowTableModal    = false;
-    CustomTable EditingTable      = new();
-    string      EditingTableWorkId = "";
-    List<ColDef> NewColumns       = [];
-    string      TableError        = "";
+    // ── Work detail modal ─────────────────────────────────────
+    bool  ShowDetailModal = false;
+    Work? DetailWork      = null;
+
+    // ── Remarks modal ─────────────────────────────────────────
+    bool             ShowRemarksModal = false;
+    Work?            RemarksWork      = null;
+    List<WorkRemark> RemarksList      = [];
+    string           NewRemarkText    = "";
+    string           RemarkError      = "";
+
+    // ── Settings – Categories panel ───────────────────────────
+    bool   ShowCatsPanel    = false;
+    bool   ShowInlineAddCat = false;
+    string NewCatCode       = "";
+    string NewCatName       = "";
+    int    InlineEditCatId  = 0;
+    string InlineEditCatCode = "";
+    string InlineEditCatName = "";
+    string CatError          = "";
+
+    // ── Settings – Fund Sources panel ─────────────────────────
+    bool   ShowFsPanel     = false;
+    bool   ShowInlineAddFs = false;
+    string NewFsCode       = "";
+    string NewFsName       = "";
+    int    InlineEditFsId  = 0;
+    string InlineEditFsCode = "";
+    string InlineEditFsName = "";
+    string FsError          = "";
+
+    // ── Settings – Departments panel ──────────────────────────
+    bool          ShowDeptPanel    = false;
+    bool          ShowInlineAddDept = false;
+    string        NewDeptName      = "";
+    string        DeptError        = "";
+    List<DeptItem> DeptList        = [];
+
+    record DeptItem(string Name);
+
+    // ── Settings – Status panel ───────────────────────────────
+    bool ShowStatusPanel = false;
+
+    static readonly (string status, string desc, string badge)[] StatusDefs =
+    [
+        ("ONGOING",   "Work is currently in progress",           "bg-warning text-dark"),
+        ("COMPLETED", "Work has been fully completed",           "bg-success"),
+        ("STALLED",   "Work is blocked or temporarily stopped",  "bg-danger"),
+        ("CANCELLED", "Work was cancelled / not proceeding",     "bg-secondary"),
+    ];
+
+    // ── Password change modal ─────────────────────────────────
+    bool   ShowPasswordModal = false;
+    string PwdCurrent = "";
+    string PwdNew     = "";
+    string PwdConfirm = "";
+    string PwdError   = "";
+    string PwdSuccess = "";
 
     string SectionTitle => Section switch
     {
         "overview" => "Overview",
         "users"    => "User Management",
         "works"    => "Works Management",
-        "tables"   => "Custom Tables",
+        "settings" => "Settings",
         _          => ""
     };
 
@@ -675,24 +1102,35 @@
             .Include(w => w.Category)
             .Include(w => w.FundSource)
             .Include(w => w.AssignedJen)
+            .Include(w => w.AssignedAen)
+            .Include(w => w.AssignedExen)
             .OrderByDescending(w => w.CreatedAt)
             .ToListAsync();
 
-        Engineers = await db.Engineers
-            .Where(e => !e.IsDeleted)
-            .OrderBy(e => e.Name)
-            .ToListAsync();
-
-        Categories  = await db.WorkCategories.Where(c => c.IsActive).ToListAsync();
-        FundSources = await db.FundSources.Where(f => f.IsActive).ToListAsync();
+        Engineers    = await db.Engineers.Where(e => !e.IsDeleted).OrderBy(e => e.Name).ToListAsync();
+        Categories   = await db.WorkCategories.OrderBy(c => c.CategoryCode).ToListAsync();
+        FundSources  = await db.FundSources.OrderBy(f => f.SourceCode).ToListAsync();
         JenEngineers = Engineers.Where(e => e.Role == EngineerRole.JEN).ToList();
+        AenEngineers = Engineers.Where(e => e.Role == EngineerRole.AEN).ToList();
+        XenEngineers = Engineers.Where(e => e.Role == EngineerRole.XEN).ToList();
 
-        CustomTables = await db.CustomTables
-            .Where(t => !t.IsDeleted)
-            .Include(t => t.Work)
-            .Include(t => t.Columns)
-            .OrderByDescending(t => t.CreatedAt)
-            .ToListAsync();
+        // Latest remark per work
+        var allRemarks = await db.WorkRemarks.OrderBy(r => r.CreatedAt).ToListAsync();
+        LatestRemarksMap = allRemarks
+            .GroupBy(r => r.WorkId)
+            .ToDictionary(g => g.Key, g => g.Last());
+
+        // Departments: union of DB-stored list + distinct values from works
+        var fromWorks = AllWorks
+            .Where(w => !string.IsNullOrWhiteSpace(w.Department))
+            .Select(w => w.Department!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        DeptList = DeptList
+            .Select(d => d.Name)
+            .Union(fromWorks, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(d => d)
+            .Select(d => new DeptItem(d))
+            .ToList();
 
         FilterWorks();
     }
@@ -701,28 +1139,44 @@
     {
         var q = AllWorks.AsEnumerable();
 
+        // Status filter
         q = WorkFilter switch
         {
-            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract),
+            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING),
             "COMPLETED" => q.Where(w => w.Status == WorkStatus.COMPLETED),
-            "ANNUAL"    => q.Where(w => w.IsAnnualContract),
+            "STALLED"   => q.Where(w => w.Status == WorkStatus.STALLED),
             _           => q
         };
 
-        if (!string.IsNullOrWhiteSpace(WorkSearch))
-            q = q.Where(w => w.WorkName.Contains(WorkSearch, StringComparison.OrdinalIgnoreCase)
-                           || (w.WorkCode ?? "").Contains(WorkSearch, StringComparison.OrdinalIgnoreCase));
+        // Engineer filters
+        if (!string.IsNullOrEmpty(WorkJenFilter) && int.TryParse(WorkJenFilter, out var jenId))
+            q = q.Where(w => w.AssignedJenId == jenId);
+        if (!string.IsNullOrEmpty(WorkAenFilter) && int.TryParse(WorkAenFilter, out var aenId))
+            q = q.Where(w => w.AssignedAenId == aenId);
+        if (!string.IsNullOrEmpty(WorkXenFilter) && int.TryParse(WorkXenFilter, out var xenId))
+            q = q.Where(w => w.AssignedExenId == xenId);
+
+        // Date range filters
+        if (!string.IsNullOrWhiteSpace(WorkStartDateFilter) && DateOnly.TryParse(WorkStartDateFilter, out var startDate))
+            q = q.Where(w => w.StartDate >= startDate);
+        if (!string.IsNullOrWhiteSpace(WorkEndDateFilter) && DateOnly.TryParse(WorkEndDateFilter, out var endDate))
+            q = q.Where(w => w.ExpectedCompletion <= endDate || w.ActualCompletion <= endDate);
 
         FilteredWorks = q.ToList();
+    }
+
+    void ResetWorkFilters()
+    {
+        WorkFilter = "ALL";
+        WorkJenFilter = WorkAenFilter = WorkXenFilter = "";
+        WorkStartDateFilter = WorkEndDateFilter = "";
+        FilterWorks();
     }
 
     // ── User CRUD ─────────────────────────────────────────────
     void OpenAddUser()
     {
-        EditingUser = new Engineer();
-        UserPassword = "";
-        EditingUserRoleStr = "JEN";
-        UserError = "";
+        EditingUser = new Engineer(); UserPassword = ""; EditingUserRoleStr = "JEN"; UserError = "";
         ShowUserModal = true;
     }
 
@@ -730,56 +1184,57 @@
     {
         EditingUser = new Engineer
         {
-            EngineerId   = eng.EngineerId,
-            Name         = eng.Name,
-            Username     = eng.Username,
-            PasswordHash = eng.PasswordHash,
-            Role         = eng.Role,
-            Mobile       = eng.Mobile,
-            Email        = eng.Email,
-            IsActive     = eng.IsActive
+            EngineerId = eng.EngineerId, Name = eng.Name, Username = eng.Username,
+            PasswordHash = eng.PasswordHash, Role = eng.Role, Mobile = eng.Mobile,
+            Email = eng.Email, IsActive = eng.IsActive
         };
-        UserPassword = "";
-        EditingUserRoleStr = eng.Role.ToString();
-        UserError = "";
+        UserPassword = ""; EditingUserRoleStr = eng.Role.ToString(); UserError = "";
         ShowUserModal = true;
     }
 
-    void CloseUserModal() { ShowUserModal = false; }
+    void CloseUserModal() => ShowUserModal = false;
 
     async Task SaveUser()
     {
         if (string.IsNullOrWhiteSpace(EditingUser.Name) || string.IsNullOrWhiteSpace(EditingUser.Username))
         { UserError = "Name and Username are required."; return; }
-
         if (EditingUser.EngineerId == 0 && string.IsNullOrWhiteSpace(UserPassword))
         { UserError = "Password is required for new users."; return; }
 
-        EditingUser.Role = Enum.Parse<EngineerRole>(EditingUserRoleStr);
-
-        await using var db = await DbFactory.CreateDbContextAsync();
-
-        if (EditingUser.EngineerId == 0)
+        try
         {
-            EditingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
-            db.Engineers.Add(EditingUser);
-        }
-        else
-        {
-            var existing = await db.Engineers.FindAsync(EditingUser.EngineerId);
-            if (existing is null) return;
-            existing.Name     = EditingUser.Name;
-            existing.Username = EditingUser.Username;
-            existing.Role     = EditingUser.Role;
-            existing.Mobile   = EditingUser.Mobile;
-            existing.Email    = EditingUser.Email;
-            if (!string.IsNullOrWhiteSpace(UserPassword))
-                existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
-        }
+            EditingUser.Role = Enum.Parse<EngineerRole>(EditingUserRoleStr);
+            await using var db = await DbFactory.CreateDbContextAsync();
 
-        await db.SaveChangesAsync();
-        ShowUserModal = false;
-        await LoadAll();
+            if (EditingUser.EngineerId == 0)
+            {
+                EditingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
+                EditingUser.CreatedAt = DateTime.UtcNow;
+                db.Engineers.Add(EditingUser);
+            }
+            else
+            {
+                var ex = await db.Engineers.FindAsync(EditingUser.EngineerId);
+                if (ex is null) { UserError = "User not found."; return; }
+                ex.Name = EditingUser.Name;
+                ex.Username = EditingUser.Username;
+                ex.Role = EditingUser.Role;
+                ex.Mobile = EditingUser.Mobile;
+                ex.Email = EditingUser.Email;
+                ex.UpdatedAt = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(UserPassword))
+                    ex.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
+                db.Engineers.Update(ex);
+            }
+            await db.SaveChangesAsync();
+            ShowUserModal = false;
+            UserError = "";
+            await LoadAll();
+        }
+        catch (Exception ex)
+        {
+            UserError = $"Error saving user: {ex.Message}";
+        }
     }
 
     async Task ToggleUserActive(Engineer eng)
@@ -793,145 +1248,229 @@
     // ── Work CRUD ─────────────────────────────────────────────
     void OpenAddWork()
     {
-        EditingWork            = new Work();
-        EditingWorkStatusStr   = "ONGOING";
-        EditingWorkCategoryId  = "";
-        EditingWorkFundSourceId = "";
-        EditingWorkJenId       = "";
-        WorkError              = "";
-        ShowWorkModal          = true;
+        EditingWork = new Work(); EditingWorkStatusStr = "ONGOING";
+        EditingWorkCategoryId = EditingWorkFundSourceId = EditingWorkJenId =
+        EditingWorkAenId = EditingWorkXenId = WorkError = "";
+        ShowWorkModal = true;
     }
 
     void OpenEditWork(Work w)
     {
         EditingWork = new Work
         {
-            WorkId                    = w.WorkId,
-            WorkName                  = w.WorkName,
-            WorkCode                  = w.WorkCode,
-            CategoryId                = w.CategoryId,
-            FundSourceId              = w.FundSourceId,
-            Department                = w.Department,
-            AssignedJenId             = w.AssignedJenId,
-            ContractorName            = w.ContractorName,
-            ContractorMobile          = w.ContractorMobile,
-            SanctionedAmount          = w.SanctionedAmount,
-            AgreementAmount           = w.AgreementAmount,
-            ProgressPercent           = w.ProgressPercent,
-            FinancialProgressPercent  = w.FinancialProgressPercent,
-            Status                    = w.Status,
-            IsAnnualContract          = w.IsAnnualContract,
-            IsScheme                  = w.IsScheme,
-            IsCmBudget                = w.IsCmBudget,
-            StartDate                 = w.StartDate,
-            ExpectedCompletion        = w.ExpectedCompletion,
-            Remarks                   = w.Remarks
+            WorkId = w.WorkId, WorkName = w.WorkName, WorkCode = w.WorkCode,
+            CategoryId = w.CategoryId, FundSourceId = w.FundSourceId, Department = w.Department,
+            AssignedJenId = w.AssignedJenId, AssignedAenId = w.AssignedAenId, AssignedExenId = w.AssignedExenId,
+            ContractorName = w.ContractorName, ContractorMobile = w.ContractorMobile,
+            SanctionedAmount = w.SanctionedAmount, AgreementAmount = w.AgreementAmount,
+            ProgressPercent = w.ProgressPercent, FinancialProgressPercent = w.FinancialProgressPercent,
+            Status = w.Status, IsAnnualContract = w.IsAnnualContract, IsScheme = w.IsScheme,
+            IsCmBudget = w.IsCmBudget, StartDate = w.StartDate, ExpectedCompletion = w.ExpectedCompletion,
+            Remarks = w.Remarks
         };
         EditingWorkStatusStr    = w.Status.ToString();
         EditingWorkCategoryId   = w.CategoryId?.ToString() ?? "";
         EditingWorkFundSourceId = w.FundSourceId?.ToString() ?? "";
         EditingWorkJenId        = w.AssignedJenId?.ToString() ?? "";
+        EditingWorkAenId        = w.AssignedAenId?.ToString() ?? "";
+        EditingWorkXenId        = w.AssignedExenId?.ToString() ?? "";
         WorkError = "";
         ShowWorkModal = true;
     }
 
-    void CloseWorkModal() { ShowWorkModal = false; }
+    void CloseWorkModal() => ShowWorkModal = false;
 
     async Task SaveWork()
     {
-        if (string.IsNullOrWhiteSpace(EditingWork.WorkName))
-        { WorkError = "Work Name is required."; return; }
-
-        EditingWork.Status       = Enum.Parse<WorkStatus>(EditingWorkStatusStr);
-        EditingWork.CategoryId   = string.IsNullOrEmpty(EditingWorkCategoryId) ? null : int.Parse(EditingWorkCategoryId);
-        EditingWork.FundSourceId = string.IsNullOrEmpty(EditingWorkFundSourceId) ? null : int.Parse(EditingWorkFundSourceId);
-        EditingWork.AssignedJenId = string.IsNullOrEmpty(EditingWorkJenId) ? null : int.Parse(EditingWorkJenId);
+        if (string.IsNullOrWhiteSpace(EditingWork.WorkName)) { WorkError = "Work Name is required."; return; }
+        EditingWork.Status         = Enum.Parse<WorkStatus>(EditingWorkStatusStr);
+        EditingWork.CategoryId     = string.IsNullOrEmpty(EditingWorkCategoryId)   ? null : int.Parse(EditingWorkCategoryId);
+        EditingWork.FundSourceId   = string.IsNullOrEmpty(EditingWorkFundSourceId) ? null : int.Parse(EditingWorkFundSourceId);
+        EditingWork.AssignedJenId  = string.IsNullOrEmpty(EditingWorkJenId)        ? null : int.Parse(EditingWorkJenId);
+        EditingWork.AssignedAenId  = string.IsNullOrEmpty(EditingWorkAenId)        ? null : int.Parse(EditingWorkAenId);
+        EditingWork.AssignedExenId = string.IsNullOrEmpty(EditingWorkXenId)        ? null : int.Parse(EditingWorkXenId);
 
         await using var db = await DbFactory.CreateDbContextAsync();
-
-        if (EditingWork.WorkId == 0)
-            db.Works.Add(EditingWork);
+        if (EditingWork.WorkId == 0) db.Works.Add(EditingWork);
         else
         {
-            var existing = await db.Works.FindAsync(EditingWork.WorkId);
-            if (existing is null) return;
-            db.Entry(existing).CurrentValues.SetValues(EditingWork);
+            var ex = await db.Works.FindAsync(EditingWork.WorkId);
+            if (ex is null) return;
+            db.Entry(ex).CurrentValues.SetValues(EditingWork);
         }
-
         await db.SaveChangesAsync();
         ShowWorkModal = false;
         await LoadAll();
     }
 
-    // ── Custom Table CRUD ─────────────────────────────────────
-    void OpenAddTable()
+    // ── Work Detail modal ─────────────────────────────────────
+    void OpenDetail(Work w) { DetailWork = w; ShowDetailModal = true; }
+    void CloseDetail()      { ShowDetailModal = false; DetailWork = null; }
+
+    // ── Remarks ───────────────────────────────────────────────
+    async Task OpenRemarks(Work w)
     {
-        EditingTable      = new CustomTable();
-        EditingTableWorkId = "";
-        NewColumns        = [new ColDef()];
-        TableError        = "";
-        ShowTableModal    = true;
+        RemarksWork = w; NewRemarkText = ""; RemarkError = "";
+        await using var db = await DbFactory.CreateDbContextAsync();
+        RemarksList = await db.WorkRemarks.Where(r => r.WorkId == w.WorkId).OrderBy(r => r.CreatedAt).ToListAsync();
+        ShowRemarksModal = true;
     }
 
-    void OpenEditTable(CustomTable ct)
+    void CloseRemarks() { ShowRemarksModal = false; RemarksWork = null; }
+
+    async Task AddRemark()
     {
-        EditingTable       = ct;
-        EditingTableWorkId = ct.WorkId?.ToString() ?? "";
-        NewColumns         = ct.Columns
-            .Where(c => !c.IsDeleted)
-            .Select(c => new ColDef { ColumnName = c.ColumnName, DataTypeStr = c.DataType.ToString() })
-            .ToList();
-        TableError = "";
-        ShowTableModal = true;
-    }
-
-    void CloseTableModal() { ShowTableModal = false; }
-    void AddColumn() => NewColumns.Add(new ColDef());
-
-    async Task SaveTable()
-    {
-        if (string.IsNullOrWhiteSpace(EditingTable.TableName))
-        { TableError = "Table name is required."; return; }
-
-        if (!NewColumns.Any(c => !string.IsNullOrWhiteSpace(c.ColumnName)))
-        { TableError = "Add at least one column."; return; }
-
-        EditingTable.WorkId = string.IsNullOrEmpty(EditingTableWorkId) ? null : int.Parse(EditingTableWorkId);
+        if (string.IsNullOrWhiteSpace(NewRemarkText)) { RemarkError = "Remark cannot be empty."; return; }
+        var auth       = await AuthState!;
+        var authorName = auth.User.Identity?.Name ?? "Admin";
+        var idStr      = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        int? authorId  = idStr is not null ? int.Parse(idStr) : null;
 
         await using var db = await DbFactory.CreateDbContextAsync();
-
-        if (EditingTable.TableId == 0)
+        db.WorkRemarks.Add(new WorkRemark
         {
-            db.CustomTables.Add(EditingTable);
-            await db.SaveChangesAsync();
+            WorkId = RemarksWork!.WorkId, Content = NewRemarkText.Trim(),
+            AuthorName = authorName, AuthorId = authorId, CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+        NewRemarkText = ""; RemarkError = "";
+        RemarksList = await db.WorkRemarks.Where(r => r.WorkId == RemarksWork!.WorkId).OrderBy(r => r.CreatedAt).ToListAsync();
 
-            int order = 0;
-            foreach (var col in NewColumns.Where(c => !string.IsNullOrWhiteSpace(c.ColumnName)))
-            {
-                db.CustomColumns.Add(new CustomColumn
-                {
-                    TableId      = EditingTable.TableId,
-                    ColumnName   = col.ColumnName,
-                    DataType     = Enum.Parse<ColumnDataType>(col.DataTypeStr),
-                    DisplayOrder = order++
-                });
-            }
-            await db.SaveChangesAsync();
-        }
-        else
-        {
-            var existing = await db.CustomTables.FindAsync(EditingTable.TableId);
-            if (existing is not null)
-            {
-                existing.TableName   = EditingTable.TableName;
-                existing.Description = EditingTable.Description;
-                existing.WorkId      = EditingTable.WorkId;
-                await db.SaveChangesAsync();
-            }
-        }
+        // Refresh latest remark map
+        LatestRemarksMap[RemarksWork!.WorkId] = RemarksList.Last();
+    }
 
-        ShowTableModal = false;
+    // ── Settings – Helper methods ─────────────────────────────
+    void OpenAddCat() => ShowInlineAddCat = true;
+    void CancelAddCat() { ShowInlineAddCat = false; NewCatCode = ""; NewCatName = ""; }
+    void OpenAddFs() => ShowInlineAddFs = true;
+    void CancelAddFs() { ShowInlineAddFs = false; NewFsCode = ""; NewFsName = ""; }
+    void OpenAddDept() => ShowInlineAddDept = true;
+    void CancelAddDept() { ShowInlineAddDept = false; NewDeptName = ""; }
+
+    // ── Settings – Category inline management ─────────────────
+    void StartEditCategory(WorkCategory cat)
+    {
+        InlineEditCatId   = cat.CategoryId;
+        InlineEditCatCode = cat.CategoryCode;
+        InlineEditCatName = cat.CategoryName;
+        CatError = "";
+    }
+
+    async Task SaveInlineCategory()
+    {
+        InlineEditCatCode = InlineEditCatCode.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(InlineEditCatCode)) { CatError = "Code required."; return; }
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var ex = await db.WorkCategories.FindAsync(InlineEditCatId);
+        if (ex is null) return;
+        ex.CategoryCode = InlineEditCatCode; ex.CategoryName = InlineEditCatName;
+        try { await db.SaveChangesAsync(); } catch (Exception e) { CatError = e.Message; return; }
+        InlineEditCatId = 0; CatError = "";
         await LoadAll();
+    }
+
+    async Task SaveInlineNewCategory()
+    {
+        NewCatCode = NewCatCode.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(NewCatCode)) { CatError = "Code required."; return; }
+        await using var db = await DbFactory.CreateDbContextAsync();
+        db.WorkCategories.Add(new WorkCategory { CategoryCode = NewCatCode, CategoryName = NewCatName, IsActive = true });
+        try { await db.SaveChangesAsync(); } catch (Exception e) { CatError = e.Message; return; }
+        NewCatCode = NewCatName = ""; ShowInlineAddCat = false; CatError = "";
+        await LoadAll();
+    }
+
+    async Task ToggleCategoryActive(WorkCategory cat)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var c = await db.WorkCategories.FindAsync(cat.CategoryId);
+        if (c is not null) { c.IsActive = !c.IsActive; await db.SaveChangesAsync(); }
+        await LoadAll();
+    }
+
+    // ── Settings – Fund Source inline management ──────────────
+    void StartEditFundSource(FundSource fs)
+    {
+        InlineEditFsId   = fs.FundSourceId;
+        InlineEditFsCode = fs.SourceCode;
+        InlineEditFsName = fs.SourceName;
+        FsError = "";
+    }
+
+    async Task SaveInlineFundSource()
+    {
+        InlineEditFsCode = InlineEditFsCode.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(InlineEditFsCode)) { FsError = "Code required."; return; }
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var ex = await db.FundSources.FindAsync(InlineEditFsId);
+        if (ex is null) return;
+        ex.SourceCode = InlineEditFsCode; ex.SourceName = InlineEditFsName;
+        try { await db.SaveChangesAsync(); } catch (Exception e) { FsError = e.Message; return; }
+        InlineEditFsId = 0; FsError = "";
+        await LoadAll();
+    }
+
+    async Task SaveInlineNewFundSource()
+    {
+        NewFsCode = NewFsCode.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(NewFsCode)) { FsError = "Code required."; return; }
+        await using var db = await DbFactory.CreateDbContextAsync();
+        db.FundSources.Add(new FundSource { SourceCode = NewFsCode, SourceName = NewFsName, IsActive = true });
+        try { await db.SaveChangesAsync(); } catch (Exception e) { FsError = e.Message; return; }
+        NewFsCode = NewFsName = ""; ShowInlineAddFs = false; FsError = "";
+        await LoadAll();
+    }
+
+    async Task ToggleFundSourceActive(FundSource fs)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var f = await db.FundSources.FindAsync(fs.FundSourceId);
+        if (f is not null) { f.IsActive = !f.IsActive; await db.SaveChangesAsync(); }
+        await LoadAll();
+    }
+
+    // ── Settings – Department management ─────────────────────
+    void SaveNewDepartment()
+    {
+        NewDeptName = NewDeptName.Trim();
+        if (string.IsNullOrWhiteSpace(NewDeptName)) { DeptError = "Name is required."; return; }
+        if (DeptList.Any(d => d.Name.Equals(NewDeptName, StringComparison.OrdinalIgnoreCase)))
+        { DeptError = "Already exists."; return; }
+        DeptList = DeptList.Append(new DeptItem(NewDeptName)).OrderBy(d => d.Name).ToList();
+        NewDeptName = ""; ShowInlineAddDept = false; DeptError = "";
+    }
+
+    // ── Password Change ───────────────────────────────────────
+    void OpenPasswordModal()
+    {
+        PwdCurrent = PwdNew = PwdConfirm = PwdError = PwdSuccess = "";
+        ShowPasswordModal = true;
+    }
+    void ClosePasswordModal() => ShowPasswordModal = false;
+
+    async Task ChangePassword()
+    {
+        PwdError = PwdSuccess = "";
+        if (string.IsNullOrWhiteSpace(PwdCurrent) || string.IsNullOrWhiteSpace(PwdNew))
+        { PwdError = "All fields are required."; return; }
+        if (PwdNew != PwdConfirm) { PwdError = "New passwords do not match."; return; }
+        if (PwdNew.Length < 6)    { PwdError = "Password must be at least 6 characters."; return; }
+
+        var auth  = await AuthState!;
+        var idStr = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (idStr is null) { PwdError = "Session error. Please re-login."; return; }
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var eng = await db.Engineers.FindAsync(int.Parse(idStr));
+        if (eng is null) { PwdError = "Account not found."; return; }
+        if (!BCrypt.Net.BCrypt.Verify(PwdCurrent, eng.PasswordHash))
+        { PwdError = "Current password is incorrect."; return; }
+
+        eng.PasswordHash = BCrypt.Net.BCrypt.HashPassword(PwdNew);
+        await db.SaveChangesAsync();
+        PwdSuccess = "Password updated successfully.";
+        PwdCurrent = PwdNew = PwdConfirm = "";
     }
 
     // ── Helpers ───────────────────────────────────────────────
@@ -944,16 +1483,41 @@
         _                    => "bg-light text-dark"
     };
 
+    static string StatusLabel(WorkStatus s) => s switch
+    {
+        WorkStatus.ONGOING   => "Ongoing",
+        WorkStatus.COMPLETED => "Completed",
+        WorkStatus.STALLED   => "Stalled",
+        WorkStatus.CANCELLED => "Cancelled",
+        _                    => s.ToString()
+    };
+
+    static string RoleBadge(EngineerRole r) => r switch
+    {
+        EngineerRole.ADMIN => "bg-danger",
+        EngineerRole.XEN   => "bg-dark",
+        EngineerRole.AEN   => "bg-secondary",
+        _                  => "bg-primary"
+    };
+
+    static string CatBadge(string? code) => (code ?? "").ToUpperInvariant() switch
+    {
+        "ROAD"      => "bg-primary",
+        "DRAIN"     => "bg-info text-dark",
+        "ELECTRIC"  => "bg-warning text-dark",
+        "PARK"      => "bg-success",
+        "TEMPLE"    => "bg-danger",
+        "DEVISTHAN" => "bg-danger",
+        "WATER"     => "bg-info text-dark",
+        "BEAUTIFY"  => "bg-success",
+        _           => "bg-secondary"
+    };
+
     static string ProgColor(decimal pct) => pct switch
     {
         >= 75 => "progress-fill-green",
         >= 40 => "progress-fill-orange",
         _     => "progress-fill-red"
     };
-
-    class ColDef
-    {
-        public string ColumnName  { get; set; } = "";
-        public string DataTypeStr { get; set; } = "TEXT";
-    }
 }
+
