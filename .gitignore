@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Production secrets — real file lives only on VPS, never commit it
+appsettings.Production.json
+
 # User-specific files
 *.rsuser
 *.suo

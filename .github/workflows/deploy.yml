@@ -1,0 +1,110 @@
+name: Deploy — BDA Work Dashboard
+
+on:
+  workflow_dispatch:          # manual trigger only
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # JOB 1 — Build & publish on GitHub-hosted runner
+  # ──────────────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish (Release, linux-x64, self-contained=false)
+        run: |
+          dotnet publish Work-Dashboard.csproj \
+            -c Release \
+            -r linux-x64 \
+            --no-self-contained \
+            -o ./publish
+
+      - name: Package artifact
+        run: tar -czf deploy.tar.gz -C ./publish .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: deploy.tar.gz
+          retention-days: 3
+
+  # ──────────────────────────────────────────────────────────────
+  # JOB 2 — Copy to VPS and restart service
+  # ──────────────────────────────────────────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-build
+
+      - name: Copy tarball to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          port:     ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key:      ${{ secrets.VPS_SSH_KEY }}
+          source:   deploy.tar.gz
+          target:   /tmp/
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          port:     ${{ secrets.VPS_PORT }}
+          username: ${{ secrets.VPS_USER }}
+          key:      ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            APP_DIR=/var/www/work-dashboard
+            SERVICE=work-dashboard
+            SETTINGS_FILE=$APP_DIR/appsettings.Production.json
+            BACKUP=/tmp/appsettings.Production.json.bak
+
+            echo "==> Stopping service..."
+            sudo systemctl stop $SERVICE || true
+
+            echo "==> Backing up production appsettings..."
+            [ -f "$SETTINGS_FILE" ] && cp "$SETTINGS_FILE" "$BACKUP"
+
+            echo "==> Deploying..."
+            sudo mkdir -p $APP_DIR
+            sudo tar -xzf /tmp/deploy.tar.gz -C $APP_DIR
+            rm -f /tmp/deploy.tar.gz
+
+            echo "==> Restoring production appsettings..."
+            [ -f "$BACKUP" ] && sudo mv "$BACKUP" "$SETTINGS_FILE"
+
+            echo "==> Fixing ownership..."
+            sudo chown -R www-data:www-data $APP_DIR
+
+            echo "==> Starting service..."
+            sudo systemctl start $SERVICE
+            sudo systemctl enable $SERVICE
+
+            echo "==> Verifying..."
+            sleep 3
+            if sudo systemctl is-active --quiet $SERVICE; then
+              echo "✅ work-dashboard is running."
+            else
+              echo "❌ Service failed to start. Last 30 log lines:"
+              sudo journalctl -u $SERVICE -n 30 --no-pager
+              exit 1
+            fi

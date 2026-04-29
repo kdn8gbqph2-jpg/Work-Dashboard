@@ -1,0 +1,19 @@
+[Unit]
+Description=BDA Work Dashboard — Blazor Server
+After=network.target mysql.service
+
+[Service]
+Type=notify
+User=www-data
+WorkingDirectory=/var/www/work-dashboard
+ExecStart=/usr/bin/dotnet /var/www/work-dashboard/Work-Dashboard.dll
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=work-dashboard
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://localhost:5020
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+[Install]
+WantedBy=multi-user.target
