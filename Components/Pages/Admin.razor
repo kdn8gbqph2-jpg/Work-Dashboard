@@ -379,15 +379,15 @@
                                             <div class="d-flex gap-1 justify-content-center">
                                                 <button class="action-btn action-btn-view" title="View Details"
                                                         @onclick="() => OpenDetail(w)">
-                                                    <i class="bi bi-eye"></i>
+                                                    <i class="bi bi-eye-fill"></i>
                                                 </button>
                                                 <button class="action-btn action-btn-chat" title="Remarks"
                                                         @onclick="() => OpenRemarks(w)">
-                                                    <i class="bi bi-chat-dots"></i>
+                                                    <i class="bi bi-chat-dots-fill"></i>
                                                 </button>
                                                 <button class="action-btn action-btn-edit" title="Edit"
                                                         @onclick="() => OpenEditWork(w)">
-                                                    <i class="bi bi-pencil"></i>
+                                                    <i class="bi bi-pencil-fill"></i>
                                                 </button>
                                             </div>
                                         </td>
@@ -443,7 +443,7 @@
                                                 </span>
                                                 <button class="btn btn-xs btn-link text-muted p-0" title="Edit"
                                                         @onclick="() => StartEditCategory(cat)">
-                                                    <i class="bi bi-pencil"></i>
+                                                    <i class="bi bi-pencil-fill"></i>
                                                 </button>
                                             </div>
                                         }
@@ -511,7 +511,7 @@
                                                 </span>
                                                 <button class="btn btn-xs btn-link text-muted p-0" title="Edit"
                                                         @onclick="() => StartEditFundSource(fs)">
-                                                    <i class="bi bi-pencil"></i>
+                                                    <i class="bi bi-pencil-fill"></i>
                                                 </button>
                                             </div>
                                         }
@@ -817,55 +817,138 @@
                 <button class="btn-close" @onclick="CloseDetail"></button>
             </div>
             <div class="modal-box-body">
-                <p class="fw-semibold mb-3" style="font-size:0.95rem">@DetailWork.WorkName</p>
-                <div class="row g-2 detail-grid">
-                    <div class="col-sm-6"><span class="detail-label">Category</span>
-                        @if (DetailWork.Category != null) { <span class="badge @CatBadge(DetailWork.Category.CategoryCode)">@DetailWork.Category.CategoryCode</span> }
-                        else { <span class="detail-val">—</span> }
+
+                <p class="detail-section-title">Basic Information</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Work Name</div>
+                        <div class="detail-val">@DetailWork.WorkName</div>
                     </div>
-                    <div class="col-sm-6"><span class="detail-label">Status</span>
-                        <span class="badge @StatusBadge(DetailWork.Status)">@DetailWork.Status</span>
+                    <div>
+                        <div class="detail-label">File No. / Work Code</div>
+                        <div class="detail-val">@(DetailWork.WorkCode ?? "—")</div>
                     </div>
-                    <div class="col-sm-6"><span class="detail-label">Department</span><span class="detail-val">@(DetailWork.Department ?? "—")</span></div>
-                    <div class="col-sm-6"><span class="detail-label">Fund Source</span><span class="detail-val">@(DetailWork.FundSource?.SourceCode ?? "—")</span></div>
-                    <div class="col-sm-4"><span class="detail-label">JEN</span><span class="detail-val">@(DetailWork.AssignedJen?.Name ?? "—")</span></div>
-                    <div class="col-sm-4"><span class="detail-label">AEN</span><span class="detail-val">@(DetailWork.AssignedAen?.Name ?? "—")</span></div>
-                    <div class="col-sm-4"><span class="detail-label">XEN</span><span class="detail-val">@(DetailWork.AssignedExen?.Name ?? "—")</span></div>
-                    <div class="col-sm-6"><span class="detail-label">Contractor</span><span class="detail-val">@(DetailWork.ContractorName ?? "—")</span></div>
-                    <div class="col-sm-6"><span class="detail-label">Mobile</span><span class="detail-val">@(DetailWork.ContractorMobile ?? "—")</span></div>
-                    <div class="col-sm-6"><span class="detail-label">Sanctioned (लाखों)</span><span class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</span></div>
-                    <div class="col-sm-6"><span class="detail-label">Agreement (लाखों)</span><span class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</span></div>
-                    <div class="col-sm-6"><span class="detail-label">Start Date</span><span class="detail-val">@(DetailWork.StartDate?.ToString("dd/MM/yyyy") ?? "—")</span></div>
-                    <div class="col-sm-6"><span class="detail-label">Expected Completion</span><span class="detail-val">@(DetailWork.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</span></div>
-                    <div class="col-sm-4"><span class="detail-label">Physical Progress</span>
-                        <span class="detail-val">
+                    <div>
+                        <div class="detail-label">Category</div>
+                        <div class="detail-val">
+                            @if (DetailWork.Category != null)
+                            { <span class="badge @CatBadge(DetailWork.Category.CategoryCode)">@DetailWork.Category.CategoryCode</span> }
+                            else { <text>—</text> }
+                        </div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Status</div>
+                        <div class="detail-val">
+                            <span class="status-pill status-pill-@DetailWork.Status.ToString().ToLower()">
+                                <span class="status-dot"></span>@StatusLabel(DetailWork.Status)
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Department</div>
+                        <div class="detail-val">@(DetailWork.Department ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Fund Source</div>
+                        <div class="detail-val">@(DetailWork.FundSource?.SourceName ?? DetailWork.FundSource?.SourceCode ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Flags</div>
+                        <div class="detail-val">
+                            @if (DetailWork.IsScheme)         { <span class="badge bg-primary me-1" style="font-size:0.65rem">Scheme</span> }
+                            @if (DetailWork.IsCmBudget)       { <span class="badge bg-success me-1" style="font-size:0.65rem">CM Budget</span> }
+                            @if (DetailWork.IsAnnualContract) { <span class="badge bg-info text-dark" style="font-size:0.65rem">Annual</span> }
+                            @if (!DetailWork.IsScheme && !DetailWork.IsCmBudget && !DetailWork.IsAnnualContract) { <text>—</text> }
+                        </div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Engineers</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">JEN</div>
+                        <div class="detail-val">@(DetailWork.AssignedJen?.Name ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">AEN</div>
+                        <div class="detail-val">@(DetailWork.AssignedAen?.Name ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Executive Engineer (XEN)</div>
+                        <div class="detail-val">@(DetailWork.AssignedExen?.Name ?? "—")</div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Financial</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Sanctioned Amount (लाखों)</div>
+                        <div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Agreement Amount (लाखों)</div>
+                        <div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Expenditure (लाखों)</div>
+                        <div class="detail-val">@(DetailWork.Expenditure?.ToString("N2") ?? "—")</div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Progress &amp; Dates</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Start Date</div>
+                        <div class="detail-val">@(DetailWork.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Expected Completion</div>
+                        <div class="detail-val">@(DetailWork.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Physical Progress</div>
+                        <div class="detail-val">
                             @if (DetailWork.ProgressPercent.HasValue)
                             {
-                                <div class="progress-pill mt-1" style="max-width:100px;display:inline-block;width:100%">
-                                    <div class="progress-fill @ProgColor(DetailWork.ProgressPercent.Value)" style="width:@(DetailWork.ProgressPercent)%"></div>
+                                <div class="progress-pill mb-1">
+                                    <div class="progress-fill @ProgColor(DetailWork.ProgressPercent.Value)"
+                                         style="width:@(DetailWork.ProgressPercent)%"></div>
                                 </div>
-                                <text> @DetailWork.ProgressPercent%</text>
+                                @($"{DetailWork.ProgressPercent}%")
                             }
                             else { <text>—</text> }
-                        </span>
-                    </div>
-                    <div class="col-sm-4"><span class="detail-label">Financial Progress</span><span class="detail-val">@(DetailWork.FinancialProgressPercent.HasValue ? $"{DetailWork.FinancialProgressPercent}%" : "—")</span></div>
-                    <div class="col-sm-4">
-                        <span class="detail-label">Flags</span>
-                        <span class="detail-val">
-                            @if (DetailWork.IsScheme)        { <span class="badge bg-primary me-1" style="font-size:0.65rem">Scheme</span> }
-                            @if (DetailWork.IsCmBudget)      { <span class="badge bg-success me-1" style="font-size:0.65rem">CM Budget</span> }
-                            @if (DetailWork.IsAnnualContract){ <span class="badge bg-info text-dark" style="font-size:0.65rem">Annual</span> }
-                        </span>
-                    </div>
-                    @if (!string.IsNullOrWhiteSpace(DetailWork.Remarks))
-                    {
-                        <div class="col-12">
-                            <span class="detail-label">Remarks</span>
-                            <div class="detail-val mt-1" style="white-space:pre-wrap;background:#f8f9fa;border-radius:6px;padding:0.5rem 0.75rem;font-size:0.82rem">@DetailWork.Remarks</div>
                         </div>
-                    }
+                    </div>
+                    <div>
+                        <div class="detail-label">Financial Progress</div>
+                        <div class="detail-val">@(DetailWork.FinancialProgressPercent.HasValue ? $"{DetailWork.FinancialProgressPercent}%" : "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Actual Completion</div>
+                        <div class="detail-val">@(DetailWork.ActualCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
                 </div>
+
+                <p class="detail-section-title">Contractor</p>
+                <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Contractor Name</div>
+                        <div class="detail-val">@(DetailWork.ContractorName ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Contractor Mobile</div>
+                        <div class="detail-val">@(DetailWork.ContractorMobile ?? "—")</div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(DetailWork.Remarks))
+                {
+                    <p class="detail-section-title">Remarks</p>
+                    <div class="remark-static">
+                        <div class="remark-content" style="white-space:pre-wrap">@DetailWork.Remarks</div>
+                    </div>
+                }
+
             </div>
             <div class="modal-box-footer">
                 <button class="btn btn-secondary btn-sm" @onclick="CloseDetail">Close</button>

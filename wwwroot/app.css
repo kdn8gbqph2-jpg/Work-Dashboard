@@ -181,9 +181,9 @@ h1:focus {
 }
 
 .btn-logout {
-    background: none;
-    border: 1px solid rgba(255,255,255,0.25);
-    color: rgba(255,255,255,0.65);
+    background: transparent !important;
+    border: 1px solid #334155 !important;
+    color: #e2e8f0 !important;
     border-radius: 6px;
     padding: 0.4rem 0.8rem;
     font-size: 0.82rem;
@@ -193,8 +193,20 @@ h1:focus {
 }
 
 .btn-logout:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
+    background: #334155 !important;
+    color: #fff !important;
+    border-color: #334155 !important;
+}
+
+.btn-logout[type="submit"] {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #fff !important;
+}
+
+.btn-logout[type="submit"]:hover {
+    background: #b91c1c !important;
+    border-color: #b91c1c !important;
 }
 
 /* Main area */
@@ -234,8 +246,8 @@ h1:focus {
 /* Filter bar */
 .filter-bar {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #e9ecef;
-    background: #f8f9fa;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
 }
 
 .filter-select {
@@ -244,16 +256,18 @@ h1:focus {
 
 /* BDA Table */
 .bda-table thead tr {
-    background: #f97316;
-    color: #fff;
+    background: #ff8c00 !important;
+    color: #fff !important;
 }
 
 .bda-table thead th {
     font-size: 0.82rem;
     font-weight: 600;
-    border: none;
+    border: none !important;
     padding: 0.75rem 0.9rem;
     white-space: nowrap;
+    background: #ff8c00 !important;
+    color: #fff !important;
 }
 
 .bda-table tbody tr:nth-child(odd) {
@@ -649,8 +663,8 @@ h1:focus {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    background: #fff;
-    border: 1px solid #dee2e6;
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
     border-radius: 8px;
     padding: 0.28rem 0.6rem;
 }
@@ -658,41 +672,46 @@ h1:focus {
 .filter-group-label {
     font-size: 0.78rem;
     font-weight: 600;
-    color: #6c757d;
+    color: #475569 !important;
     white-space: nowrap;
 }
 
 .filter-select-sm {
-    border: none;
-    outline: none;
-    box-shadow: none;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
     padding: 0 1.4rem 0 0.15rem;
     font-size: 0.82rem;
     min-width: 70px;
-    background-color: transparent;
+    background-color: transparent !important;
     cursor: pointer;
-    color: #495057;
+    color: #1e293b !important;
     appearance: auto;
     -webkit-appearance: auto;
     font-family: inherit;
 }
 
+.filter-select-sm:focus {
+    outline: 2px solid #f97316 !important;
+}
+
 .filter-daterange {
     display: flex;
     align-items: center;
-    background: #fff;
-    border: 1px solid #dee2e6;
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
     border-radius: 8px;
     padding: 0.28rem 0.7rem;
     font-size: 0.82rem;
+    color: #1e293b !important;
 }
 
 .filter-date-input {
-    border: none;
-    outline: none;
+    border: none !important;
+    outline: none !important;
     font-size: 0.82rem;
-    color: #495057;
-    background: transparent;
+    color: #1e293b !important;
+    background: transparent !important;
     width: 110px;
 }
 
@@ -705,20 +724,21 @@ h1:focus {
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    background: #fff;
-    border: 1px solid #dee2e6;
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
     border-radius: 8px;
     padding: 0.32rem 0.75rem;
     font-size: 0.82rem;
-    color: #6c757d;
+    color: #475569 !important;
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
 }
 
 .btn-filter-reset:hover {
-    border-color: #f97316;
-    color: #f97316;
+    background: #ffead5 !important;
+    border-color: #f97316 !important;
+    color: #f97316 !important;
 }
 
 /* ── Works Table Styles ──────────────────────────────────── */

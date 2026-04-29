@@ -5,9 +5,10 @@
 @inject NavigationManager Nav
 @using Microsoft.EntityFrameworkCore
 @using Work_Dashboard.Data
+@using Work_Dashboard.Data.Entities
 @using System.Security.Claims
 
-<PageTitle>JEN Dashboard — BDA</PageTitle>
+<PageTitle>BDA Work Dashboard</PageTitle>
 
 <div class="jen-shell">
 
@@ -22,15 +23,9 @@
         </div>
 
         <nav class="sidebar-nav">
-            <button class="nav-item @(ActiveSection == "summary" ? "active" : "")"
-                    @onclick='() => SetSection("summary")'>
-                <i class="bi bi-bar-chart-fill"></i>
-                <span>Work Summary</span>
-            </button>
-            <button class="nav-item @(ActiveSection == "works" ? "active" : "")"
-                    @onclick='() => SetSection("works")'>
+            <button class="nav-item active">
                 <i class="bi bi-table"></i>
-                <span>Works List</span>
+                <span>My Works</span>
             </button>
         </nav>
 
@@ -51,16 +46,26 @@
 
         <div class="jen-topbar">
             <div>
-                <h5 class="mb-0 fw-bold">
-                    @(ActiveSection == "summary" ? "Work Summary — Category Wise" : "Works List")
-                </h5>
+                <h5 class="mb-0 fw-bold">My Assigned Works</h5>
                 <small class="text-muted">Bharatpur Development Authority</small>
             </div>
-            <div class="topbar-user">
-                <i class="bi bi-person-circle me-1"></i>
-                <AuthorizeView>
-                    <span>@context.User.Identity?.Name</span>
-                </AuthorizeView>
+            <div class="d-flex align-items-center gap-2">
+                @if (CurrentRole == "XEN" || CurrentRole == "AEN")
+                {
+                    <button class="btn btn-sm btn-primary px-3" @onclick="OpenAddWork">
+                        <i class="bi bi-plus-lg me-1"></i>Add Work
+                    </button>
+                }
+                <div class="topbar-user">
+                    <i class="bi bi-person-circle me-1"></i>
+                    <AuthorizeView>
+                        <span>@context.User.Identity?.Name</span>
+                    </AuthorizeView>
+                    @if (!string.IsNullOrEmpty(CurrentRole))
+                    {
+                        <span class="badge bg-secondary ms-1" style="font-size:0.65rem">@CurrentRole</span>
+                    }
+                </div>
             </div>
         </div>
 
@@ -72,166 +77,126 @@
         }
         else
         {
-            @* ── Summary Section ─────────────────────────────────── *@
-            if (ActiveSection == "summary")
-            {
-                <div class="content-card">
+            @* ── Works List ───────────────────────────────────── *@
+            <div class="content-card">
+                @* Filter Bar *@
+                <div class="filter-bar">
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="fw-semibold text-nowrap mb-0">Status:</label>
+                            <select class="form-select form-select-sm filter-select"
+                                    @bind="SelectedFilter" @bind:after="ApplyFilter">
+                                <option value="ALL">All Works</option>
+                                <option value="ONGOING">Ongoing</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="ANNUAL">Annual Contract</option>
+                            </select>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="fw-semibold text-nowrap mb-0">Category:</label>
+                            <select class="form-select form-select-sm filter-select"
+                                    @bind="SelectedCategory" @bind:after="ApplyFilter">
+                                <option value="">All Categories</option>
+                                @foreach (var cat in CategoryCodes)
+                                {
+                                    <option value="@cat">@cat</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="ms-auto">
+                            <input class="form-control form-control-sm"
+                                   style="min-width:220px"
+                                   placeholder="🔍 Search work name..."
+                                   @bind="SearchText" @bind:after="ApplyFilter" />
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Showing <strong>@FilteredWorks.Count</strong> of <strong>@AllWorks.Count</strong> assigned works
+                        </small>
+                    </div>
+                </div>
+
+                @* Works Table *@
+                <div class="table-responsive">
                     <table class="table table-hover bda-table mb-0">
                         <thead>
                             <tr>
-                                <th style="width:50px">#</th>
-                                <th>Work Category</th>
-                                <th class="text-end">कार्यादेश राशि (लाखों में)</th>
-                                <th class="text-center">Record Count</th>
+                                <th style="width:40px">#</th>
+                                <th style="min-width:260px">Work Name</th>
+                                <th style="min-width:90px">Status</th>
+                                <th style="min-width:110px">JEN</th>
+                                <th style="min-width:110px">AEN</th>
+                                <th style="min-width:110px">XEN</th>
+                                <th style="min-width:220px">Latest Remark</th>
+                                <th style="width:80px" class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @{ int sn = 1; }
-                            @foreach (var row in SummaryRows)
+                            @if (!FilteredWorks.Any())
                             {
                                 <tr>
-                                    <td class="text-muted">@(sn++)</td>
-                                    <td class="fw-semibold">@row.Category</td>
-                                    <td class="text-end">@row.TotalAmount.ToString("N2")</td>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:0.5rem"></i>
+                                        No assigned works found.
+                                    </td>
+                                </tr>
+                            }
+                            @{ int idx = 1; }
+                            @foreach (var w in FilteredWorks)
+                            {
+                                <tr>
+                                    <td class="text-muted">@(idx++)</td>
+                                    <td>
+                                        <span class="work-name fw-semibold">@w.WorkName</span>
+                                        @if (!string.IsNullOrWhiteSpace(w.WorkCode))
+                                        {
+                                            <br /><small class="text-muted">@w.WorkCode</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="status-pill status-pill-@w.Status.ToString().ToLower()">
+                                            <span class="status-dot"></span>@StatusLabel(w.Status)
+                                        </span>
+                                    </td>
+                                    <td><small>@(w.AssignedJen?.Name ?? "—")</small></td>
+                                    <td><small>@(w.AssignedAen?.Name ?? "—")</small></td>
+                                    <td><small>@(w.AssignedExen?.Name ?? "—")</small></td>
+                                    <td>
+                                        @if (LatestRemarksMap.TryGetValue(w.WorkId, out var lr))
+                                        {
+                                            <small class="remarks-cell d-block">@lr.Content</small>
+                                            <small class="text-muted" style="font-size:0.7rem">
+                                                — @lr.AuthorName, @lr.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                                            </small>
+                                        }
+                                        else if (!string.IsNullOrWhiteSpace(w.Remarks))
+                                        {
+                                            <small class="remarks-cell d-block text-muted">@w.Remarks</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary">@row.Count</span>
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <button class="action-btn action-btn-view" title="Work Details"
+                                                    @onclick="() => OpenDetail(w)">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="action-btn action-btn-chat" title="View / Add Remarks"
+                                                    @onclick="() => OpenRemarks(w)">
+                                                <i class="bi bi-chat-dots"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             }
                         </tbody>
-                        <tfoot>
-                            <tr class="fw-bold table-dark">
-                                <td colspan="2">Total</td>
-                                <td class="text-end">@SummaryRows.Sum(r => r.TotalAmount).ToString("N2")</td>
-                                <td class="text-center">@SummaryRows.Sum(r => r.Count)</td>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
-            }
-
-            @* ── Works List Section ───────────────────────────────── *@
-            if (ActiveSection == "works")
-            {
-                <div class="content-card">
-                    @* Filter Bar *@
-                    <div class="filter-bar">
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <div class="d-flex align-items-center gap-2">
-                                <label class="fw-semibold text-nowrap mb-0">View:</label>
-                                <select class="form-select form-select-sm filter-select"
-                                        @bind="SelectedFilter" @bind:after="ApplyFilter">
-                                    <option value="ALL">All Works</option>
-                                    <option value="ONGOING">Ongoing Works</option>
-                                    <option value="COMPLETED">Completed Works</option>
-                                    <option value="ANNUAL">Annual Contract Works</option>
-                                </select>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <label class="fw-semibold text-nowrap mb-0">Category:</label>
-                                <select class="form-select form-select-sm filter-select"
-                                        @bind="SelectedCategory" @bind:after="ApplyFilter">
-                                    <option value="">All Categories</option>
-                                    @foreach (var cat in Categories)
-                                    {
-                                        <option value="@cat">@cat</option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="ms-auto">
-                                <input class="form-control form-control-sm"
-                                       style="min-width:220px"
-                                       placeholder="🔍 Search work name..."
-                                       @bind="SearchText" @bind:after="ApplyFilter" />
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                Showing <strong>@FilteredWorks.Count</strong> records
-                                @if (SelectedFilter != "ALL")
-                                {
-                                    <span> — <span class="badge @FilterBadgeClass">@FilterLabel</span></span>
-                                }
-                            </small>
-                        </div>
-                    </div>
-
-                    @* Works Table *@
-                    <div class="table-responsive">
-                        <table class="table table-hover bda-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th style="width:40px">#</th>
-                                    <th style="min-width:260px">Work Name</th>
-                                    <th style="min-width:90px">Status</th>
-                                    <th style="min-width:110px">JEN</th>
-                                    <th style="min-width:110px">AEN</th>
-                                    <th style="min-width:110px">XEN</th>
-                                    <th style="min-width:220px">Latest Remark</th>
-                                    <th style="width:100px" class="text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (!FilteredWorks.Any())
-                                {
-                                    <tr>
-                                        <td colspan="8" class="text-center text-muted py-4">No records found.</td>
-                                    </tr>
-                                }
-                                @{ int idx = 1; }
-                                @foreach (var w in FilteredWorks)
-                                {
-                                    <tr>
-                                        <td class="text-muted">@(idx++)</td>
-                                        <td>
-                                            <span class="work-name fw-semibold">@w.WorkName</span>
-                                            @if (!string.IsNullOrWhiteSpace(w.WorkCode))
-                                            {
-                                                <br/><small class="text-muted">@w.WorkCode</small>
-                                            }
-                                        </td>
-                                        <td>
-                                            <span class="badge @StatusBadge(w.Status)" style="font-size:0.72rem">@w.Status</span>
-                                        </td>
-                                        <td><small>@(w.AssignedJen?.Name ?? "—")</small></td>
-                                        <td><small>@(w.AssignedAen?.Name ?? "—")</small></td>
-                                        <td><small>@(w.AssignedExen?.Name ?? "—")</small></td>
-                                        <td>
-                                            @if (LatestRemarksMap.TryGetValue(w.WorkId, out var lr))
-                                            {
-                                                <small class="remarks-cell d-block">@lr.Content</small>
-                                                <small class="text-muted" style="font-size:0.7rem">
-                                                    — @lr.AuthorName, @lr.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
-                                                </small>
-                                            }
-                                            else if (!string.IsNullOrWhiteSpace(w.Remarks))
-                                            {
-                                                <small class="remarks-cell d-block text-muted">@w.Remarks</small>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">—</span>
-                                            }
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="d-flex gap-1 justify-content-center">
-                                                <button class="btn btn-xs btn-outline-secondary" title="Work Details"
-                                                        @onclick="() => OpenDetail(w)">
-                                                    <i class="bi bi-info-circle"></i>
-                                                </button>
-                                                <button class="btn btn-xs btn-outline-primary" title="View / Add Remarks"
-                                                        @onclick="() => OpenRemarks(w)">
-                                                    <i class="bi bi-chat-dots"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            }
+            </div>
         }
     </main>
 </div>
@@ -275,27 +240,9 @@
                     <div>
                         <div class="detail-label">Status</div>
                         <div class="detail-val">
-                            <span class="badge @StatusBadge(DetailWork.Status)">@DetailWork.Status</span>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="detail-label">Scheme</div>
-                        <div class="detail-val">@(DetailWork.IsScheme ? "Yes" : "No")</div>
-                    </div>
-                    <div>
-                        <div class="detail-label">CM Budget</div>
-                        <div class="detail-val">@(DetailWork.IsCmBudget ? "Yes" : "No")</div>
-                    </div>
-                    <div>
-                        <div class="detail-label">Annual Contract</div>
-                        <div class="detail-val">@(DetailWork.IsAnnualContract ? "Yes" : "No")</div>
-                    </div>
-                    <div>
-                        <div class="detail-label">Location / Ward</div>
-                        <div class="detail-val">
-                            @(DetailWork.Location ?? "—")
-                            @if (!string.IsNullOrWhiteSpace(DetailWork.WardNumber))
-                            { <span class="text-muted"> (Ward @DetailWork.WardNumber)</span> }
+                            <span class="status-pill status-pill-@DetailWork.Status.ToString().ToLower()">
+                                <span class="status-dot"></span>@StatusLabel(DetailWork.Status)
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -319,25 +266,29 @@
                 <p class="detail-section-title">Financial</p>
                 <div class="detail-grid">
                     <div>
-                        <div class="detail-label">Sanctioned Amount (Lakh)</div>
+                        <div class="detail-label">Sanctioned Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Agreement Amount (Lakh)</div>
+                        <div class="detail-label">Agreement Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Expenditure (Lakh)</div>
+                        <div class="detail-label">Expenditure (लाखों)</div>
                         <div class="detail-val">@(DetailWork.Expenditure?.ToString("N2") ?? "—")</div>
-                    </div>
-                    <div>
-                        <div class="detail-label">Payment Status</div>
-                        <div class="detail-val">@(DetailWork.PaymentStatus ?? "—")</div>
                     </div>
                 </div>
 
-                <p class="detail-section-title">Progress</p>
+                <p class="detail-section-title">Progress &amp; Dates</p>
                 <div class="detail-grid">
+                    <div>
+                        <div class="detail-label">Start Date</div>
+                        <div class="detail-val">@(DetailWork.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Expected Completion</div>
+                        <div class="detail-val">@(DetailWork.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
                     <div>
                         <div class="detail-label">Physical Progress</div>
                         <div class="detail-val">
@@ -355,14 +306,6 @@
                     <div>
                         <div class="detail-label">Financial Progress</div>
                         <div class="detail-val">@(DetailWork.FinancialProgressPercent.HasValue ? $"{DetailWork.FinancialProgressPercent}%" : "—")</div>
-                    </div>
-                    <div>
-                        <div class="detail-label">Start Date</div>
-                        <div class="detail-val">@(DetailWork.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
-                    </div>
-                    <div>
-                        <div class="detail-label">Expected Completion</div>
-                        <div class="detail-val">@(DetailWork.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
                     </div>
                     <div>
                         <div class="detail-label">Actual Completion</div>
@@ -415,7 +358,6 @@
             </div>
             <div class="modal-box-body" style="display:flex;flex-direction:column;gap:0.75rem">
 
-                @* Static original remarks *@
                 @if (!string.IsNullOrWhiteSpace(RemarksWork.Remarks))
                 {
                     <div class="remark-static">
@@ -428,7 +370,6 @@
                     </div>
                 }
 
-                @* Dynamic timestamped remarks *@
                 @if (RemarksList.Any())
                 {
                     <div class="remarks-scroll">
@@ -455,7 +396,6 @@
                     </div>
                 }
 
-                @* Add remark form *@
                 <div class="remark-add-box">
                     <label class="fw-semibold mb-1 d-block" style="font-size:0.85rem">Add Remark</label>
                     @if (!string.IsNullOrEmpty(RemarkError))
@@ -470,6 +410,138 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ ADD WORK MODAL (XEN only) ════════════════════════════════ *@
+@if (ShowAddWorkModal && (CurrentRole == "XEN" || CurrentRole == "AEN"))
+{
+    <div class="modal-overlay" @onclick="CloseAddWork">
+        <div class="modal-box modal-box-lg" style="max-width:760px;max-height:92vh" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <div>
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-plus-circle me-1 text-primary"></i>Add New Work</h6>
+                    <small class="text-muted">Fill in work details</small>
+                </div>
+                <button class="btn-close" @onclick="CloseAddWork"></button>
+            </div>
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(AddWorkError))
+                { <div class="alert alert-danger py-2 mb-3">@AddWorkError</div> }
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-semibold">Work Name <span class="text-danger">*</span></label>
+                        <textarea class="form-control" rows="2" @bind="NewWork.WorkName" placeholder="Enter full work name"></textarea>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">File No. / Work Code</label>
+                        <input class="form-control" @bind="NewWork.WorkCode" placeholder="e.g. 118/2024-25" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select class="form-select" @bind="NewWorkCategoryId">
+                            <option value="">— Select —</option>
+                            @foreach (var c in FormCategories) { <option value="@c.CategoryId">@c.CategoryCode — @c.CategoryName</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Fund Source</label>
+                        <select class="form-select" @bind="NewWorkFundSourceId">
+                            <option value="">— Select —</option>
+                            @foreach (var f in FormFundSources) { <option value="@f.FundSourceId">@f.SourceCode — @f.SourceName</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Department</label>
+                        <input class="form-control" @bind="NewWork.Department" placeholder="e.g. BDA, TOURISM" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">JEN</label>
+                        <select class="form-select" @bind="NewWorkJenId">
+                            <option value="">— Select —</option>
+                            @foreach (var e in FormJenEngineers) { <option value="@e.EngineerId">@e.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">AEN</label>
+                        <select class="form-select" @bind="NewWorkAenId">
+                            <option value="">— Select —</option>
+                            @foreach (var e in FormAenEngineers) { <option value="@e.EngineerId">@e.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">XEN</label>
+                        <select class="form-select" @bind="NewWorkXenId">
+                            <option value="">— Select —</option>
+                            @foreach (var e in FormXenEngineers) { <option value="@e.EngineerId">@e.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Status</label>
+                        <select class="form-select" @bind="NewWorkStatusStr">
+                            <option value="ONGOING">ONGOING</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="STALLED">STALLED</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Sanctioned Amount (लाखों)</label>
+                        <input type="number" step="0.01" class="form-control" @bind="NewWork.SanctionedAmount" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Agreement Amount (लाखों)</label>
+                        <input type="number" step="0.01" class="form-control" @bind="NewWork.AgreementAmount" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Contractor Name</label>
+                        <input class="form-control" @bind="NewWork.ContractorName" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Contractor Mobile</label>
+                        <input class="form-control" @bind="NewWork.ContractorMobile" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Start Date</label>
+                        <input type="date" class="form-control" @bind="NewWork.StartDate" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Expected Completion</label>
+                        <input type="date" class="form-control" @bind="NewWork.ExpectedCompletion" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Physical Progress %</label>
+                        <input type="number" step="1" min="0" max="100" class="form-control" @bind="NewWork.ProgressPercent" />
+                    </div>
+                    <div class="col-12 mb-2">
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="chkAnnualXen" @bind="NewWork.IsAnnualContract" />
+                                <label class="form-check-label" for="chkAnnualXen">Annual Contract</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="chkSchemeXen" @bind="NewWork.IsScheme" />
+                                <label class="form-check-label" for="chkSchemeXen">Scheme (योजना)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="chkCmXen" @bind="NewWork.IsCmBudget" />
+                                <label class="form-check-label" for="chkCmXen">CM Budget</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-semibold">Remarks</label>
+                        <textarea class="form-control" rows="2" @bind="NewWork.Remarks"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="CloseAddWork">Cancel</button>
+                <button class="btn btn-primary btn-sm" @onclick="SaveNewWork">
+                    <i class="bi bi-check2 me-1"></i>Save Work
+                </button>
             </div>
         </div>
     </div>
@@ -513,16 +585,19 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
 
-    string ActiveSection    = "summary";
+    // Auth state
+    string CurrentRole       = "";
+    int    CurrentEngineerId = 0;
+
+    // Page state
     string SelectedFilter   = "ALL";
     string SelectedCategory = "";
     string SearchText       = "";
     bool   IsLoading        = true;
 
-    List<Work>       AllWorks      = [];
-    List<Work>       FilteredWorks = [];
-    List<string>     Categories    = [];
-    List<SummaryRow> SummaryRows   = [];
+    List<Work>   AllWorks      = [];
+    List<Work>   FilteredWorks = [];
+    List<string> CategoryCodes = [];
 
     Dictionary<int, WorkRemark> LatestRemarksMap = [];
 
@@ -536,6 +611,24 @@
     List<WorkRemark> RemarksList      = [];
     string           NewRemarkText    = "";
     string           RemarkError      = "";
+
+    // Add Work modal (XEN only)
+    bool   ShowAddWorkModal    = false;
+    Work   NewWork             = new();
+    string NewWorkStatusStr    = "ONGOING";
+    string NewWorkCategoryId   = "";
+    string NewWorkFundSourceId = "";
+    string NewWorkJenId        = "";
+    string NewWorkAenId        = "";
+    string NewWorkXenId        = "";
+    string AddWorkError        = "";
+
+    // Form data for Add Work
+    List<WorkCategory> FormCategories   = [];
+    List<FundSource>   FormFundSources  = [];
+    List<Engineer>     FormJenEngineers = [];
+    List<Engineer>     FormAenEngineers = [];
+    List<Engineer>     FormXenEngineers = [];
 
     // Password change modal
     bool   ShowPasswordModal = false;
@@ -553,46 +646,61 @@
 
     async Task LoadData()
     {
+        var auth  = await AuthState!;
+        var idStr = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        CurrentEngineerId = idStr is not null && int.TryParse(idStr, out var pid) ? pid : 0;
+        CurrentRole = auth.User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+
         await using var db = await DbFactory.CreateDbContextAsync();
 
-        AllWorks = await db.Works
+        var q = db.Works
             .Where(w => !w.IsDeleted)
             .Include(w => w.AssignedJen)
             .Include(w => w.AssignedAen)
             .Include(w => w.AssignedExen)
             .Include(w => w.Category)
             .Include(w => w.FundSource)
-            .OrderByDescending(w => w.CreatedAt)
-            .ToListAsync();
+            .OrderByDescending(w => w.CreatedAt);
 
-        // Latest remark per work
+        // Show only works assigned to this engineer based on their role
+        AllWorks = CurrentRole switch
+        {
+            "JEN" => await q.Where(w => w.AssignedJenId  == CurrentEngineerId).ToListAsync(),
+            "AEN" => await q.Where(w => w.AssignedAenId  == CurrentEngineerId).ToListAsync(),
+            "XEN" => await q.Where(w => w.AssignedExenId == CurrentEngineerId).ToListAsync(),
+            _     => await q.ToListAsync()
+        };
+
+        // Latest remark per work (only for loaded works)
+        var workIds    = AllWorks.Select(w => w.WorkId).ToList();
         var allRemarks = await db.WorkRemarks
+            .Where(r => workIds.Contains(r.WorkId))
             .OrderBy(r => r.CreatedAt)
             .ToListAsync();
         LatestRemarksMap = allRemarks
             .GroupBy(r => r.WorkId)
             .ToDictionary(g => g.Key, g => g.Last());
 
-        Categories = AllWorks
+        CategoryCodes = AllWorks
             .Where(w => w.Category != null)
             .Select(w => w.Category!.CategoryCode)
             .Distinct()
             .OrderBy(c => c)
             .ToList();
 
-        SummaryRows = AllWorks
-            .GroupBy(w => w.Category?.CategoryCode ?? "MISC")
-            .Select(g => new SummaryRow(
-                g.Key,
-                g.Sum(w => w.AgreementAmount ?? 0),
-                g.Count()))
-            .OrderByDescending(r => r.TotalAmount)
-            .ToList();
+        // Load form data for AEN/XEN Add Work modal
+        if (CurrentRole == "XEN" || CurrentRole == "AEN")
+        {
+            FormCategories   = await db.WorkCategories.Where(c => c.IsActive).OrderBy(c => c.CategoryCode).ToListAsync();
+            FormFundSources  = await db.FundSources.Where(f => f.IsActive).OrderBy(f => f.SourceCode).ToListAsync();
+            var allEng       = await db.Engineers.Where(e => !e.IsDeleted && e.IsActive).OrderBy(e => e.Name).ToListAsync();
+            FormJenEngineers = allEng.Where(e => e.Role == EngineerRole.JEN).ToList();
+            FormAenEngineers = allEng.Where(e => e.Role == EngineerRole.AEN).ToList();
+            FormXenEngineers = allEng.Where(e => e.Role == EngineerRole.XEN).ToList();
+        }
 
         ApplyFilter();
     }
-
-    void SetSection(string section) => ActiveSection = section;
 
     void ApplyFilter()
     {
@@ -662,15 +770,56 @@
         db.WorkRemarks.Add(remark);
         await db.SaveChangesAsync();
 
-        // Update the map so the table refreshes too
         LatestRemarksMap[RemarksWork.WorkId] = remark;
-
         NewRemarkText = "";
         RemarkError   = "";
         RemarksList = await db.WorkRemarks
             .Where(r => r.WorkId == RemarksWork!.WorkId)
             .OrderBy(r => r.CreatedAt)
             .ToListAsync();
+    }
+
+    // ── Add Work (XEN) ────────────────────────────────────────
+    void OpenAddWork()
+    {
+        NewWork            = new Work();
+        NewWorkStatusStr   = "ONGOING";
+        NewWorkCategoryId  = NewWorkFundSourceId = "";
+        NewWorkJenId       = NewWorkAenId = NewWorkXenId = "";
+        AddWorkError       = "";
+        ShowAddWorkModal   = true;
+    }
+
+    void CloseAddWork() => ShowAddWorkModal = false;
+
+    async Task SaveNewWork()
+    {
+        AddWorkError = "";
+        if (string.IsNullOrWhiteSpace(NewWork.WorkName))
+        { AddWorkError = "Work name is required."; return; }
+
+        try
+        {
+            NewWork.Status    = Enum.Parse<WorkStatus>(NewWorkStatusStr);
+            NewWork.CreatedAt = DateTime.UtcNow;
+
+            if (!string.IsNullOrEmpty(NewWorkCategoryId)   && int.TryParse(NewWorkCategoryId,   out var cid)) NewWork.CategoryId    = cid;
+            if (!string.IsNullOrEmpty(NewWorkFundSourceId) && int.TryParse(NewWorkFundSourceId, out var fid)) NewWork.FundSourceId  = fid;
+            if (!string.IsNullOrEmpty(NewWorkJenId)        && int.TryParse(NewWorkJenId,        out var jid)) NewWork.AssignedJenId = jid;
+            if (!string.IsNullOrEmpty(NewWorkAenId)        && int.TryParse(NewWorkAenId,        out var aid)) NewWork.AssignedAenId = aid;
+            if (!string.IsNullOrEmpty(NewWorkXenId)        && int.TryParse(NewWorkXenId,        out var xid)) NewWork.AssignedExenId = xid;
+
+            await using var db = await DbFactory.CreateDbContextAsync();
+            db.Works.Add(NewWork);
+            await db.SaveChangesAsync();
+
+            ShowAddWorkModal = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            AddWorkError = $"Error saving work: {ex.Message}";
+        }
     }
 
     // ── Password Change ───────────────────────────────────────
@@ -709,29 +858,13 @@
     }
 
     // ── Helpers ───────────────────────────────────────────────
-    string FilterLabel => SelectedFilter switch
+    static string StatusLabel(WorkStatus s) => s switch
     {
-        "ONGOING"   => "Ongoing",
-        "COMPLETED" => "Completed",
-        "ANNUAL"    => "Annual Contract",
-        _           => "All"
-    };
-
-    string FilterBadgeClass => SelectedFilter switch
-    {
-        "ONGOING"   => "bg-warning text-dark",
-        "COMPLETED" => "bg-success",
-        "ANNUAL"    => "bg-info text-dark",
-        _           => "bg-secondary"
-    };
-
-    static string StatusBadge(WorkStatus s) => s switch
-    {
-        WorkStatus.ONGOING   => "bg-warning text-dark",
-        WorkStatus.COMPLETED => "bg-success",
-        WorkStatus.STALLED   => "bg-danger",
-        WorkStatus.CANCELLED => "bg-secondary",
-        _                    => "bg-light text-dark"
+        WorkStatus.ONGOING   => "Ongoing",
+        WorkStatus.COMPLETED => "Completed",
+        WorkStatus.STALLED   => "Stalled",
+        WorkStatus.CANCELLED => "Cancelled",
+        _                    => s.ToString()
     };
 
     static string ProgressColor(decimal pct) => pct switch
@@ -740,6 +873,4 @@
         >= 40 => "progress-fill-orange",
         _     => "progress-fill-red"
     };
-
-    record SummaryRow(string Category, decimal TotalAmount, int Count);
 }
