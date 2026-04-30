@@ -309,6 +309,17 @@
                                 </select>
                             </div>
 
+                            @* Annual *@
+                            <div class="filter-group">
+                                <span class="filter-group-label">Annual</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkAnnualFilter" @bind:after="FilterWorks">
+                                    <option value="ALL">All</option>
+                                    <option value="YES">Annual Only</option>
+                                    <option value="NO">Non-Annual</option>
+                                </select>
+                            </div>
+
                             @* Date Range *@
                             <div class="filter-daterange">
                                 <i class="bi bi-calendar3 text-muted me-1"></i>
@@ -723,6 +734,22 @@
                 </div>
             }
         }
+
+        <footer class="bda-footer">
+            <div class="bda-footer-inner">
+                <a href="https://services.bdabharatpur.org" class="bda-footer-services">
+                    <i class="bi bi-grid-3x3-gap-fill me-1"></i>All Services
+                </a>
+                <span class="bda-footer-copy">
+                    &copy; @DateTime.Now.Year Bharatpur Development Authority. All rights reserved.
+                </span>
+                <span class="bda-footer-links">
+                    <a href="https://bhda.rajasthan.gov.in/home/dptHome" target="_blank" rel="noopener">Official website</a>
+                    <span class="mx-2">·</span>
+                    <a href="mailto:bdabharatpur@rajasthan.gov.in">bdabharatpur@rajasthan.gov.in</a>
+                </span>
+            </div>
+        </footer>
     </main>
 </div>
 
@@ -1257,10 +1284,11 @@
     Dictionary<int, WorkRemark> LatestRemarksMap = [];
 
     // ── Works filter ──────────────────────────────────────────
-    string WorkFilter       = "ALL";
-    string WorkJenFilter    = "";
-    string WorkAenFilter    = "";
-    string WorkXenFilter    = "";
+    string WorkFilter          = "ALL";
+    string WorkJenFilter       = "";
+    string WorkAenFilter       = "";
+    string WorkXenFilter       = "";
+    string WorkAnnualFilter    = "ALL";
     string WorkStartDateFilter = "";
     string WorkEndDateFilter   = "";
 
@@ -1456,6 +1484,10 @@
         if (!string.IsNullOrEmpty(WorkXenFilter) && int.TryParse(WorkXenFilter, out var xenId))
             q = q.Where(w => w.AssignedExenId == xenId);
 
+        // Annual contract filter
+        if (WorkAnnualFilter == "YES") q = q.Where(w => w.IsAnnualContract);
+        if (WorkAnnualFilter == "NO")  q = q.Where(w => !w.IsAnnualContract);
+
         // Date range filters
         if (!string.IsNullOrWhiteSpace(WorkStartDateFilter) && DateOnly.TryParse(WorkStartDateFilter, out var startDate))
             q = q.Where(w => w.StartDate >= startDate);
@@ -1469,6 +1501,7 @@
     {
         WorkFilter = "ALL";
         WorkJenFilter = WorkAenFilter = WorkXenFilter = "";
+        WorkAnnualFilter = "ALL";
         WorkStartDateFilter = WorkEndDateFilter = "";
         FilterWorks();
     }
