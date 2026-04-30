@@ -926,6 +926,13 @@ h1:focus {
     padding: 10px 16px 12px 52px;
     border-bottom: 2px solid #dbeafe;
 }
+.expand-fullname {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
 .expand-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
