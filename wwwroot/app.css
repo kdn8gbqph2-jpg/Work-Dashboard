@@ -500,6 +500,16 @@ h1:focus {
     font-size: 0.75rem;
 }
 
+.login-services-link {
+    font-size: 0.78rem;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+.login-services-link:hover {
+    text-decoration: underline;
+}
+
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
 }
