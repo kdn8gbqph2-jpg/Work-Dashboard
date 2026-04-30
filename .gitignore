@@ -6,6 +6,9 @@
 # Production secrets — real file lives only on VPS, never commit it
 appsettings.Production.json
 
+# Application log files (written by Serilog at runtime)
+logs/
+
 # User-specific files
 *.rsuser
 *.suo

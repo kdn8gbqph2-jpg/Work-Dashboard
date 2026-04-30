@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<BdaDbContext> DbFactory
 @inject NavigationManager Nav
+@inject Work_Dashboard.Services.AuditService AuditSvc
 @using Microsoft.EntityFrameworkCore
 @using Work_Dashboard.Data
 @using Work_Dashboard.Data.Entities
@@ -812,6 +813,10 @@
             await using var db = await DbFactory.CreateDbContextAsync();
             db.Works.Add(NewWork);
             await db.SaveChangesAsync();
+            await AuditSvc.LogAsync(
+                "works", NewWork.WorkId, AuditAction.INSERT,
+                CurrentEngineerId,
+                new { NewWork.WorkName, NewWork.Status });
 
             ShowAddWorkModal = false;
             await LoadData();

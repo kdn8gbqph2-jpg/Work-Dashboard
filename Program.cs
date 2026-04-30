@@ -3,12 +3,33 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using Work_Dashboard.Components;
 using Work_Dashboard.Data;
 using Work_Dashboard.Data.Entities;
 using Work_Dashboard.Services;
 
+// ── Serilog bootstrap logger (captures startup errors) ────────
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+
+// ── Serilog full configuration ────────────────────────────────
+builder.Host.UseSerilog((ctx, lc) => lc
+    .ReadFrom.Configuration(ctx.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "logs/bda-dashboard-.log",
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+        rollingInterval: RollingInterval.Day,
+        fileSizeLimitBytes: 10 * 1024 * 1024,   // 10 MB
+        rollOnFileSizeLimit: true,
+        retainedFileCountLimit: 60,
+        shared: false));
 
 // ── Database ──────────────────────────────────────────────────
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -32,6 +53,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<AuditService>();
 
 // ── Blazor ────────────────────────────────────────────────────
 builder.Services.AddRazorComponents()
@@ -117,4 +139,16 @@ app.MapPost("/account/logout", async (HttpContext ctx) =>
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.Run();
+try
+{
+    Log.Information("BDA Work Dashboard starting up");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

@@ -4,8 +4,10 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<BdaDbContext> DbFactory
 @inject NavigationManager Nav
+@inject Work_Dashboard.Services.AuditService AuditSvc
 @using Microsoft.EntityFrameworkCore
 @using Work_Dashboard.Data
+@using Work_Dashboard.Data.Entities
 @using System.Security.Claims
 
 <PageTitle>Admin — BDA Dashboard</PageTitle>
@@ -145,43 +147,60 @@
             if (Section == "users")
             {
                 <div class="content-card">
-                    <div class="filter-bar d-flex justify-content-between align-items-center">
-                        <span class="fw-semibold">@Engineers.Count engineer(s)</span>
-                        <button class="btn btn-sm btn-primary" @onclick="OpenAddUser">
-                            <i class="bi bi-person-plus-fill me-1"></i>Add User
+                    @* ── Header ── *@
+                    <div class="um-header">
+                        <div class="um-title">
+                            <i class="bi bi-people-fill me-2"></i>User Management
+                        </div>
+                        <button class="btn btn-sm btn-primary px-3" @onclick="OpenAddUser">
+                            <i class="bi bi-plus-lg me-1"></i>Add User
                         </button>
                     </div>
-                    <table class="table table-hover bda-table mb-0">
-                        <thead>
-                            <tr><th>#</th><th>Name</th><th>Username</th><th>Role</th><th>Mobile</th><th class="text-center">Active</th><th class="text-center">Edit</th></tr>
-                        </thead>
-                        <tbody>
-                            @{ int ui = 1; }
-                            @foreach (var eng in Engineers)
-                            {
+
+                    @* ── Table ── *@
+                    <div class="table-responsive">
+                        <table class="table table-hover bda-table mb-0">
+                            <thead>
                                 <tr>
-                                    <td class="text-muted">@(ui++)</td>
-                                    <td class="fw-semibold">@eng.Name</td>
-                                    <td><code>@eng.Username</code></td>
-                                    <td><span class="badge @RoleBadge(eng.Role)">@eng.Role</span></td>
-                                    <td>@(eng.Mobile ?? "—")</td>
-                                    <td class="text-center">
-                                        <div class="form-check d-flex justify-content-center mb-0">
-                                            <input class="form-check-input" type="checkbox"
-                                                   checked="@eng.IsActive"
-                                                   @onchange="() => ToggleUserActive(eng)"
-                                                   title="@(eng.IsActive ? "Active – click to deactivate" : "Inactive – click to activate")" />
-                                        </div>
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-xs btn-outline-primary" @onclick="() => OpenEditUser(eng)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                    </td>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Mobile No.</th>
+                                    <th class="text-center" style="width:110px">Actions</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var eng in Engineers)
+                                {
+                                    <tr class="@(!eng.IsActive ? "um-row-inactive" : "")">
+                                        <td>
+                                            <div class="um-name">@eng.Name</div>
+                                            <div class="um-username">@eng.Username</div>
+                                        </td>
+                                        <td>
+                                            <span class="um-role-pill um-role-@eng.Role.ToString().ToLower()">
+                                                @eng.Role
+                                            </span>
+                                        </td>
+                                        <td class="um-mobile">@(eng.Mobile ?? "—")</td>
+                                        <td class="text-center">
+                                            <div class="d-flex gap-1 justify-content-center">
+                                                <button class="um-action-btn um-btn-edit"
+                                                        title="Edit user"
+                                                        @onclick="() => OpenEditUser(eng)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="um-action-btn um-btn-delete"
+                                                        title="@(eng.IsActive ? "Deactivate user" : "Activate user")"
+                                                        @onclick="() => ConfirmDeleteUser(eng)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             }
 
@@ -671,6 +690,55 @@
     </div>
 }
 
+@* ══ CONFIRM DELETE USER MODAL ════════════════════════════════ *@
+@if (ShowConfirmDeleteUser && ConfirmDeleteEngineer != null)
+{
+    <div class="modal-overlay" @onclick="CloseConfirmDelete">
+        <div class="modal-box" style="max-width:380px" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Confirm Action</h6>
+                <button class="btn-close" @onclick="CloseConfirmDelete"></button>
+            </div>
+            <div class="modal-box-body text-center py-3">
+                <p class="mb-1">
+                    @if (ConfirmDeleteEngineer.IsActive)
+                    {
+                        <text>Deactivate <strong>@ConfirmDeleteEngineer.Name</strong>?</text>
+                    }
+                    else
+                    {
+                        <text>Reactivate <strong>@ConfirmDeleteEngineer.Name</strong>?</text>
+                    }
+                </p>
+                <small class="text-muted">
+                    @if (ConfirmDeleteEngineer.IsActive)
+                    {
+                        <text>This user will no longer be able to log in.</text>
+                    }
+                    else
+                    {
+                        <text>This user will regain access to the system.</text>
+                    }
+                </small>
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="CloseConfirmDelete">Cancel</button>
+                <button class="btn @(ConfirmDeleteEngineer.IsActive ? "btn-danger" : "btn-success") btn-sm"
+                        @onclick="ExecuteToggleUser">
+                    @if (ConfirmDeleteEngineer.IsActive)
+                    {
+                        <text><i class="bi bi-person-dash me-1"></i>Deactivate</text>
+                    }
+                    else
+                    {
+                        <text><i class="bi bi-person-check me-1"></i>Reactivate</text>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @* ══ WORK EDIT MODAL ══════════════════════════════════════════ *@
 @if (ShowWorkModal)
 {
@@ -786,10 +854,6 @@
                                 <label class="form-check-label" for="chkCm">CM Budget</label>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label fw-semibold">Static Remarks</label>
-                        <textarea class="form-control" rows="2" @bind="EditingWork.Remarks"></textarea>
                     </div>
                 </div>
             </div>
@@ -952,10 +1016,10 @@
             </div>
             <div class="modal-box-footer">
                 <button class="btn btn-secondary btn-sm" @onclick="CloseDetail">Close</button>
-                <button class="btn btn-outline-secondary btn-sm me-auto" @onclick="async () => { var w = DetailWork!; CloseDetail(); await OpenRemarks(w); }">
+                <button class="btn btn-outline-secondary btn-sm me-auto" @onclick="async () => { var w = DetailWork; if (w != null) { CloseDetail(); await OpenRemarks(w); } }">
                     <i class="bi bi-chat-dots me-1"></i>View Remarks
                 </button>
-                <button class="btn btn-primary btn-sm" @onclick="() => { CloseDetail(); OpenEditWork(DetailWork!); }">
+                <button class="btn btn-primary btn-sm" @onclick="() => { var w = DetailWork; if (w != null) { CloseDetail(); OpenEditWork(w); } }">
                     <i class="bi bi-pencil me-1"></i>Edit
                 </button>
             </div>
@@ -971,7 +1035,7 @@
             <div class="modal-box-header">
                 <div>
                     <h6 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-1 text-primary"></i>Remarks</h6>
-                    <small class="text-muted">@RemarksWork.WorkName[..Math.Min(70, RemarksWork.WorkName.Length)]</small>
+                    <small class="text-muted" style="word-break: break-word; white-space: normal;">@RemarksWork.WorkName</small>
                 </div>
                 <button class="btn-close" @onclick="CloseRemarks"></button>
             </div>
@@ -1062,8 +1126,9 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
 
-    string Section   = "overview";
-    bool   IsLoading = true;
+    string Section            = "overview";
+    bool   IsLoading          = true;
+    int?   CurrentEngineerId  = null;
 
     // ── Data ──────────────────────────────────────────────────
     List<Work>         AllWorks      = [];
@@ -1085,11 +1150,34 @@
     string WorkEndDateFilter   = "";
 
     // ── User modal ────────────────────────────────────────────
-    bool     ShowUserModal      = false;
-    Engineer EditingUser        = new();
-    string   UserPassword       = "";
-    string   EditingUserRoleStr = "JEN";
-    string   UserError          = "";
+    bool      ShowUserModal            = false;
+    Engineer  EditingUser              = new();
+    string    UserPassword             = "";
+    string    EditingUserRoleStr       = "JEN";
+    string    UserError                = "";
+
+    // ── Confirm delete/toggle user ────────────────────────────
+    bool      ShowConfirmDeleteUser    = false;
+    Engineer? ConfirmDeleteEngineer    = null;
+
+    void ConfirmDeleteUser(Engineer eng)
+    {
+        ConfirmDeleteEngineer = eng;
+        ShowConfirmDeleteUser = true;
+    }
+
+    void CloseConfirmDelete()
+    {
+        ShowConfirmDeleteUser = false;
+        ConfirmDeleteEngineer = null;
+    }
+
+    async Task ExecuteToggleUser()
+    {
+        if (ConfirmDeleteEngineer is null) return;
+        await ToggleUserActive(ConfirmDeleteEngineer);
+        CloseConfirmDelete();
+    }
 
     // ── Work modal ────────────────────────────────────────────
     bool   ShowWorkModal         = false;
@@ -1172,6 +1260,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var auth  = await AuthState!;
+        var idStr = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (idStr is not null && int.TryParse(idStr, out var id))
+            CurrentEngineerId = id;
+
         await LoadAll();
         IsLoading = false;
     }
@@ -1289,7 +1382,8 @@
             EditingUser.Role = Enum.Parse<EngineerRole>(EditingUserRoleStr);
             await using var db = await DbFactory.CreateDbContextAsync();
 
-            if (EditingUser.EngineerId == 0)
+            bool isNew = EditingUser.EngineerId == 0;
+            if (isNew)
             {
                 EditingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
                 EditingUser.CreatedAt = DateTime.UtcNow;
@@ -1310,6 +1404,11 @@
                 db.Engineers.Update(ex);
             }
             await db.SaveChangesAsync();
+            await AuditSvc.LogAsync(
+                "engineers", EditingUser.EngineerId,
+                isNew ? AuditAction.INSERT : AuditAction.UPDATE,
+                CurrentEngineerId,
+                new { EditingUser.Name, EditingUser.Username, EditingUser.Role });
             ShowUserModal = false;
             UserError = "";
             await LoadAll();
@@ -1324,7 +1423,15 @@
     {
         await using var db = await DbFactory.CreateDbContextAsync();
         var e = await db.Engineers.FindAsync(eng.EngineerId);
-        if (e is not null) { e.IsActive = !e.IsActive; await db.SaveChangesAsync(); }
+        if (e is not null)
+        {
+            e.IsActive = !e.IsActive;
+            await db.SaveChangesAsync();
+            await AuditSvc.LogAsync(
+                "engineers", e.EngineerId, AuditAction.UPDATE,
+                CurrentEngineerId,
+                new { e.IsActive });
+        }
         await LoadAll();
     }
 
@@ -1339,6 +1446,8 @@
 
     void OpenEditWork(Work w)
     {
+        if (w == null) return;
+
         EditingWork = new Work
         {
             WorkId = w.WorkId, WorkName = w.WorkName, WorkCode = w.WorkCode,
@@ -1374,7 +1483,8 @@
         EditingWork.AssignedExenId = string.IsNullOrEmpty(EditingWorkXenId)        ? null : int.Parse(EditingWorkXenId);
 
         await using var db = await DbFactory.CreateDbContextAsync();
-        if (EditingWork.WorkId == 0) db.Works.Add(EditingWork);
+        bool isNewWork = EditingWork.WorkId == 0;
+        if (isNewWork) db.Works.Add(EditingWork);
         else
         {
             var ex = await db.Works.FindAsync(EditingWork.WorkId);
@@ -1382,6 +1492,11 @@
             db.Entry(ex).CurrentValues.SetValues(EditingWork);
         }
         await db.SaveChangesAsync();
+        await AuditSvc.LogAsync(
+            "works", EditingWork.WorkId,
+            isNewWork ? AuditAction.INSERT : AuditAction.UPDATE,
+            CurrentEngineerId,
+            new { EditingWork.WorkName, EditingWork.Status });
         ShowWorkModal = false;
         await LoadAll();
     }

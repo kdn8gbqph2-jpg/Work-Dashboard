@@ -66,6 +66,25 @@ h1:focus {
     justify-content: space-between;
     padding: 1rem 1.25rem;
     border-bottom: 1px solid #e9ecef;
+    gap: 1rem;
+}
+
+.modal-box-header > div:first-child {
+    min-width: 0;
+    flex: 1;
+}
+
+.modal-box-header h6 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.modal-box-header small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .modal-box-body {
@@ -846,6 +865,80 @@ h1:focus {
 .action-btn-chat:hover  { background: #6c757d; color: #fff; }
 .action-btn-edit  { border-color: #16a34a; color: #16a34a; }
 .action-btn-edit:hover  { background: #16a34a; color: #fff; }
+
+/* ── User Management Table ───────────────────────────────── */
+.um-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.um-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1a2e44;
+}
+
+.um-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #1a2e44;
+}
+
+.um-username {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+    font-family: monospace;
+}
+
+.um-mobile {
+    font-size: 0.85rem;
+    color: #374151;
+    font-variant-numeric: tabular-nums;
+}
+
+.um-row-inactive td {
+    opacity: 0.45;
+}
+
+/* Role pills */
+.um-role-pill {
+    display: inline-block;
+    padding: 0.22rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.um-role-admin   { background: #fee2e2; color: #991b1b; }
+.um-role-xen     { background: #ede9fe; color: #5b21b6; }
+.um-role-aen     { background: #dbeafe; color: #1d4ed8; }
+.um-role-jen     { background: #dcfce7; color: #15803d; }
+
+/* Action buttons */
+.um-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1.5px solid;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.um-btn-edit  { border-color: #2563eb; color: #2563eb; }
+.um-btn-edit:hover  { background: #2563eb; color: #fff; }
+.um-btn-delete  { border-color: #dc2626; color: #dc2626; }
+.um-btn-delete:hover  { background: #dc2626; color: #fff; }
 
 /* ── Settings Accordion Panels ──────────────────────────── */
 .settings-panel-card {
