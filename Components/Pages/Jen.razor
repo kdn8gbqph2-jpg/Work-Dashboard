@@ -1002,6 +1002,13 @@
     }
 
     // ── Helpers ───────────────────────────────────────────────
+    static string ProgColor(decimal pct) => pct switch
+    {
+        >= 75 => "progress-fill-green",
+        >= 40 => "progress-fill-orange",
+        _     => "progress-fill-red"
+    };
+
     static string StatusLabel(WorkStatus s) => s switch
     {
         WorkStatus.ONGOING   => "Ongoing",
