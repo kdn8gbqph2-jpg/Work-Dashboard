@@ -865,6 +865,26 @@ h1:focus {
 .action-btn-chat:hover  { background: #6c757d; color: #fff; }
 .action-btn-edit  { border-color: #16a34a; color: #16a34a; }
 .action-btn-edit:hover  { background: #16a34a; color: #fff; }
+.action-btn-delete  { border-color: #dc2626; color: #dc2626; }
+.action-btn-delete:hover  { background: #dc2626; color: #fff; }
+
+/* ── Inline remark edit button ───────────────────────────── */
+.btn-remark-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid #2563eb;
+    background: transparent;
+    color: #2563eb;
+    font-size: 0.7rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+.btn-remark-edit:hover { opacity: 1; background: #eff6ff; }
 
 /* ── User Management Table ───────────────────────────────── */
 .um-header {

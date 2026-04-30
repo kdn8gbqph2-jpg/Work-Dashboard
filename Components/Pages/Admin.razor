@@ -404,6 +404,10 @@
                                                         @onclick="async () => await OpenEditWork(w)">
                                                     <i class="bi bi-pencil-fill"></i>
                                                 </button>
+                                                <button class="action-btn action-btn-delete" title="Delete Work"
+                                                        @onclick="() => { ConfirmDeleteWorkItem = w; ShowConfirmDeleteWork = true; }">
+                                                    <i class="bi bi-trash-fill"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -735,6 +739,29 @@
     </div>
 }
 
+@* ══ CONFIRM DELETE WORK MODAL ════════════════════════════════ *@
+@if (ShowConfirmDeleteWork && ConfirmDeleteWorkItem != null)
+{
+    <div class="modal-overlay" @onclick="() => { ShowConfirmDeleteWork = false; ConfirmDeleteWorkItem = null; }">
+        <div class="modal-box" style="max-width:400px" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-trash me-1"></i>Delete Work</h6>
+                <button class="btn-close" @onclick="() => { ShowConfirmDeleteWork = false; ConfirmDeleteWorkItem = null; }"></button>
+            </div>
+            <div class="modal-box-body text-center py-3">
+                <p class="mb-1">Delete <strong>@ConfirmDeleteWorkItem.WorkName</strong>?</p>
+                <small class="text-muted">This work will be hidden from all views. This action can be undone by the database admin.</small>
+            </div>
+            <div class="modal-box-footer">
+                <button class="btn btn-secondary btn-sm" @onclick="() => { ShowConfirmDeleteWork = false; ConfirmDeleteWorkItem = null; }">Cancel</button>
+                <button class="btn btn-danger btn-sm" @onclick="SoftDeleteWork">
+                    <i class="bi bi-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @* ══ WORK EDIT MODAL ══════════════════════════════════════════ *@
 @if (ShowWorkModal)
 {
@@ -872,12 +899,33 @@
                                 <div class="remarks-scroll mb-2">
                                     @foreach (var r in RemarksList)
                                     {
+                                        bool isLast = r == RemarksList.Last();
                                         <div class="remark-entry">
                                             <div class="remark-meta">
                                                 <i class="bi bi-person-circle me-1"></i>@r.AuthorName
                                                 <span class="ms-2 text-muted" style="font-size:0.72rem">@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</span>
+                                                @if (isLast)
+                                                {
+                                                    <button class="ms-auto btn-remark-edit" title="Edit this remark"
+                                                            @onclick="() => { EditingRemarkId = r.RemarkId; EditingRemarkText = r.Content; }">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                }
                                             </div>
-                                            <div class="remark-content">@r.Content</div>
+                                            @if (isLast && EditingRemarkId == r.RemarkId)
+                                            {
+                                                <textarea class="form-control form-control-sm mt-1" rows="2" @bind="EditingRemarkText"></textarea>
+                                                <div class="d-flex gap-1 mt-1">
+                                                    <button class="btn btn-sm btn-primary" @onclick="SaveEditRemark">
+                                                        <i class="bi bi-check2 me-1"></i>Save
+                                                    </button>
+                                                    <button class="btn btn-sm btn-secondary" @onclick="() => EditingRemarkId = 0">Cancel</button>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="remark-content">@r.Content</div>
+                                            }
                                         </div>
                                     }
                                 </div>
@@ -1174,11 +1222,17 @@
     bool  ShowDetailModal = false;
     Work? DetailWork      = null;
 
+    // ── Work delete confirm ───────────────────────────────────
+    bool  ShowConfirmDeleteWork = false;
+    Work? ConfirmDeleteWorkItem = null;
+
     // ── Remarks (inline in edit modal) ────────────────────────
-    Work?            RemarksWork   = null;
-    List<WorkRemark> RemarksList   = [];
-    string           NewRemarkText = "";
-    string           RemarkError   = "";
+    Work?            RemarksWork      = null;
+    List<WorkRemark> RemarksList      = [];
+    string           NewRemarkText    = "";
+    string           RemarkError      = "";
+    int              EditingRemarkId  = 0;
+    string           EditingRemarkText = "";
 
     // ── Settings – Categories panel ───────────────────────────
     bool   ShowCatsPanel    = false;
@@ -1519,6 +1573,43 @@
 
         // Keep the latest remark map in sync for the table column
         LatestRemarksMap[RemarksWork.WorkId] = RemarksList.Last();
+    }
+
+    async Task SaveEditRemark()
+    {
+        if (EditingRemarkId == 0 || string.IsNullOrWhiteSpace(EditingRemarkText)) return;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var r = await db.WorkRemarks.FindAsync(EditingRemarkId);
+        if (r is not null)
+        {
+            r.Content = EditingRemarkText.Trim();
+            await db.SaveChangesAsync();
+            // Refresh list
+            RemarksList = await db.WorkRemarks
+                .Where(x => x.WorkId == r.WorkId)
+                .OrderBy(x => x.CreatedAt)
+                .ToListAsync();
+            if (RemarksList.Any())
+                LatestRemarksMap[r.WorkId] = RemarksList.Last();
+        }
+        EditingRemarkId = 0; EditingRemarkText = "";
+    }
+
+    // ── Soft delete work ──────────────────────────────────────
+    async Task SoftDeleteWork()
+    {
+        if (ConfirmDeleteWorkItem is null) return;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var w = await db.Works.FindAsync(ConfirmDeleteWorkItem.WorkId);
+        if (w is not null)
+        {
+            w.IsDeleted = true;
+            await db.SaveChangesAsync();
+            await AuditSvc.LogAsync("works", w.WorkId, AuditAction.DELETE, CurrentEngineerId,
+                new { w.WorkName });
+        }
+        ShowConfirmDeleteWork = false; ConfirmDeleteWorkItem = null;
+        await LoadAll();
     }
 
     // ── Settings – Helper methods ─────────────────────────────
