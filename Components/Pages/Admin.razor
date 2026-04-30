@@ -387,7 +387,7 @@
                                             @if (remarkText != null)
                                             {
                                                 <div class="remark-preview">@remarkText</div>
-                                                <button class="btn-read-more" @onclick="async () => await OpenRemarks(w)">Read more</button>
+                                                <button class="btn-read-more" @onclick="async () => await OpenEditWork(w)">Read more</button>
                                             }
                                             else
                                             {
@@ -400,12 +400,8 @@
                                                         @onclick="() => OpenDetail(w)">
                                                     <i class="bi bi-eye-fill"></i>
                                                 </button>
-                                                <button class="action-btn action-btn-chat" title="Remarks"
-                                                        @onclick="() => OpenRemarks(w)">
-                                                    <i class="bi bi-chat-dots-fill"></i>
-                                                </button>
-                                                <button class="action-btn action-btn-edit" title="Edit"
-                                                        @onclick="() => OpenEditWork(w)">
+                                                <button class="action-btn action-btn-edit" title="Edit / Remarks"
+                                                        @onclick="async () => await OpenEditWork(w)">
                                                     <i class="bi bi-pencil-fill"></i>
                                                 </button>
                                             </div>
@@ -855,6 +851,54 @@
                             </div>
                         </div>
                     </div>
+
+                    @* ── Remarks section (edit only) ────────────────────── *@
+                    @if (EditingWork.WorkId != 0)
+                    {
+                        <div class="col-12 mt-2">
+                            <hr class="my-2" />
+                            <p class="fw-semibold mb-2" style="font-size:0.85rem">
+                                <i class="bi bi-chat-dots me-1 text-primary"></i>Remarks
+                            </p>
+                            @if (!string.IsNullOrWhiteSpace(EditingWork.Remarks))
+                            {
+                                <div class="remark-static mb-2">
+                                    <div class="remark-meta"><i class="bi bi-pin-angle me-1"></i>Original note</div>
+                                    <div class="remark-content">@EditingWork.Remarks</div>
+                                </div>
+                            }
+                            @if (RemarksList.Any())
+                            {
+                                <div class="remarks-scroll mb-2">
+                                    @foreach (var r in RemarksList)
+                                    {
+                                        <div class="remark-entry">
+                                            <div class="remark-meta">
+                                                <i class="bi bi-person-circle me-1"></i>@r.AuthorName
+                                                <span class="ms-2 text-muted" style="font-size:0.72rem">@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</span>
+                                            </div>
+                                            <div class="remark-content">@r.Content</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else if (string.IsNullOrWhiteSpace(EditingWork.Remarks))
+                            {
+                                <p class="text-muted" style="font-size:0.82rem"><i class="bi bi-info-circle me-1"></i>No remarks yet.</p>
+                            }
+                            <div class="remark-add-box">
+                                @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
+                                <textarea class="form-control form-control-sm" rows="2"
+                                          placeholder="Add a remark…"
+                                          @bind="NewRemarkText"></textarea>
+                                <div class="d-flex justify-content-end mt-1">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
+                                        <i class="bi bi-send-fill me-1"></i>Add Remark
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
             <div class="modal-box-footer">
@@ -1016,73 +1060,9 @@
             </div>
             <div class="modal-box-footer">
                 <button class="btn btn-secondary btn-sm" @onclick="CloseDetail">Close</button>
-                <button class="btn btn-outline-secondary btn-sm me-auto" @onclick="async () => { var w = DetailWork; if (w != null) { CloseDetail(); await OpenRemarks(w); } }">
-                    <i class="bi bi-chat-dots me-1"></i>View Remarks
+                <button class="btn btn-primary btn-sm" @onclick="async () => { var w = DetailWork; if (w != null) { CloseDetail(); await OpenEditWork(w); } }">
+                    <i class="bi bi-pencil me-1"></i>Edit / Remarks
                 </button>
-                <button class="btn btn-primary btn-sm" @onclick="() => { var w = DetailWork; if (w != null) { CloseDetail(); OpenEditWork(w); } }">
-                    <i class="bi bi-pencil me-1"></i>Edit
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-@* ══ REMARKS MODAL ════════════════════════════════════════════ *@
-@if (ShowRemarksModal && RemarksWork != null)
-{
-    <div class="modal-overlay" @onclick="CloseRemarks">
-        <div class="modal-box modal-box-lg" style="max-width:600px;max-height:85vh" @onclick:stopPropagation>
-            <div class="modal-box-header">
-                <div>
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-1 text-primary"></i>Remarks</h6>
-                    <small class="text-muted" style="word-break: break-word; white-space: normal;">@RemarksWork.WorkName</small>
-                </div>
-                <button class="btn-close" @onclick="CloseRemarks"></button>
-            </div>
-            <div class="modal-box-body" style="display:flex;flex-direction:column;gap:0.75rem">
-                @if (!string.IsNullOrWhiteSpace(RemarksWork.Remarks))
-                {
-                    <div class="remark-static">
-                        <div class="remark-meta">
-                            <i class="bi bi-file-earmark-text me-1"></i><strong>Original Record</strong>
-                            <span class="ms-auto text-muted" style="font-size:0.73rem">Imported from sheet</span>
-                        </div>
-                        <div class="remark-content">@RemarksWork.Remarks</div>
-                    </div>
-                }
-                @if (RemarksList.Any())
-                {
-                    <div class="remarks-scroll">
-                        @foreach (var r in RemarksList)
-                        {
-                            <div class="remark-entry">
-                                <div class="remark-meta">
-                                    <i class="bi bi-person-circle me-1 text-primary"></i>
-                                    <strong>@r.AuthorName</strong>
-                                    <span class="ms-auto text-muted" style="font-size:0.73rem">@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
-                                </div>
-                                <div class="remark-content">@r.Content</div>
-                            </div>
-                        }
-                    </div>
-                }
-                else if (string.IsNullOrWhiteSpace(RemarksWork.Remarks))
-                {
-                    <div class="text-center text-muted py-2">
-                        <i class="bi bi-chat-dots" style="font-size:2rem;opacity:0.3"></i>
-                        <p class="mt-1 mb-0">No remarks yet.</p>
-                    </div>
-                }
-                <div class="remark-add-box">
-                    <label class="fw-semibold mb-1 d-block" style="font-size:0.85rem">Add Remark</label>
-                    @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
-                    <textarea class="form-control form-control-sm" rows="3" placeholder="Type your remark here…" @bind="NewRemarkText"></textarea>
-                    <div class="d-flex justify-content-end mt-2">
-                        <button class="btn btn-sm btn-primary" @onclick="AddRemark">
-                            <i class="bi bi-send-fill me-1"></i>Add Remark
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -1194,12 +1174,11 @@
     bool  ShowDetailModal = false;
     Work? DetailWork      = null;
 
-    // ── Remarks modal ─────────────────────────────────────────
-    bool             ShowRemarksModal = false;
-    Work?            RemarksWork      = null;
-    List<WorkRemark> RemarksList      = [];
-    string           NewRemarkText    = "";
-    string           RemarkError      = "";
+    // ── Remarks (inline in edit modal) ────────────────────────
+    Work?            RemarksWork   = null;
+    List<WorkRemark> RemarksList   = [];
+    string           NewRemarkText = "";
+    string           RemarkError   = "";
 
     // ── Settings – Categories panel ───────────────────────────
     bool   ShowCatsPanel    = false;
@@ -1444,7 +1423,7 @@
         ShowWorkModal = true;
     }
 
-    void OpenEditWork(Work w)
+    async Task OpenEditWork(Work w)
     {
         if (w == null) return;
 
@@ -1466,11 +1445,20 @@
         EditingWorkJenId        = w.AssignedJenId?.ToString() ?? "";
         EditingWorkAenId        = w.AssignedAenId?.ToString() ?? "";
         EditingWorkXenId        = w.AssignedExenId?.ToString() ?? "";
-        WorkError = "";
+        WorkError = ""; NewRemarkText = ""; RemarkError = "";
+        RemarksWork = w;
+
+        // Load existing remarks so the remarks panel is ready
+        await using var db = await DbFactory.CreateDbContextAsync();
+        RemarksList = await db.WorkRemarks
+            .Where(r => r.WorkId == w.WorkId)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+
         ShowWorkModal = true;
     }
 
-    void CloseWorkModal() => ShowWorkModal = false;
+    void CloseWorkModal() { ShowWorkModal = false; RemarksWork = null; RemarksList = []; }
 
     async Task SaveWork()
     {
@@ -1505,20 +1493,12 @@
     void OpenDetail(Work w) { DetailWork = w; ShowDetailModal = true; }
     void CloseDetail()      { ShowDetailModal = false; DetailWork = null; }
 
-    // ── Remarks ───────────────────────────────────────────────
-    async Task OpenRemarks(Work w)
-    {
-        RemarksWork = w; NewRemarkText = ""; RemarkError = "";
-        await using var db = await DbFactory.CreateDbContextAsync();
-        RemarksList = await db.WorkRemarks.Where(r => r.WorkId == w.WorkId).OrderBy(r => r.CreatedAt).ToListAsync();
-        ShowRemarksModal = true;
-    }
-
-    void CloseRemarks() { ShowRemarksModal = false; RemarksWork = null; }
-
+    // ── Remarks (inline in edit modal) ────────────────────────
     async Task AddRemark()
     {
         if (string.IsNullOrWhiteSpace(NewRemarkText)) { RemarkError = "Remark cannot be empty."; return; }
+        if (RemarksWork is null) return;
+
         var auth       = await AuthState!;
         var authorName = auth.User.Identity?.Name ?? "Admin";
         var idStr      = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -1527,15 +1507,18 @@
         await using var db = await DbFactory.CreateDbContextAsync();
         db.WorkRemarks.Add(new WorkRemark
         {
-            WorkId = RemarksWork!.WorkId, Content = NewRemarkText.Trim(),
+            WorkId = RemarksWork.WorkId, Content = NewRemarkText.Trim(),
             AuthorName = authorName, AuthorId = authorId, CreatedAt = DateTime.UtcNow
         });
         await db.SaveChangesAsync();
         NewRemarkText = ""; RemarkError = "";
-        RemarksList = await db.WorkRemarks.Where(r => r.WorkId == RemarksWork!.WorkId).OrderBy(r => r.CreatedAt).ToListAsync();
+        RemarksList = await db.WorkRemarks
+            .Where(r => r.WorkId == RemarksWork.WorkId)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
 
-        // Refresh latest remark map
-        LatestRemarksMap[RemarksWork!.WorkId] = RemarksList.Last();
+        // Keep the latest remark map in sync for the table column
+        LatestRemarksMap[RemarksWork.WorkId] = RemarksList.Last();
     }
 
     // ── Settings – Helper methods ─────────────────────────────
