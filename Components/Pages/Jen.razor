@@ -121,9 +121,9 @@
                 </div>
 
                 @* Works Table *@
-                <div class="table-responsive">
+                <div class="table-responsive table-scroll-body">
                     <table class="table table-hover bda-table mb-0">
-                        <thead>
+                        <thead class="thead-sticky">
                             <tr>
                                 <th style="width:44px">#</th>
                                 <th style="min-width:260px">Work Name / File No.</th>
@@ -596,7 +596,8 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Contractor Mobile</label>
-                        <input class="form-control" @bind="NewWork.ContractorMobile" />
+                        <input class="form-control" type="tel" @bind="NewWork.ContractorMobile"
+                               pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Start Date</label>

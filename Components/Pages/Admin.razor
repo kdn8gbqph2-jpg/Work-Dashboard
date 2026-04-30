@@ -347,9 +347,9 @@
                     </div>
 
                     @* ── Works Table ── *@
-                    <div class="table-responsive">
+                    <div class="table-responsive table-scroll-body">
                         <table class="table table-hover bda-table mb-0">
-                            <thead>
+                            <thead class="thead-sticky">
                                 <tr>
                                     <th style="width:44px">#</th>
                                     <th style="min-width:260px">Work Name / File No.</th>
@@ -790,7 +790,8 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">Mobile</label>
-                        <input class="form-control" @bind="EditingUser.Mobile" />
+                        <input class="form-control" type="tel" @bind="EditingUser.Mobile"
+                               pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number" />
                     </div>
                 </div>
             </div>
@@ -950,7 +951,8 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Contractor Mobile</label>
-                        <input class="form-control" @bind="EditingWork.ContractorMobile" />
+                        <input class="form-control" type="tel" @bind="EditingWork.ContractorMobile"
+                               pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Sanctioned Amount (लाखों)</label>

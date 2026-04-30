@@ -510,6 +510,22 @@ h1:focus {
     text-decoration: underline;
 }
 
+/* ── Scrollable works table with sticky header ────────────── */
+.table-scroll-body {
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.thead-sticky th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #ff8c00 !important;
+    color: #fff !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
 }
