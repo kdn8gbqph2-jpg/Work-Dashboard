@@ -66,6 +66,7 @@ using (var scope = app.Services.CreateScope())
 {
     var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<BdaDbContext>>();
     await using var db = await factory.CreateDbContextAsync();
+    await db.Database.EnsureCreatedAsync();   // create schema if DB is empty
     if (!await db.Engineers.AnyAsync())
     {
         db.Engineers.Add(new Engineer
