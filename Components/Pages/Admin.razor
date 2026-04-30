@@ -343,6 +343,7 @@
                                     <th style="width:44px">#</th>
                                     <th style="min-width:260px">Work Name / File No.</th>
                                     <th style="min-width:110px">Status</th>
+                                    <th style="min-width:90px">Progress</th>
                                     <th style="min-width:110px">JEN</th>
                                     <th style="min-width:100px">AEN</th>
                                     <th style="min-width:100px">XEN</th>
@@ -353,32 +354,54 @@
                             <tbody>
                                 @if (!FilteredWorks.Any())
                                 {
-                                    <tr><td colspan="8" class="text-center text-muted py-5">No records found.</td></tr>
+                                    <tr><td colspan="9" class="text-center text-muted py-5">No records found.</td></tr>
                                 }
                                 @{ int wi = 1; }
                                 @foreach (var w in FilteredWorks)
                                 {
                                     var lr = LatestRemarksMap.GetValueOrDefault(w.WorkId);
                                     var remarkText = lr?.Content ?? (string.IsNullOrWhiteSpace(w.Remarks) ? null : w.Remarks);
-                                    <tr>
+                                    bool isExpanded = ExpandedWorkIds.Contains(w.WorkId);
+                                    <tr class="@(isExpanded ? "work-row-expanded" : "")">
                                         <td class="text-muted fw-medium">@(wi++)</td>
                                         <td>
-                                            <div class="fw-semibold work-name-cell">@w.WorkName</div>
-                                            <div class="d-flex align-items-center gap-1 mt-1">
-                                                @if (w.WorkCode != null)
-                                                {
-                                                    <span class="work-fileno"><i class="bi bi-folder2 me-1"></i>@w.WorkCode</span>
-                                                }
-                                                @if (w.IsAnnualContract)
-                                                {
-                                                    <span class="badge badge-annual">Annual</span>
-                                                }
+                                            <div class="d-flex align-items-start gap-1">
+                                                <div class="flex-grow-1 min-w-0">
+                                                    <div class="fw-semibold work-name-cell">@w.WorkName</div>
+                                                    <div class="d-flex align-items-center gap-1 mt-1">
+                                                        @if (w.WorkCode != null)
+                                                        {
+                                                            <span class="work-fileno"><i class="bi bi-folder2 me-1"></i>@w.WorkCode</span>
+                                                        }
+                                                        @if (w.IsAnnualContract)
+                                                        {
+                                                            <span class="badge badge-annual">Annual</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <button class="btn-expand-row" title="@(isExpanded ? "Collapse" : "Quick view")"
+                                                        @onclick="() => ToggleExpand(w.WorkId)">
+                                                    <i class="bi bi-chevron-@(isExpanded ? "up" : "down")"></i>
+                                                </button>
                                             </div>
                                         </td>
                                         <td>
                                             <span class="status-pill status-pill-@w.Status.ToString().ToLower()">
                                                 <span class="status-dot"></span>@StatusLabel(w.Status)
                                             </span>
+                                        </td>
+                                        <td>
+                                            @if (w.ProgressPercent.HasValue)
+                                            {
+                                                <div class="mini-prog-wrap">
+                                                    <div class="mini-prog-bar">
+                                                        <div class="mini-prog-fill @ProgColor(w.ProgressPercent.Value)"
+                                                             style="width:@(w.ProgressPercent)%"></div>
+                                                    </div>
+                                                    <span class="mini-prog-label">@w.ProgressPercent%</span>
+                                                </div>
+                                            }
+                                            else { <span class="text-muted">—</span> }
                                         </td>
                                         <td><span class="eng-name">@(w.AssignedJen?.Name ?? "—")</span></td>
                                         <td><span class="eng-name">@(w.AssignedAen?.Name ?? "—")</span></td>
@@ -411,6 +434,69 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    @if (isExpanded)
+                                    {
+                                        <tr class="work-expand-row">
+                                            <td colspan="9">
+                                                <div class="work-expand-panel">
+                                                    <div class="expand-grid">
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Physical Progress</div>
+                                                            <div class="expand-val">
+                                                                @if (w.ProgressPercent.HasValue)
+                                                                {
+                                                                    <div class="progress-pill mb-1">
+                                                                        <div class="progress-fill @ProgColor(w.ProgressPercent.Value)"
+                                                                             style="width:@(w.ProgressPercent)%"></div>
+                                                                    </div>
+                                                                    <text>@w.ProgressPercent%</text>
+                                                                }
+                                                                else { <text>—</text> }
+                                                            </div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Financial Progress</div>
+                                                            <div class="expand-val">@(w.FinancialProgressPercent.HasValue ? $"{w.FinancialProgressPercent}%" : "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Agreement Amount</div>
+                                                            <div class="expand-val">@(w.AgreementAmount.HasValue ? $"₹ {w.AgreementAmount:N2} L" : "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Contractor</div>
+                                                            <div class="expand-val">@(w.ContractorName ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Start Date</div>
+                                                            <div class="expand-val">@(w.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Expected Completion</div>
+                                                            <div class="expand-val">@(w.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Category</div>
+                                                            <div class="expand-val">@(w.Category?.CategoryName ?? w.Category?.CategoryCode ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Fund Source</div>
+                                                            <div class="expand-val">@(w.FundSource?.SourceName ?? w.FundSource?.SourceCode ?? "—")</div>
+                                                        </div>
+                                                    </div>
+                                                    @if (lr != null)
+                                                    {
+                                                        <div class="expand-remark">
+                                                            <i class="bi bi-chat-left-text me-1 text-primary"></i>
+                                                            <span class="text-muted" style="font-size:0.72rem">
+                                                                @lr.AuthorName · @lr.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                                            </span>
+                                                            <div class="expand-remark-text">@lr.Content</div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
                                 }
                             </tbody>
                         </table>
@@ -1225,6 +1311,10 @@
     // ── Work delete confirm ───────────────────────────────────
     bool  ShowConfirmDeleteWork = false;
     Work? ConfirmDeleteWorkItem = null;
+
+    // ── Inline expand ─────────────────────────────────────────
+    HashSet<int> ExpandedWorkIds = new();
+    void ToggleExpand(int workId) { if (!ExpandedWorkIds.Remove(workId)) ExpandedWorkIds.Add(workId); }
 
     // ── Remarks (inline in edit modal) ────────────────────────
     Work?            RemarksWork      = null;

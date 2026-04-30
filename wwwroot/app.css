@@ -886,6 +886,108 @@ h1:focus {
 }
 .btn-remark-edit:hover { opacity: 1; background: #eff6ff; }
 
+/* ── Expand chevron button in work name cell ─────────────── */
+.btn-expand-row {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+    background: transparent;
+    color: #6b7280;
+    font-size: 0.65rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    margin-top: 3px;
+    padding: 0;
+}
+.btn-expand-row:hover {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+/* ── Expanded work row highlight ─────────────────────────── */
+.work-row-expanded > td {
+    background: #f5f8ff !important;
+    border-bottom: none !important;
+}
+
+/* ── Inline expand sub-row ───────────────────────────────── */
+.work-expand-row > td {
+    background: #f0f5ff;
+    border-top: none !important;
+    padding: 0 !important;
+}
+.work-expand-panel {
+    padding: 10px 16px 12px 52px;
+    border-bottom: 2px solid #dbeafe;
+}
+.expand-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px 20px;
+    margin-bottom: 8px;
+}
+.expand-label {
+    font-size: 0.67rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+.expand-val {
+    font-size: 0.82rem;
+    color: #1e293b;
+    font-weight: 500;
+}
+.expand-remark {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #dbeafe;
+    font-size: 0.78rem;
+    color: #475569;
+}
+.expand-remark-text {
+    margin-top: 3px;
+    color: #334155;
+    font-style: italic;
+    font-size: 0.82rem;
+}
+
+/* ── Mini progress bar in table ──────────────────────────── */
+.mini-prog-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 72px;
+}
+.mini-prog-bar {
+    flex: 1;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.mini-prog-fill {
+    height: 100%;
+    border-radius: 3px;
+}
+.mini-prog-fill.progress-fill-green  { background: #16a34a; }
+.mini-prog-fill.progress-fill-orange { background: #f59e0b; }
+.mini-prog-fill.progress-fill-red    { background: #dc2626; }
+.mini-prog-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+    min-width: 26px;
+}
+
 /* ── User Management Table ───────────────────────────────── */
 .um-header {
     display: flex;
