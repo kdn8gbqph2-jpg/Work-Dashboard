@@ -75,6 +75,7 @@ jobs:
 
             APP_DIR=/var/www/work-dashboard
             SERVICE=work-dashboard
+            UNIT=/etc/systemd/system/$SERVICE.service
             SETTINGS_FILE=$APP_DIR/appsettings.Production.json
             BACKUP=/tmp/appsettings.Production.json.bak
 
@@ -95,16 +96,41 @@ jobs:
             echo "==> Fixing ownership..."
             sudo chown -R www-data:www-data $APP_DIR
 
-            echo "==> Starting service..."
-            sudo systemctl start $SERVICE
+            echo "==> Writing systemd unit..."
+            sudo tee $UNIT > /dev/null <<'UNIT_EOF'
+            [Unit]
+            Description=BDA Work Dashboard — Blazor Server
+            After=network.target mysql.service
+
+            [Service]
+            Type=simple
+            User=www-data
+            WorkingDirectory=/var/www/work-dashboard
+            ExecStart=/usr/bin/dotnet /var/www/work-dashboard/Work-Dashboard.dll
+            Restart=on-failure
+            RestartSec=10
+            KillSignal=SIGINT
+            SyslogIdentifier=work-dashboard
+            Environment=ASPNETCORE_ENVIRONMENT=Production
+            Environment=ASPNETCORE_URLS=http://localhost:5020
+            Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+            [Install]
+            WantedBy=multi-user.target
+            UNIT_EOF
+
+            sudo systemctl daemon-reload
             sudo systemctl enable $SERVICE
 
+            echo "==> Starting service..."
+            sudo systemctl start $SERVICE
+
             echo "==> Verifying..."
-            sleep 3
+            sleep 15
             if sudo systemctl is-active --quiet $SERVICE; then
               echo "✅ work-dashboard is running."
             else
-              echo "❌ Service failed to start. Last 30 log lines:"
-              sudo journalctl -u $SERVICE -n 30 --no-pager
+              echo "❌ Service failed to start. Last 40 log lines:"
+              sudo journalctl -u $SERVICE -n 40 --no-pager
               exit 1
             fi
