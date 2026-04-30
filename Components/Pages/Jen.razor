@@ -95,10 +95,10 @@
                                 { <option value="@cat">@cat</option> }
                             </select>
                         </div>
-                        <div class="filter-daterange">
-                            <i class="bi bi-search text-muted me-1"></i>
-                            <input class="filter-date-input" style="min-width:200px"
-                                   placeholder="Search work name…"
+                        <div class="filter-search-wrap">
+                            <i class="bi bi-search filter-search-icon"></i>
+                            <input type="search" class="filter-search-input"
+                                   placeholder="Search file no…"
                                    @bind="SearchText" @bind:after="ApplyFilter" />
                         </div>
                         <button class="btn-filter-reset" @onclick="ResetFilters">
@@ -823,8 +823,7 @@
             q = q.Where(w => w.Category?.CategoryCode == SelectedCategory);
 
         if (!string.IsNullOrWhiteSpace(SearchText))
-            q = q.Where(w => w.WorkName.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-                           || (w.WorkCode ?? "").Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            q = q.Where(w => w.WorkCode != null && w.WorkCode.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
         FilteredWorks = q.ToList();
     }

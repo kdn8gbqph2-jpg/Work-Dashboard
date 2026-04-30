@@ -264,6 +264,14 @@
                     <div class="works-filter-bar">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
 
+                            @* File No Search *@
+                            <div class="filter-search-wrap">
+                                <i class="bi bi-search filter-search-icon"></i>
+                                <input type="search" class="filter-search-input"
+                                       placeholder="Search file no…"
+                                       @bind="WorkSearchText" @bind:after="FilterWorks" />
+                            </div>
+
                             @* Status *@
                             <div class="filter-group">
                                 <span class="filter-group-label">Status</span>
@@ -1272,6 +1280,7 @@
 
     // ── Works filter ──────────────────────────────────────────
     string WorkFilter          = "ALL";
+    string WorkSearchText      = "";
     string WorkJenFilter       = "";
     string WorkAenFilter       = "";
     string WorkXenFilter       = "";
@@ -1463,6 +1472,13 @@
             _           => q
         };
 
+        // File no search
+        if (!string.IsNullOrWhiteSpace(WorkSearchText))
+        {
+            var t = WorkSearchText.Trim();
+            q = q.Where(w => w.WorkCode != null && w.WorkCode.Contains(t, StringComparison.OrdinalIgnoreCase));
+        }
+
         // Engineer filters
         if (!string.IsNullOrEmpty(WorkJenFilter) && int.TryParse(WorkJenFilter, out var jenId))
             q = q.Where(w => w.AssignedJenId == jenId);
@@ -1487,6 +1503,7 @@
     void ResetWorkFilters()
     {
         WorkFilter = "ALL";
+        WorkSearchText = "";
         WorkJenFilter = WorkAenFilter = WorkXenFilter = "";
         WorkAnnualFilter = "ALL";
         WorkStartDateFilter = WorkEndDateFilter = "";
