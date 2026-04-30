@@ -82,12 +82,12 @@ jobs:
             sudo systemctl stop $SERVICE || true
 
             echo "==> Backing up production appsettings..."
-            [ -f "$SETTINGS_FILE" ] && cp "$SETTINGS_FILE" "$BACKUP"
+            [ -f "$SETTINGS_FILE" ] && sudo cp "$SETTINGS_FILE" "$BACKUP"
 
             echo "==> Deploying..."
             sudo mkdir -p $APP_DIR
             sudo tar -xzf /tmp/deploy.tar.gz -C $APP_DIR
-            rm -f /tmp/deploy.tar.gz
+            sudo rm -f /tmp/deploy.tar.gz
 
             echo "==> Restoring production appsettings..."
             [ -f "$BACKUP" ] && sudo mv "$BACKUP" "$SETTINGS_FILE"
