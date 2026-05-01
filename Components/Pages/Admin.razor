@@ -1048,6 +1048,12 @@
                                                     </button>
                                                 }
                                             </div>
+                                            @if (r.EditedAt.HasValue)
+                                            {
+                                                <div class="remark-edited-meta">
+                                                    <i class="bi bi-pencil-fill me-1"></i>Edited by @r.EditedByName · @r.EditedAt.Value.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                                </div>
+                                            }
                                             @if (isLast && EditingRemarkId == r.RemarkId)
                                             {
                                                 <textarea class="form-control form-control-sm mt-1" rows="2" @bind="EditingRemarkText"></textarea>
@@ -1766,11 +1772,19 @@
     async Task SaveEditRemark()
     {
         if (EditingRemarkId == 0 || string.IsNullOrWhiteSpace(EditingRemarkText)) return;
+        var auth       = await AuthState!;
+        var editorName = auth.User.Identity?.Name ?? "Admin";
+        var idStr      = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        int? editorId  = idStr is not null ? int.Parse(idStr) : null;
+
         await using var db = await DbFactory.CreateDbContextAsync();
         var r = await db.WorkRemarks.FindAsync(EditingRemarkId);
         if (r is not null)
         {
-            r.Content = EditingRemarkText.Trim();
+            r.Content      = EditingRemarkText.Trim();
+            r.EditedByName = editorName;
+            r.EditedById   = editorId;
+            r.EditedAt     = DateTime.UtcNow;
             await db.SaveChangesAsync();
             // Refresh list
             RemarksList = await db.WorkRemarks

@@ -116,6 +116,9 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
             e.Property(x => x.AuthorName).HasColumnName("author_name").HasMaxLength(150);
             e.Property(x => x.AuthorId).HasColumnName("author_id");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.EditedByName).HasColumnName("edited_by_name").HasMaxLength(200);
+            e.Property(x => x.EditedById).HasColumnName("edited_by_id");
+            e.Property(x => x.EditedAt).HasColumnName("edited_at");
 
             e.HasOne(x => x.Work).WithMany().HasForeignKey(x => x.WorkId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Author).WithMany().HasForeignKey(x => x.AuthorId).OnDelete(DeleteBehavior.SetNull);
