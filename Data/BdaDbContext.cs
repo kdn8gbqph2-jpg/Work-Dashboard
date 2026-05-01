@@ -26,7 +26,7 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
             e.Property(x => x.Name).HasColumnName("name").HasMaxLength(150);
             e.Property(x => x.Username).HasColumnName("username").HasMaxLength(50);
             e.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(255);
-            e.Property(x => x.Role).HasColumnName("role").HasConversion<string>();
+            e.Property(x => x.Role).HasColumnName("role").HasMaxLength(20).HasConversion<string>();
             e.Property(x => x.Mobile).HasColumnName("mobile").HasMaxLength(15);
             e.Property(x => x.Email).HasColumnName("email").HasMaxLength(100);
             e.Property(x => x.IsActive).HasColumnName("is_active");
