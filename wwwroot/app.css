@@ -793,6 +793,18 @@ h1:focus {
     background: #f97316;
     color: #fff;
 }
+.works-tab-total {
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 1rem 0.85rem 0.75rem;
+    color: #374151;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-right: 1px solid #e9ecef;
+    margin-right: 0.25rem;
+    white-space: nowrap;
+}
+.works-tab-total strong { color: #f97316; margin-left: 0.2rem; }
 
 /* ── Column picker modal ─────────────────────────────────── */
 .col-picker-modal { max-width: 560px; }

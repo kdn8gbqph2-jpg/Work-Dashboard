@@ -273,6 +273,9 @@
                 @* ── Work Tabs ── *@
                 <div class="content-card p-0 mb-3">
                     <div class="works-tab-bar">
+                        <span class="works-tab-total">
+                            <i class="bi bi-briefcase-fill me-1"></i>Total <strong>@AllWorks.Count</strong>
+                        </span>
                         <button class="works-tab @(WorkTab == "ONGOING"   ? "active" : "")" @onclick='() => SetWorkTab("ONGOING")'>
                             <i class="bi bi-hourglass-split me-1"></i>Ongoing
                             <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</span>
@@ -334,16 +337,15 @@
                                 </select>
                             </div>
 
-                            @* Date Range *@
-                            <div class="filter-daterange">
-                                <i class="bi bi-calendar3 text-muted me-1"></i>
-                                <input type="date" class="filter-date-input" placeholder="Start date"
-                                       value="@WorkStartDateFilter"
-                                       @onchange="@((ChangeEventArgs e) => { WorkStartDateFilter = e?.Value?.ToString() ?? ""; FilterWorks(); })" />
-                                <span class="text-muted mx-1">—</span>
-                                <input type="date" class="filter-date-input" placeholder="End date"
-                                       value="@WorkEndDateFilter"
-                                       @onchange="@((ChangeEventArgs e) => { WorkEndDateFilter = e?.Value?.ToString() ?? ""; FilterWorks(); })" />
+                            @* Year Filter *@
+                            <div class="filter-group">
+                                <span class="filter-group-label"><i class="bi bi-calendar3 me-1"></i>Year</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkYearFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    @foreach (var y in WorkYears)
+                                    { <option value="@y">@y</option> }
+                                </select>
                             </div>
 
                             @* Reset *@
@@ -1452,8 +1454,12 @@
     string WorkAenFilter       = "";
     string WorkXenFilter       = "";
     string WorkAnnualFilter    = "ALL";
-    string WorkStartDateFilter = "";
-    string WorkEndDateFilter   = "";
+    string WorkYearFilter      = "";
+
+    List<string> WorkYears => AllWorks
+        .Where(w => w.StartDate.HasValue)
+        .Select(w => FinYear(w.StartDate!.Value))
+        .Distinct().OrderByDescending(y => y).ToList();
 
     // ── Overview year filter ──────────────────────────────────
     string OverviewYear = "ALL";
@@ -1684,11 +1690,9 @@
         if (WorkAnnualFilter == "YES") q = q.Where(w => w.IsAnnualContract);
         if (WorkAnnualFilter == "NO")  q = q.Where(w => !w.IsAnnualContract);
 
-        // Date range filters
-        if (!string.IsNullOrWhiteSpace(WorkStartDateFilter) && DateOnly.TryParse(WorkStartDateFilter, out var startDate))
-            q = q.Where(w => w.StartDate >= startDate);
-        if (!string.IsNullOrWhiteSpace(WorkEndDateFilter) && DateOnly.TryParse(WorkEndDateFilter, out var endDate))
-            q = q.Where(w => w.ExpectedCompletion <= endDate || w.ActualCompletion <= endDate);
+        // Financial year filter
+        if (!string.IsNullOrEmpty(WorkYearFilter))
+            q = q.Where(w => w.StartDate.HasValue && FinYear(w.StartDate!.Value) == WorkYearFilter);
 
         FilteredWorks = q.ToList();
     }
@@ -1697,7 +1701,7 @@
     {
         WorkSearchText = "";
         WorkJenFilter = WorkAenFilter = WorkXenFilter = "";
-        WorkStartDateFilter = WorkEndDateFilter = "";
+        WorkYearFilter = "";
         FilterWorks();
     }
 
