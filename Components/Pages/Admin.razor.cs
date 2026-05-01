@@ -24,7 +24,7 @@ public partial class Admin
         new("progress",    "Physical Progress (%)",  "Phys%",      DefaultOn: true),
         new("fin_progress","Financial Progress (%)","Fin%",        DefaultOn: false),
         new("sanc_amt",    "Sanctioned Amt (Lakhs)", "Sanc(L)",    DefaultOn: true),
-        new("agr_amt",     "Agreement Amt (Lakhs)",  "Agr(L)",     DefaultOn: false),
+        new("agr_amt",     "Workorder Amt (Lakhs)",  "WO(L)",      DefaultOn: false),
         new("jen",         "JEN",                   "JEN",        DefaultOn: true),
         new("aen",         "AEN",                   "AEN",        DefaultOn: true),
         new("xen",         "XEN",                   "XEN",        DefaultOn: true),

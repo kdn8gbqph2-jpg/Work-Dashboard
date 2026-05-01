@@ -282,7 +282,7 @@
                                                         <div class="expand-val">@(w.FinancialProgressPercent.HasValue ? $"{w.FinancialProgressPercent}%" : "—")</div>
                                                     </div>
                                                     <div class="expand-item">
-                                                        <div class="expand-label">Agreement Amount</div>
+                                                        <div class="expand-label">Workorder Amount</div>
                                                         <div class="expand-val">@(w.AgreementAmount.HasValue ? $"₹ {w.AgreementAmount:N2} L" : "—")</div>
                                                     </div>
                                                     <div class="expand-item">
@@ -398,7 +398,7 @@
                         <div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Agreement Amount (लाखों)</div>
+                        <div class="detail-label">Workorder Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
@@ -631,7 +631,7 @@
                         <input type="number" step="0.01" class="form-control" @bind="NewWork.SanctionedAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Agreement Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">Workorder Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="NewWork.AgreementAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
@@ -800,7 +800,7 @@
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.SanctionedAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Agreement Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">Workorder Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.AgreementAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
