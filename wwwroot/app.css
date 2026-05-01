@@ -332,6 +332,7 @@ h1:focus {
 .progress-fill-green  { background: #22c55e; }
 .progress-fill-orange { background: #f97316; }
 .progress-fill-red    { background: #ef4444; }
+.progress-fill-fin    { background: #6366f1; }  /* indigo — financial progress */
 
 /* Remarks cell — clamp to 3 lines */
 .remarks-cell {
@@ -747,6 +748,49 @@ h1:focus {
 .btn-export-xlsx      { background: #16a34a; }
 .btn-export-pdf       { background: #dc2626; }
 .btn-export-customize { background: #7c3aed; }
+
+/* ── Works tab bar ───────────────────────────────────────── */
+.works-tab-bar {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0;
+}
+.works-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border: none;
+    background: none;
+    color: #6c757d;
+    font-size: 0.88rem;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    border-radius: 4px 4px 0 0;
+}
+.works-tab:hover { color: #f97316; }
+.works-tab.active {
+    color: #f97316;
+    border-bottom-color: #f97316;
+    background: #fff8f0;
+    font-weight: 600;
+}
+.works-tab-count {
+    background: #e9ecef;
+    color: #495057;
+    border-radius: 10px;
+    padding: 0 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.works-tab.active .works-tab-count {
+    background: #f97316;
+    color: #fff;
+}
 
 /* ── Column picker modal ─────────────────────────────────── */
 .col-picker-modal { max-width: 560px; }
@@ -1317,6 +1361,7 @@ h1:focus {
 .mini-prog-fill.progress-fill-green  { background: #16a34a; }
 .mini-prog-fill.progress-fill-orange { background: #f59e0b; }
 .mini-prog-fill.progress-fill-red    { background: #dc2626; }
+.mini-prog-fill-fin                  { height: 100%; border-radius: 3px; background: #6366f1; }
 .mini-prog-label {
     font-size: 0.72rem;
     font-weight: 600;
