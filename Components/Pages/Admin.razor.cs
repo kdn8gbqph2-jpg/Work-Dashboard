@@ -23,6 +23,9 @@ public partial class Admin
         "Progress%", "Amt(L)", "JEN", "AEN", "XEN", "Contractor", "Remarks"
     };
 
+    private string LatestRemark(int workId) =>
+        LatestRemarksMap.TryGetValue(workId, out var r) ? r.Content : "";
+
     private async Task ExportCsv()
     {
         var sb = new System.Text.StringBuilder();
@@ -34,7 +37,7 @@ public partial class Admin
                 $"{w.Status},{w.ProgressPercent ?? 0},{w.SanctionedAmount ?? 0}," +
                 $"{CsvVal(w.AssignedJen?.Name)},{CsvVal(w.AssignedAen?.Name)}," +
                 $"{CsvVal(w.AssignedExen?.Name)},{CsvVal(w.ContractorName)},{CsvVal(w.Location)}," +
-                $"{CsvVal(w.Remarks)}");
+                $"{CsvVal(LatestRemark(w.WorkId))}");
         await JS.InvokeVoidAsync("bdaDownloadText", $"BDA_Works_{DateTime.Now:yyyyMMdd}.csv", sb.ToString());
     }
 
@@ -68,7 +71,7 @@ public partial class Admin
             ws.Cell(row, 9).Value  = w.AssignedExen?.Name ?? "";
             ws.Cell(row, 10).Value = w.ContractorName      ?? "";
             ws.Cell(row, 11).Value = w.Location            ?? "";
-            ws.Cell(row, 12).Value = w.Remarks             ?? "";
+            ws.Cell(row, 12).Value = LatestRemark(w.WorkId);
             row++;
         }
 
@@ -95,7 +98,7 @@ public partial class Admin
             w.AssignedAen?.Name  ?? "",
             w.AssignedExen?.Name ?? "",
             w.ContractorName     ?? "",
-            w.Remarks            ?? ""
+            LatestRemark(w.WorkId)
         }).ToArray();
 
         await JS.InvokeVoidAsync("bdaExportPdf",
