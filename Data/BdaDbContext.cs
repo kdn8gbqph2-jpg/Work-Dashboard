@@ -11,9 +11,7 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
     public DbSet<Work>            Works            => Set<Work>();
     public DbSet<WorkProgressLog> WorkProgressLogs => Set<WorkProgressLog>();
     public DbSet<WorkRemark>      WorkRemarks      => Set<WorkRemark>();
-    public DbSet<AttachmentType>      AttachmentTypes      => Set<AttachmentType>();
-    public DbSet<AttachmentCategory>  AttachmentCategories => Set<AttachmentCategory>();
-    public DbSet<Attachment>          Attachments          => Set<Attachment>();
+    public DbSet<WorkFile>            WorkFiles            => Set<WorkFile>();
     public DbSet<DriveFolder>         DriveFolders         => Set<DriveFolder>();
     public DbSet<GoogleOAuthToken>    GoogleOAuthTokens    => Set<GoogleOAuthToken>();
     public DbSet<AuditLog>            AuditLogs            => Set<AuditLog>();
@@ -141,53 +139,20 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
             e.HasOne(x => x.LoggedByEngineer).WithMany(x => x.ProgressLogs).HasForeignKey(x => x.LoggedBy).OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ── attachment_types ─────────────────────────────────────
-        mb.Entity<AttachmentType>(e =>
+        // ── files ────────────────────────────────────────────────
+        mb.Entity<WorkFile>(e =>
         {
-            e.ToTable("attachment_types");
-            e.HasKey(x => x.TypeId);
-            e.Property(x => x.TypeId).HasColumnName("type_id");
-            e.Property(x => x.TypeCode).HasColumnName("type_code").HasMaxLength(20);
-            e.Property(x => x.TypeName).HasColumnName("type_name").HasMaxLength(50);
-            e.HasIndex(x => x.TypeCode).IsUnique();
-        });
-
-        // ── attachment_categories ────────────────────────────────
-        mb.Entity<AttachmentCategory>(e =>
-        {
-            e.ToTable("attachment_categories");
-            e.HasKey(x => x.CatId);
-            e.Property(x => x.CatId).HasColumnName("cat_id");
-            e.Property(x => x.CatCode).HasColumnName("cat_code").HasMaxLength(30);
-            e.Property(x => x.CatName).HasColumnName("cat_name").HasMaxLength(100);
-            e.Property(x => x.AllowedTypeId).HasColumnName("allowed_type_id");
-            e.HasIndex(x => x.CatCode).IsUnique();
-            e.HasOne(x => x.AllowedType).WithMany(x => x.AttachmentCategories).HasForeignKey(x => x.AllowedTypeId).OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // ── attachments ──────────────────────────────────────────
-        mb.Entity<Attachment>(e =>
-        {
-            e.ToTable("attachments");
-            e.HasKey(x => x.AttachmentId);
-            e.Property(x => x.AttachmentId).HasColumnName("attachment_id");
-            e.Property(x => x.ParentType).HasColumnName("parent_type").HasConversion<string>();
-            e.Property(x => x.ParentId).HasColumnName("parent_id");
-            e.Property(x => x.TypeId).HasColumnName("type_id");
-            e.Property(x => x.CatId).HasColumnName("cat_id");
-            e.Property(x => x.FileName).HasColumnName("file_name").HasMaxLength(255);
-            e.Property(x => x.DriveFileId).HasColumnName("drive_file_id").HasMaxLength(150);
-            e.Property(x => x.DriveViewUrl).HasColumnName("drive_view_url").HasMaxLength(1000);
-            e.Property(x => x.FileSizeBytes).HasColumnName("file_size_bytes");
-            e.Property(x => x.MimeType).HasColumnName("mime_type").HasMaxLength(100);
+            e.ToTable("files");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.WorkId).HasColumnName("work_id");
+            e.Property(x => x.FileType).HasColumnName("file_type").HasConversion<string>().HasMaxLength(10);
+            e.Property(x => x.FileUrl).HasColumnName("file_url").HasMaxLength(1000);
             e.Property(x => x.UploadedBy).HasColumnName("uploaded_by");
-            e.Property(x => x.UploadedAt).HasColumnName("uploaded_at");
-            e.Property(x => x.IsDeleted).HasColumnName("is_deleted");
-            e.HasIndex(x => new { x.ParentType, x.ParentId });
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
 
-            e.HasOne(x => x.Type).WithMany(x => x.Attachments).HasForeignKey(x => x.TypeId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(x => x.Category).WithMany(x => x.Attachments).HasForeignKey(x => x.CatId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(x => x.UploadedByEngineer).WithMany().HasForeignKey(x => x.UploadedBy).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Work).WithMany().HasForeignKey(x => x.WorkId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.UploadedByEngineer).WithMany().HasForeignKey(x => x.UploadedBy).OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── drive_folders ────────────────────────────────────────
