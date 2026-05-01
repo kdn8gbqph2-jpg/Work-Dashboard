@@ -1727,7 +1727,7 @@
 
     void CloseUserModal() => ShowUserModal = false;
 
-    async Task SaveUser()
+     async Task SaveUser()
     {
         if (string.IsNullOrWhiteSpace(EditingUser.Name) || string.IsNullOrWhiteSpace(EditingUser.Username))
         { UserError = "Name and Username are required."; return; }
@@ -1740,6 +1740,19 @@
             await using var db = await DbFactory.CreateDbContextAsync();
 
             bool isNew = EditingUser.EngineerId == 0;
+
+            // Check for duplicate username (excluding current user in edit mode)
+            var existingUser = await db.Engineers
+                .FirstOrDefaultAsync(e => e.Username.ToLower() == EditingUser.Username.ToLower() 
+                    && e.EngineerId != EditingUser.EngineerId
+                    && !e.IsDeleted);
+
+            if (existingUser != null)
+            { 
+                UserError = $"Username '{EditingUser.Username}' is already in use."; 
+                return; 
+            }
+
             if (isNew)
             {
                 EditingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
@@ -1769,6 +1782,16 @@
             ShowUserModal = false;
             UserError = "";
             await LoadAll();
+        }
+        catch (DbUpdateException dbEx)
+        {
+            // Database constraint violation
+            if (dbEx.InnerException?.Message.Contains("username", StringComparison.OrdinalIgnoreCase) ?? false)
+                UserError = "Username already exists. Please choose a different username.";
+            else if (dbEx.InnerException?.Message.Contains("email", StringComparison.OrdinalIgnoreCase) ?? false)
+                UserError = "Email already exists. Please use a different email.";
+            else
+                UserError = $"Database error: {dbEx.InnerException?.Message ?? dbEx.Message}";
         }
         catch (Exception ex)
         {
