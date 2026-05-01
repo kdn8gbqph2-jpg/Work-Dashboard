@@ -379,13 +379,14 @@
                                     <th style="min-width:100px">AEN</th>
                                     <th style="min-width:100px">XEN</th>
                                     <th style="min-width:220px">Latest Remark</th>
+                                    <th style="min-width:120px">Files</th>
                                     <th class="text-center" style="min-width:100px">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if (!FilteredWorks.Any())
                                 {
-                                    <tr><td colspan="9" class="text-center text-muted py-5">No records found.</td></tr>
+                                    <tr><td colspan="10" class="text-center text-muted py-5">No records found.</td></tr>
                                 }
                                 @{ int wi = 1; }
                                 @foreach (var w in FilteredWorks)
@@ -448,6 +449,20 @@
                                                 <span class="text-muted">—</span>
                                             }
                                         </td>
+                                        <td>
+                                            @{
+                                                var pdfCount   = FileCounts.GetValueOrDefault(w.WorkId).pdfs;
+                                                var photoCount = FileCounts.GetValueOrDefault(w.WorkId).photos;
+                                            }
+                                            <span class="files-badge-cell" @onclick="() => OpenFilesModal(w)" title="Click to manage files">
+                                                <span class="files-pill files-pill-pdf @(pdfCount == 0 ? "empty" : "")">
+                                                    <i class="bi bi-file-earmark-pdf-fill"></i>@pdfCount
+                                                </span>
+                                                <span class="files-pill files-pill-img @(photoCount == 0 ? "empty" : photoCount >= 10 ? "full" : "")">
+                                                    <i class="bi bi-image-fill"></i>@photoCount/10
+                                                </span>
+                                            </span>
+                                        </td>
                                         <td class="text-center">
                                             <div class="d-flex gap-1 justify-content-center">
                                                 <button class="action-btn action-btn-view" title="View Details"
@@ -468,7 +483,7 @@
                                     @if (isExpanded)
                                     {
                                         <tr class="work-expand-row">
-                                            <td colspan="9">
+                                            <td colspan="10">
                                                 <div class="work-expand-panel">
                                                     <div class="expand-fullname">@w.WorkName</div>
                                                     <div class="expand-grid">
@@ -1272,6 +1287,15 @@
     </div>
 }
 
+@* ══ FILES MODAL ══════════════════════════════════════════════ *@
+<Work_Dashboard.Components.Shared.WorkFilesModal
+    Work="@FilesModalWork"
+    UploadedById="@CurrentEngineerId"
+    CanUpload="true"
+    CanDelete="true"
+    OnClose="CloseFilesModal"
+    OnChanged="ReloadFileCountsAsync" />
+
 @code {
     [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
 
@@ -1289,6 +1313,27 @@
     List<Engineer>     AenEngineers  = [];
     List<Engineer>     XenEngineers  = [];
     Dictionary<int, WorkRemark> LatestRemarksMap = [];
+
+    // Files modal
+    Work? FilesModalWork = null;
+    Dictionary<int, (int pdfs, int photos)> FileCounts = new();
+
+    void OpenFilesModal(Work w) => FilesModalWork = w;
+    void CloseFilesModal()      => FilesModalWork = null;
+
+    async Task ReloadFileCountsAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        FileCounts = await db.WorkFiles
+            .GroupBy(f => f.WorkId)
+            .Select(g => new
+            {
+                WorkId = g.Key,
+                Pdfs   = g.Count(x => x.FileType == WorkFileType.pdf),
+                Photos = g.Count(x => x.FileType == WorkFileType.image)
+            })
+            .ToDictionaryAsync(x => x.WorkId, x => (x.Pdfs, x.Photos));
+    }
 
     // ── Works filter ──────────────────────────────────────────
     string WorkFilter          = "ALL";
@@ -1455,6 +1500,9 @@
         LatestRemarksMap = allRemarks
             .GroupBy(r => r.WorkId)
             .ToDictionary(g => g.Key, g => g.Last());
+
+        // File counts per work
+        await ReloadFileCountsAsync();
 
         // Departments: union of DB-stored list + distinct values from works
         var fromWorks = AllWorks
