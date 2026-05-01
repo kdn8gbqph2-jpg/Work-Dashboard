@@ -846,6 +846,7 @@
                             <option value="JEN">JEN (Junior Engineer)</option>
                             <option value="AEN">AEN (Asst. Engineer)</option>
                             <option value="XEN">XEN (Exec. Engineer)</option>
+                            <option value="ACCOUNTANT">Accountant</option>
                             <option value="ADMIN">ADMIN</option>
                         </select>
                     </div>
@@ -2097,10 +2098,11 @@
 
     static string RoleBadge(EngineerRole r) => r switch
     {
-        EngineerRole.ADMIN => "bg-danger",
-        EngineerRole.XEN   => "bg-dark",
-        EngineerRole.AEN   => "bg-secondary",
-        _                  => "bg-primary"
+        EngineerRole.ADMIN       => "bg-danger",
+        EngineerRole.XEN         => "bg-dark",
+        EngineerRole.AEN         => "bg-secondary",
+        EngineerRole.ACCOUNTANT  => "bg-success",
+        _                        => "bg-primary"
     };
 
     static string CatBadge(string? code) => (code ?? "").ToUpperInvariant() switch
