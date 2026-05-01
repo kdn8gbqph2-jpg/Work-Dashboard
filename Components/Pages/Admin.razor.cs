@@ -40,8 +40,10 @@ public partial class Admin
 
     private const string LocalStorageKey = "bda_report_cols";
 
-    // Keys that are currently selected (populated on first render)
-    private HashSet<string> _selectedCols = [];
+    // Keys currently selected — defaults populated immediately so exports
+    // work even before OnAfterRenderAsync has a chance to read localStorage.
+    private HashSet<string> _selectedCols =
+        AllCols.Where(c => c.DefaultOn).Select(c => c.Key).ToHashSet();
     private bool _colsLoaded = false;
     bool ShowColPicker = false;
 
@@ -54,15 +56,10 @@ public partial class Admin
         if (!string.IsNullOrEmpty(saved))
         {
             var keys = saved.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
-            // Always enforce required cols
             foreach (var c in AllCols.Where(c => c.Required)) keys.Add(c.Key);
             _selectedCols = keys;
+            StateHasChanged();
         }
-        else
-        {
-            _selectedCols = AllCols.Where(c => c.DefaultOn).Select(c => c.Key).ToHashSet();
-        }
-        StateHasChanged();
     }
 
     private async Task SaveColSelection()
