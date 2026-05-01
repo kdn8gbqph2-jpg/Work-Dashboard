@@ -288,58 +288,6 @@
                     </div>
                 </div>
 
-                @* ── Stat Cards ── *@
-                <div class="row g-3 mb-3">
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-blue">
-                                <i class="bi bi-briefcase-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Total Works</div>
-                                <div class="wstat-value">@AllWorks.Count</div>
-                                <div class="wstat-sub">All works</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-orange">
-                                <i class="bi bi-hourglass-split"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Ongoing Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING)</div>
-                                <div class="wstat-sub">In Progress</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-green">
-                                <i class="bi bi-check-circle-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Completed Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</div>
-                                <div class="wstat-sub">Completed</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-red">
-                                <i class="bi bi-exclamation-circle-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Delayed Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.STALLED)</div>
-                                <div class="wstat-sub">Delayed</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 @* ── Filter Bar + Table ── *@
                 <div class="content-card">
                     <div class="works-filter-bar">
@@ -402,6 +350,11 @@
                             <button class="btn-filter-reset" @onclick="ResetWorkFilters">
                                 <i class="bi bi-arrow-clockwise"></i> Reset
                             </button>
+
+                            @* Works Count *@
+                            <span class="works-total-badge">
+                                <i class="bi bi-briefcase-fill me-1"></i>@FilteredWorks.Count works
+                            </span>
 
                             @* Export + Add Work *@
                             <div class="ms-auto d-flex align-items-center gap-2">
