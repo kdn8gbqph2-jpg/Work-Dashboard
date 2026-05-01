@@ -13,6 +13,7 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
     public DbSet<WorkRemark>      WorkRemarks      => Set<WorkRemark>();
     public DbSet<WorkFile>            WorkFiles            => Set<WorkFile>();
     public DbSet<AuditLog>            AuditLogs            => Set<AuditLog>();
+    public DbSet<BudgetHead>          BudgetHeads          => Set<BudgetHead>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -154,6 +155,24 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
 
             e.HasOne(x => x.Work).WithMany().HasForeignKey(x => x.WorkId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.UploadedByEngineer).WithMany().HasForeignKey(x => x.UploadedBy).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── budget_head_master ───────────────────────────────────
+        mb.Entity<BudgetHead>(e =>
+        {
+            e.ToTable("budget_head_master");
+            e.HasKey(x => x.BudgetHeadId);
+            e.Property(x => x.BudgetHeadId).HasColumnName("budget_head_id");
+            e.Property(x => x.BudgetCode).HasColumnName("budget_code").HasMaxLength(50);
+            e.Property(x => x.BudgetName).HasColumnName("budget_name").HasMaxLength(200);
+            e.Property(x => x.AvailableFund).HasColumnName("available_fund").HasPrecision(14, 4);
+            e.Property(x => x.AmountSpent).HasColumnName("amount_spent").HasPrecision(14, 4);
+            e.Property(x => x.RemainingAmount).HasColumnName("remaining_amount").HasPrecision(14, 4);
+            e.Property(x => x.UpdatedBy).HasColumnName("updated_by").HasMaxLength(200);
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.Property(x => x.IsActive).HasColumnName("is_active");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.HasIndex(x => x.BudgetCode).IsUnique();
         });
 
         // ── audit_log ────────────────────────────────────────────

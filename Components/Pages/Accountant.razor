@@ -1,0 +1,1019 @@
+
+@page "/accountant"
+@attribute [Authorize(Roles = "ACCOUNTANT")]
+@rendermode InteractiveServer
+@inject IDbContextFactory<BdaDbContext> DbFactory
+@inject IJSRuntime JS
+@using Microsoft.EntityFrameworkCore
+@using Work_Dashboard.Data
+@using Work_Dashboard.Data.Entities
+@using System.Security.Claims
+
+<PageTitle>Accountant — BDA Dashboard</PageTitle>
+
+<div class="jen-shell">
+
+    @* ── Sidebar ─────────────────────────────────────────────── *@
+    <aside class="jen-sidebar">
+        <div class="sidebar-brand">
+            <img src="/images/bda-logo.png" alt="BDA" class="sidebar-logo" />
+            <div>
+                <div class="sidebar-title">BDA Accounts</div>
+                <div class="sidebar-subtitle">Accountant Panel</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item @(Section == "works"    ? "active" : "")" @onclick='() => Section = "works"'>
+                <i class="bi bi-hammer"></i><span>Works</span>
+            </button>
+            <button class="nav-item @(Section == "settings" ? "active" : "")" @onclick='() => Section = "settings"'>
+                <i class="bi bi-gear-fill"></i><span>Settings</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="btn-logout w-100 mb-2" @onclick="OpenPasswordModal">
+                <i class="bi bi-key-fill"></i> Change Password
+            </button>
+            <form method="post" action="/account/logout">
+                <button type="submit" class="btn-logout w-100">
+                    <i class="bi bi-box-arrow-left"></i> Logout
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    @* ── Main ───────────────────────────────────────────────── *@
+    <main class="jen-main">
+
+        <div class="jen-topbar">
+            <div>
+                <h5 class="mb-0 fw-bold">@SectionTitle</h5>
+                <small class="text-muted">Bharatpur Development Authority</small>
+            </div>
+            <div class="topbar-user">
+                <i class="bi bi-calculator-fill text-success me-1"></i>
+                <AuthorizeView><span>@context.User.Identity?.Name</span></AuthorizeView>
+            </div>
+        </div>
+
+        @if (IsLoading)
+        {
+            <div class="d-flex justify-content-center align-items-center" style="height:60vh">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        }
+        else
+        {
+
+        @* ══ WORKS ══════════════════════════════════════════════ *@
+        if (Section == "works")
+        {
+            @* ── Work Tabs ── *@
+            <div class="content-card p-0 mb-3">
+                <div class="works-tab-bar">
+                    <span class="works-tab-total">
+                        <i class="bi bi-briefcase-fill me-1"></i>Total <strong>@AllWorks.Count</strong>
+                    </span>
+                    <button class="works-tab @(WorkTab == "ONGOING"   ? "active" : "")" @onclick='() => SetWorkTab("ONGOING")'>
+                        <i class="bi bi-hourglass-split me-1"></i>Ongoing
+                        <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</span>
+                    </button>
+                    <button class="works-tab @(WorkTab == "COMPLETED" ? "active" : "")" @onclick='() => SetWorkTab("COMPLETED")'>
+                        <i class="bi bi-check-circle-fill me-1"></i>Completed
+                        <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</span>
+                    </button>
+                    <button class="works-tab @(WorkTab == "ANNUAL"    ? "active" : "")" @onclick='() => SetWorkTab("ANNUAL")'>
+                        <i class="bi bi-arrow-repeat me-1"></i>Annual Works
+                        <span class="works-tab-count">@AllWorks.Count(w => w.IsAnnualContract)</span>
+                    </button>
+                </div>
+            </div>
+
+            @* ── Filter Bar + Table ── *@
+            <div class="content-card">
+                <div class="works-filter-bar">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+
+                        <div class="filter-search-wrap">
+                            <i class="bi bi-search filter-search-icon"></i>
+                            <input type="search" class="filter-search-input"
+                                   placeholder="Search file no…"
+                                   @bind="WorkSearchText" @bind:after="FilterWorks" />
+                        </div>
+
+                        <div class="filter-group">
+                            <span class="filter-group-label">JEN</span>
+                            <select class="filter-select-sm" @bind="WorkJenFilter" @bind:after="FilterWorks">
+                                <option value="">All</option>
+                                @foreach (var e in JenEngineers)
+                                { <option value="@e.EngineerId">@e.Name</option> }
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <span class="filter-group-label">AEN</span>
+                            <select class="filter-select-sm" @bind="WorkAenFilter" @bind:after="FilterWorks">
+                                <option value="">All</option>
+                                @foreach (var e in AenEngineers)
+                                { <option value="@e.EngineerId">@e.Name</option> }
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <span class="filter-group-label"><i class="bi bi-calendar3 me-1"></i>Year</span>
+                            <select class="filter-select-sm" @bind="WorkYearFilter" @bind:after="FilterWorks">
+                                <option value="">All</option>
+                                @foreach (var y in WorkYears)
+                                { <option value="@y">@y</option> }
+                            </select>
+                        </div>
+
+                        <button class="btn-filter-reset" @onclick="ResetWorkFilters">
+                            <i class="bi bi-arrow-clockwise"></i> Reset
+                        </button>
+
+                        <span class="works-total-badge">
+                            <i class="bi bi-briefcase-fill me-1"></i>@FilteredWorks.Count works
+                        </span>
+
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <div class="export-btn-group">
+                                <button class="btn-export btn-export-csv"  title="Download CSV"   @onclick="ExportCsv">
+                                    <i class="bi bi-filetype-csv"></i>
+                                </button>
+                                <button class="btn-export btn-export-xlsx" title="Download Excel"  @onclick="ExportExcel">
+                                    <i class="bi bi-file-earmark-excel-fill"></i>
+                                </button>
+                                <button class="btn-export btn-export-pdf"  title="Download PDF"   @onclick="ExportPdf">
+                                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Works Table ── *@
+                <div class="table-responsive table-scroll-body">
+                    <table class="table table-hover bda-table mb-0">
+                        <thead class="thead-sticky">
+                            <tr>
+                                <th style="width:44px">#</th>
+                                <th style="min-width:260px">Work Name / File No.</th>
+                                <th style="min-width:110px">Status</th>
+                                <th style="min-width:130px">Progress</th>
+                                <th style="min-width:140px">Financial</th>
+                                <th style="min-width:200px">Latest Remark</th>
+                                <th class="text-center" style="min-width:80px">View</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!FilteredWorks.Any())
+                            {
+                                <tr><td colspan="7" class="text-center text-muted py-5">No records found.</td></tr>
+                            }
+                            @{ int wi = 1; }
+                            @foreach (var w in FilteredWorks)
+                            {
+                                var lr = LatestRemarksMap.GetValueOrDefault(w.WorkId);
+                                var remarkText = lr?.Content ?? (string.IsNullOrWhiteSpace(w.Remarks) ? null : w.Remarks);
+                                bool isExpanded = ExpandedWorkIds.Contains(w.WorkId);
+                                <tr class="@(isExpanded ? "work-row-expanded" : "")">
+                                    <td class="text-muted fw-medium">@(wi++)</td>
+                                    <td>
+                                        <div class="d-flex align-items-start gap-1">
+                                            <div class="flex-grow-1 min-w-0">
+                                                <div class="fw-semibold work-name-cell">@w.WorkName</div>
+                                                <div class="d-flex align-items-center gap-1 mt-1">
+                                                    @if (w.WorkCode != null)
+                                                    { <span class="work-fileno"><i class="bi bi-folder2 me-1"></i>@w.WorkCode</span> }
+                                                    @if (w.IsAnnualContract)
+                                                    { <span class="badge badge-annual">Annual</span> }
+                                                </div>
+                                            </div>
+                                            <button class="btn-expand-row" title="@(isExpanded ? "Collapse" : "Quick view")"
+                                                    @onclick="() => ToggleExpand(w.WorkId)">
+                                                <i class="bi bi-chevron-@(isExpanded ? "up" : "down")"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill status-pill-@w.Status.ToString().ToLower()">
+                                            <span class="status-dot"></span>@StatusLabel(w.Status)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (w.ProgressPercent.HasValue)
+                                        {
+                                            <div class="mini-prog-wrap">
+                                                <div style="font-size:0.68rem;color:#6b7280;margin-bottom:1px">Phys</div>
+                                                <div class="mini-prog-bar">
+                                                    <div class="mini-prog-fill @ProgColor(w.ProgressPercent.Value)"
+                                                         style="width:@(w.ProgressPercent)%"></div>
+                                                </div>
+                                                <span class="mini-prog-label">@w.ProgressPercent%</span>
+                                            </div>
+                                        }
+                                        @if (w.FinancialProgressPercent.HasValue)
+                                        {
+                                            <div class="mini-prog-wrap mt-1">
+                                                <div style="font-size:0.68rem;color:#6b7280;margin-bottom:1px">Fin</div>
+                                                <div class="mini-prog-bar">
+                                                    <div class="mini-prog-fill mini-prog-fill-fin"
+                                                         style="width:@(w.FinancialProgressPercent)%"></div>
+                                                </div>
+                                                <span class="mini-prog-label">@w.FinancialProgressPercent%</span>
+                                            </div>
+                                        }
+                                        @if (!w.ProgressPercent.HasValue && !w.FinancialProgressPercent.HasValue)
+                                        { <span class="text-muted">—</span> }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column gap-1" style="font-size:0.8rem">
+                                            <span class="text-muted">Sanc: <strong class="text-dark">@(w.SanctionedAmount.HasValue ? $"₹{w.SanctionedAmount:N2}L" : "—")</strong></span>
+                                            <span class="text-muted">WO: <strong class="text-dark">@(w.AgreementAmount.HasValue ? $"₹{w.AgreementAmount:N2}L" : "—")</strong></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (remarkText != null)
+                                        {
+                                            <div class="remark-preview">@remarkText</div>
+                                            <button class="btn-read-more" @onclick="() => OpenDetail(w)">Read more</button>
+                                        }
+                                        else { <span class="text-muted">—</span> }
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="action-btn action-btn-view" title="View Details"
+                                                @onclick="() => OpenDetail(w)">
+                                            <i class="bi bi-eye-fill"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                @if (isExpanded)
+                                {
+                                    <tr class="work-expand-row">
+                                        <td colspan="7">
+                                            <div class="work-expand-panel">
+                                                <div class="expand-fullname">@w.WorkName</div>
+                                                <div class="expand-grid">
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Physical Progress</div>
+                                                        <div class="expand-val">
+                                                            @if (w.ProgressPercent.HasValue)
+                                                            {
+                                                                <div class="progress-pill mb-1">
+                                                                    <div class="progress-fill @ProgColor(w.ProgressPercent.Value)"
+                                                                         style="width:@(w.ProgressPercent)%"></div>
+                                                                </div>
+                                                                <text>@w.ProgressPercent%</text>
+                                                            }
+                                                            else { <text>—</text> }
+                                                        </div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Financial Progress</div>
+                                                        <div class="expand-val">
+                                                            @if (w.FinancialProgressPercent.HasValue)
+                                                            {
+                                                                <div class="progress-pill mb-1">
+                                                                    <div class="progress-fill progress-fill-fin"
+                                                                         style="width:@(w.FinancialProgressPercent)%"></div>
+                                                                </div>
+                                                                <text>@w.FinancialProgressPercent%</text>
+                                                            }
+                                                            else { <text>—</text> }
+                                                        </div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Sanctioned Amount</div>
+                                                        <div class="expand-val">@(w.SanctionedAmount.HasValue ? $"₹ {w.SanctionedAmount:N2} L" : "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Workorder Amount</div>
+                                                        <div class="expand-val">@(w.AgreementAmount.HasValue ? $"₹ {w.AgreementAmount:N2} L" : "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Contractor</div>
+                                                        <div class="expand-val">@(w.ContractorName ?? "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Start Date</div>
+                                                        <div class="expand-val">@(w.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Expected Completion</div>
+                                                        <div class="expand-val">@(w.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Category</div>
+                                                        <div class="expand-val">@(w.Category?.CategoryName ?? "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Fund Source</div>
+                                                        <div class="expand-val">@(w.FundSource?.SourceName ?? "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Flags</div>
+                                                        <div class="expand-val">
+                                                            @if (w.IsCmBudget)       { <span class="badge bg-warning text-dark me-1" style="font-size:0.65rem">CM Budget</span> }
+                                                            @if (w.IsScheme)         { <span class="badge bg-success me-1" style="font-size:0.65rem">Scheme</span> }
+                                                            @if (w.IsAnnualContract) { <span class="badge bg-info text-dark me-1" style="font-size:0.65rem">Annual</span> }
+                                                            @if (!w.IsCmBudget && !w.IsScheme && !w.IsAnnualContract) { <text>—</text> }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @if (lr != null)
+                                                {
+                                                    <div class="expand-remark">
+                                                        <i class="bi bi-chat-left-text me-1 text-primary"></i>
+                                                        <span class="text-muted" style="font-size:0.72rem">
+                                                            @lr.AuthorName · @lr.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                                        </span>
+                                                        <div class="expand-remark-text">@lr.Content</div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        @* ══ SETTINGS ════════════════════════════════════════════ *@
+        if (Section == "settings")
+        {
+            <div class="row g-3 align-items-start">
+
+                @* ── Budget Head Master panel ── *@
+                <div class="col-12">
+                    <div class="settings-panel-card">
+                        <button class="settings-panel-trigger" @onclick="() => ShowBudgetPanel = !ShowBudgetPanel">
+                            <i class="bi bi-wallet2 text-success"></i>
+                            <span class="fw-semibold">Budget Head Master</span>
+                            <span class="badge bg-secondary ms-1">@BudgetHeads.Count</span>
+                            <i class="bi bi-chevron-@(ShowBudgetPanel ? "up" : "down") ms-auto"></i>
+                        </button>
+
+                        @if (ShowBudgetPanel)
+                        {
+                            <div class="settings-panel-body">
+
+                                @* ── Select existing or Add New ── *@
+                                <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                                    <div class="filter-group" style="min-width:260px">
+                                        <span class="filter-group-label"><i class="bi bi-wallet2 me-1"></i>Budget Head</span>
+                                        <select class="filter-select-sm" value="@SelectedBudgetHeadId"
+                                                @onchange="OnBudgetHeadSelected">
+                                            <option value="0">— Select to edit —</option>
+                                            @foreach (var bh in BudgetHeads)
+                                            { <option value="@bh.BudgetHeadId">@bh.BudgetCode — @bh.BudgetName</option> }
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-sm btn-success px-3" @onclick="OpenAddBudget">
+                                        <i class="bi bi-plus-lg me-1"></i>Add New Budget Head
+                                    </button>
+                                </div>
+
+                                @* ── Budget Heads table ── *@
+                                <div class="table-responsive">
+                                    <table class="table table-sm bda-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Budget Name</th>
+                                                <th class="text-end">Available Fund (₹ L)</th>
+                                                <th class="text-end">Amount Spent (₹ L)</th>
+                                                <th class="text-end">Remaining (₹ L)</th>
+                                                <th>Updated By</th>
+                                                <th>Updated At</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (!BudgetHeads.Any())
+                                            {
+                                                <tr><td colspan="8" class="text-center text-muted py-3">No budget heads added yet.</td></tr>
+                                            }
+                                            @foreach (var bh in BudgetHeads)
+                                            {
+                                                <tr>
+                                                    <td><span class="work-fileno">@bh.BudgetCode</span></td>
+                                                    <td class="fw-medium">@bh.BudgetName</td>
+                                                    <td class="text-end">@bh.AvailableFund.ToString("N2")</td>
+                                                    <td class="text-end">@bh.AmountSpent.ToString("N2")</td>
+                                                    <td class="text-end @(bh.RemainingAmount < 0 ? "text-danger fw-bold" : "text-success fw-bold")">
+                                                        @bh.RemainingAmount.ToString("N2")
+                                                    </td>
+                                                    <td class="text-muted" style="font-size:0.82rem">@(bh.UpdatedBy ?? "—")</td>
+                                                    <td class="text-muted" style="font-size:0.82rem">
+                                                        @(bh.UpdatedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <button class="action-btn action-btn-edit" title="Edit"
+                                                                @onclick="() => OpenEditBudget(bh)">
+                                                            <i class="bi bi-pencil-fill"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        @if (BudgetHeads.Any())
+                                        {
+                                            <tfoot class="table-light fw-bold">
+                                                <tr>
+                                                    <td colspan="2">Total</td>
+                                                    <td class="text-end">@BudgetHeads.Sum(b => b.AvailableFund).ToString("N2")</td>
+                                                    <td class="text-end">@BudgetHeads.Sum(b => b.AmountSpent).ToString("N2")</td>
+                                                    <td class="text-end @(BudgetHeads.Sum(b => b.RemainingAmount) < 0 ? "text-danger" : "text-success")">
+                                                        @BudgetHeads.Sum(b => b.RemainingAmount).ToString("N2")
+                                                    </td>
+                                                    <td colspan="3"></td>
+                                                </tr>
+                                            </tfoot>
+                                        }
+                                    </table>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+        }
+
+        } @* end else IsLoading *@
+    </main>
+</div>
+
+@* ══ WORK DETAIL MODAL ══════════════════════════════════════════ *@
+@if (ShowDetailModal && DetailWork != null)
+{
+    <div class="modal-overlay" @onclick="CloseDetail">
+        <div class="modal-box modal-box-lg" style="max-width:680px" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <div>
+                    <h6 class="mb-0 fw-bold">Work Details</h6>
+                    @if (DetailWork.WorkCode != null)
+                    { <small class="text-muted">📁 @DetailWork.WorkCode</small> }
+                </div>
+                <button class="btn-close" @onclick="CloseDetail"></button>
+            </div>
+            <div class="modal-box-body">
+
+                <p class="detail-section-title">Basic Information</p>
+                <div class="detail-grid">
+                    <div><div class="detail-label">Work Name</div><div class="detail-val">@DetailWork.WorkName</div></div>
+                    <div><div class="detail-label">File No.</div><div class="detail-val">@(DetailWork.WorkCode ?? "—")</div></div>
+                    <div>
+                        <div class="detail-label">Category</div>
+                        <div class="detail-val">@(DetailWork.Category?.CategoryName ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Status</div>
+                        <div class="detail-val">
+                            <span class="status-pill status-pill-@DetailWork.Status.ToString().ToLower()">
+                                <span class="status-dot"></span>@StatusLabel(DetailWork.Status)
+                            </span>
+                        </div>
+                    </div>
+                    <div><div class="detail-label">Department</div><div class="detail-val">@(DetailWork.Department ?? "—")</div></div>
+                    <div><div class="detail-label">Fund Source</div><div class="detail-val">@(DetailWork.FundSource?.SourceName ?? "—")</div></div>
+                    <div>
+                        <div class="detail-label">Flags</div>
+                        <div class="detail-val">
+                            @if (DetailWork.IsScheme)         { <span class="badge bg-primary me-1" style="font-size:0.65rem">Scheme</span> }
+                            @if (DetailWork.IsCmBudget)       { <span class="badge bg-success me-1" style="font-size:0.65rem">CM Budget</span> }
+                            @if (DetailWork.IsAnnualContract) { <span class="badge bg-info text-dark me-1" style="font-size:0.65rem">Annual</span> }
+                            @if (!DetailWork.IsScheme && !DetailWork.IsCmBudget && !DetailWork.IsAnnualContract) { <text>—</text> }
+                        </div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Engineers</p>
+                <div class="detail-grid">
+                    <div><div class="detail-label">JEN</div><div class="detail-val">@(DetailWork.AssignedJen?.Name ?? "—")</div></div>
+                    <div><div class="detail-label">AEN</div><div class="detail-val">@(DetailWork.AssignedAen?.Name ?? "—")</div></div>
+                    <div><div class="detail-label">XEN</div><div class="detail-val">@(DetailWork.AssignedExen?.Name ?? "—")</div></div>
+                </div>
+
+                <p class="detail-section-title">Financial</p>
+                <div class="detail-grid">
+                    <div><div class="detail-label">Sanctioned Amount (L)</div><div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div></div>
+                    <div><div class="detail-label">Workorder Amount (L)</div><div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div></div>
+                    <div><div class="detail-label">Expenditure (L)</div><div class="detail-val">@(DetailWork.Expenditure?.ToString("N2") ?? "—")</div></div>
+                </div>
+
+                <p class="detail-section-title">Progress &amp; Dates</p>
+                <div class="detail-grid">
+                    <div><div class="detail-label">Start Date</div><div class="detail-val">@(DetailWork.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div></div>
+                    <div><div class="detail-label">Expected Completion</div><div class="detail-val">@(DetailWork.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div></div>
+                    <div>
+                        <div class="detail-label">Physical Progress</div>
+                        <div class="detail-val">
+                            @if (DetailWork.ProgressPercent.HasValue)
+                            {
+                                <div class="progress-pill mb-1">
+                                    <div class="progress-fill @ProgColor(DetailWork.ProgressPercent.Value)"
+                                         style="width:@(DetailWork.ProgressPercent)%"></div>
+                                </div>
+                                @($"{DetailWork.ProgressPercent}%")
+                            }
+                            else { <text>—</text> }
+                        </div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Financial Progress</div>
+                        <div class="detail-val">
+                            @if (DetailWork.FinancialProgressPercent.HasValue)
+                            {
+                                <div class="progress-pill mb-1">
+                                    <div class="progress-fill progress-fill-fin"
+                                         style="width:@(DetailWork.FinancialProgressPercent)%"></div>
+                                </div>
+                                @($"{DetailWork.FinancialProgressPercent}%")
+                            }
+                            else { <text>—</text> }
+                        </div>
+                    </div>
+                </div>
+
+                <p class="detail-section-title">Contractor</p>
+                <div class="detail-grid">
+                    <div><div class="detail-label">Contractor Name</div><div class="detail-val">@(DetailWork.ContractorName ?? "—")</div></div>
+                    <div><div class="detail-label">Mobile</div><div class="detail-val">@(DetailWork.ContractorMobile ?? "—")</div></div>
+                    <div><div class="detail-label">Location</div><div class="detail-val">@(DetailWork.Location ?? "—")</div></div>
+                    <div><div class="detail-label">Ward No.</div><div class="detail-val">@(DetailWork.WardNumber ?? "—")</div></div>
+                </div>
+
+                @{
+                    var detailLr = LatestRemarksMap.GetValueOrDefault(DetailWork.WorkId);
+                }
+                @if (detailLr != null)
+                {
+                    <p class="detail-section-title">Latest Remark</p>
+                    <div class="expand-remark">
+                        <i class="bi bi-chat-left-text me-1 text-primary"></i>
+                        <span class="text-muted" style="font-size:0.72rem">
+                            @detailLr.AuthorName · @detailLr.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                        </span>
+                        <div class="expand-remark-text">@detailLr.Content</div>
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ BUDGET HEAD MODAL ══════════════════════════════════════════ *@
+@if (ShowBudgetModal)
+{
+    <div class="modal-overlay" @onclick="CloseBudgetModal">
+        <div class="modal-box" style="max-width:520px" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold">@(EditingBudget.BudgetHeadId == 0 ? "Add Budget Head" : "Edit Budget Head")</h6>
+                <button class="btn-close" @onclick="CloseBudgetModal"></button>
+            </div>
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(BudgetError))
+                {
+                    <div class="alert alert-danger py-2">@BudgetError</div>
+                }
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Budget Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="e.g. BH001"
+                               @bind="EditingBudget.BudgetCode" maxlength="50" />
+                        <div class="form-text">Alphanumeric, unique</div>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold">Budget Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="Budget head name"
+                               @bind="EditingBudget.BudgetName" maxlength="200" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Available Fund (₹ Lakhs)</label>
+                        <input type="number" class="form-control" step="0.01" min="0"
+                               @bind="EditingBudget.AvailableFund"
+                               @bind:after="RecomputeRemaining" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Amount Spent (₹ Lakhs)</label>
+                        <input type="number" class="form-control" step="0.01" min="0"
+                               @bind="EditingBudget.AmountSpent"
+                               @bind:after="RecomputeRemaining" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Remaining (₹ Lakhs)</label>
+                        <input type="number" class="form-control" step="0.01"
+                               @bind="EditingBudget.RemainingAmount" readonly
+                               style="background:#f8f9fa" />
+                        <div class="form-text">Auto-computed</div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end mt-3">
+                    <button class="btn btn-secondary btn-sm px-3" @onclick="CloseBudgetModal">Cancel</button>
+                    <button class="btn btn-success btn-sm px-3" @onclick="SaveBudget">
+                        <i class="bi bi-check-lg me-1"></i>Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ PASSWORD CHANGE MODAL ══════════════════════════════════════ *@
+@if (ShowPasswordModal)
+{
+    <div class="modal-overlay" @onclick="ClosePasswordModal">
+        <div class="modal-box" style="max-width:400px" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold">Change Password</h6>
+                <button class="btn-close" @onclick="ClosePasswordModal"></button>
+            </div>
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(PwdError))   { <div class="alert alert-danger py-2">@PwdError</div> }
+                @if (!string.IsNullOrEmpty(PwdSuccess)) { <div class="alert alert-success py-2">@PwdSuccess</div> }
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Current Password</label>
+                    <input type="password" class="form-control" @bind="PwdCurrent" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">New Password</label>
+                    <input type="password" class="form-control" @bind="PwdNew" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Confirm New Password</label>
+                    <input type="password" class="form-control" @bind="PwdConfirm" />
+                </div>
+                <div class="d-flex gap-2 justify-content-end">
+                    <button class="btn btn-secondary btn-sm px-3" @onclick="ClosePasswordModal">Cancel</button>
+                    <button class="btn btn-primary btn-sm px-3" @onclick="ChangePassword">
+                        <i class="bi bi-check2 me-1"></i>Update Password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    string Section   = "works";
+    bool   IsLoading = true;
+    int?   CurrentEngineerId = null;
+    string CurrentUserName   = "";
+
+    // ── Data ─────────────────────────────────────────────────────
+    List<Work>         AllWorks      = [];
+    List<Work>         FilteredWorks = [];
+    List<Engineer>     JenEngineers  = [];
+    List<Engineer>     AenEngineers  = [];
+    List<BudgetHead>   BudgetHeads   = [];
+    Dictionary<int, WorkRemark> LatestRemarksMap = [];
+    HashSet<int>       ExpandedWorkIds = [];
+
+    // ── Works filters ─────────────────────────────────────────────
+    string WorkTab        = "ONGOING";
+    string WorkSearchText = "";
+    string WorkJenFilter  = "";
+    string WorkAenFilter  = "";
+    string WorkYearFilter = "";
+
+    List<string> WorkYears => AllWorks
+        .Where(w => w.StartDate.HasValue)
+        .Select(w => FinYear(w.StartDate!.Value))
+        .Distinct().OrderByDescending(y => y).ToList();
+
+    static string FinYear(DateOnly d) =>
+        d.Month >= 4
+            ? $"{d.Year}-{d.Year + 1 - 2000:D2}"
+            : $"{d.Year - 1}-{d.Year - 2000:D2}";
+
+    // ── Detail modal ─────────────────────────────────────────────
+    bool  ShowDetailModal = false;
+    Work? DetailWork      = null;
+
+    void OpenDetail(Work w) { DetailWork = w; ShowDetailModal = true; }
+    void CloseDetail()      { ShowDetailModal = false; DetailWork = null; }
+
+    // ── Budget Head settings ──────────────────────────────────────
+    bool       ShowBudgetPanel    = true;
+    bool       ShowBudgetModal    = false;
+    BudgetHead EditingBudget      = new();
+    string     BudgetError        = "";
+    int        SelectedBudgetHeadId = 0;
+
+    void OnBudgetHeadSelected(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            var bh = BudgetHeads.FirstOrDefault(b => b.BudgetHeadId == id);
+            if (bh != null) OpenEditBudget(bh);
+        }
+        SelectedBudgetHeadId = 0;
+    }
+
+    void OpenAddBudget()
+    {
+        EditingBudget = new BudgetHead();
+        BudgetError = "";
+        ShowBudgetModal = true;
+    }
+
+    void OpenEditBudget(BudgetHead bh)
+    {
+        EditingBudget = new BudgetHead
+        {
+            BudgetHeadId   = bh.BudgetHeadId,
+            BudgetCode     = bh.BudgetCode,
+            BudgetName     = bh.BudgetName,
+            AvailableFund  = bh.AvailableFund,
+            AmountSpent    = bh.AmountSpent,
+            RemainingAmount = bh.RemainingAmount,
+            IsActive       = bh.IsActive
+        };
+        BudgetError = "";
+        ShowBudgetModal = true;
+    }
+
+    void CloseBudgetModal()
+    {
+        ShowBudgetModal = false;
+        SelectedBudgetHeadId = 0;
+    }
+
+    void RecomputeRemaining()
+    {
+        EditingBudget.RemainingAmount = EditingBudget.AvailableFund - EditingBudget.AmountSpent;
+    }
+
+    async Task SaveBudget()
+    {
+        BudgetError = "";
+        if (string.IsNullOrWhiteSpace(EditingBudget.BudgetCode))
+        { BudgetError = "Budget Code is required."; return; }
+        if (string.IsNullOrWhiteSpace(EditingBudget.BudgetName))
+        { BudgetError = "Budget Name is required."; return; }
+
+        EditingBudget.RemainingAmount = EditingBudget.AvailableFund - EditingBudget.AmountSpent;
+        EditingBudget.UpdatedBy  = CurrentUserName;
+        EditingBudget.UpdatedAt  = DateTime.UtcNow;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        if (EditingBudget.BudgetHeadId == 0)
+        {
+            EditingBudget.CreatedAt = DateTime.UtcNow;
+            db.BudgetHeads.Add(EditingBudget);
+        }
+        else
+        {
+            var existing = await db.BudgetHeads.FindAsync(EditingBudget.BudgetHeadId);
+            if (existing == null) { BudgetError = "Record not found."; return; }
+            existing.BudgetCode      = EditingBudget.BudgetCode;
+            existing.BudgetName      = EditingBudget.BudgetName;
+            existing.AvailableFund   = EditingBudget.AvailableFund;
+            existing.AmountSpent     = EditingBudget.AmountSpent;
+            existing.RemainingAmount = EditingBudget.RemainingAmount;
+            existing.UpdatedBy       = EditingBudget.UpdatedBy;
+            existing.UpdatedAt       = EditingBudget.UpdatedAt;
+        }
+
+        try
+        {
+            await db.SaveChangesAsync();
+            BudgetHeads = await db.BudgetHeads.OrderBy(b => b.BudgetCode).ToListAsync();
+            CloseBudgetModal();
+        }
+        catch (Exception ex)
+        {
+            BudgetError = ex.InnerException?.Message.Contains("Duplicate") == true
+                ? "Budget Code already exists."
+                : "Save failed. Please try again.";
+        }
+    }
+
+    // ── Password change ───────────────────────────────────────────
+    bool   ShowPasswordModal = false;
+    string PwdCurrent = "";
+    string PwdNew     = "";
+    string PwdConfirm = "";
+    string PwdError   = "";
+    string PwdSuccess = "";
+
+    void OpenPasswordModal()  { PwdCurrent = PwdNew = PwdConfirm = PwdError = PwdSuccess = ""; ShowPasswordModal = true; }
+    void ClosePasswordModal() { ShowPasswordModal = false; }
+
+    async Task ChangePassword()
+    {
+        PwdError = PwdSuccess = "";
+        if (string.IsNullOrWhiteSpace(PwdNew)) { PwdError = "New password cannot be empty."; return; }
+        if (PwdNew != PwdConfirm)              { PwdError = "Passwords do not match."; return; }
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var eng = await db.Engineers.FindAsync(CurrentEngineerId);
+        if (eng == null) { PwdError = "User not found."; return; }
+        if (!BCrypt.Net.BCrypt.Verify(PwdCurrent, eng.PasswordHash)) { PwdError = "Current password is incorrect."; return; }
+
+        eng.PasswordHash = BCrypt.Net.BCrypt.HashPassword(PwdNew);
+        eng.UpdatedAt    = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        PwdSuccess = "Password updated successfully.";
+    }
+
+    string SectionTitle => Section switch
+    {
+        "works"    => "Works",
+        "settings" => "Settings — Budget Master",
+        _          => ""
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth  = await AuthState!;
+        var idStr = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (idStr is not null && int.TryParse(idStr, out var id))
+            CurrentEngineerId = id;
+        CurrentUserName = auth.User.Identity?.Name ?? "";
+
+        await LoadAll();
+        IsLoading = false;
+    }
+
+    async Task LoadAll()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        AllWorks = await db.Works
+            .Where(w => !w.IsDeleted)
+            .Include(w => w.Category)
+            .Include(w => w.FundSource)
+            .Include(w => w.AssignedJen)
+            .Include(w => w.AssignedAen)
+            .Include(w => w.AssignedExen)
+            .OrderByDescending(w => w.CreatedAt)
+            .ToListAsync();
+
+        var allEng    = await db.Engineers.Where(e => !e.IsDeleted).OrderBy(e => e.Name).ToListAsync();
+        JenEngineers  = allEng.Where(e => e.Role == EngineerRole.JEN).ToList();
+        AenEngineers  = allEng.Where(e => e.Role == EngineerRole.AEN).ToList();
+
+        var allRemarks = await db.WorkRemarks.OrderBy(r => r.CreatedAt).ToListAsync();
+        LatestRemarksMap = allRemarks
+            .GroupBy(r => r.WorkId)
+            .ToDictionary(g => g.Key, g => g.Last());
+
+        BudgetHeads = await db.BudgetHeads.OrderBy(b => b.BudgetCode).ToListAsync();
+
+        FilterWorks();
+    }
+
+    void SetWorkTab(string tab) { WorkTab = tab; FilterWorks(); }
+
+    void ToggleExpand(int id)
+    {
+        if (!ExpandedWorkIds.Remove(id)) ExpandedWorkIds.Add(id);
+    }
+
+    void FilterWorks()
+    {
+        var q = AllWorks.AsEnumerable();
+
+        q = WorkTab switch
+        {
+            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract),
+            "COMPLETED" => q.Where(w => w.Status == WorkStatus.COMPLETED),
+            "ANNUAL"    => q.Where(w => w.IsAnnualContract),
+            _           => q
+        };
+
+        if (!string.IsNullOrWhiteSpace(WorkSearchText))
+        {
+            var t = WorkSearchText.Trim();
+            q = q.Where(w => w.WorkCode != null && w.WorkCode.Contains(t, StringComparison.OrdinalIgnoreCase)
+                          || w.WorkName.Contains(t, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrEmpty(WorkJenFilter) && int.TryParse(WorkJenFilter, out var jenId))
+            q = q.Where(w => w.AssignedJenId == jenId);
+        if (!string.IsNullOrEmpty(WorkAenFilter) && int.TryParse(WorkAenFilter, out var aenId))
+            q = q.Where(w => w.AssignedAenId == aenId);
+        if (!string.IsNullOrEmpty(WorkYearFilter))
+            q = q.Where(w => w.StartDate.HasValue && FinYear(w.StartDate!.Value) == WorkYearFilter);
+
+        FilteredWorks = q.ToList();
+    }
+
+    void ResetWorkFilters()
+    {
+        WorkSearchText = WorkJenFilter = WorkAenFilter = WorkYearFilter = "";
+        FilterWorks();
+    }
+
+    // ── Export ────────────────────────────────────────────────────
+    private static readonly string[] ExportHeaders =
+        { "#", "File No.", "Work Name", "Status", "Progress(%)", "Fin Progress(%)",
+          "Sanctioned(L)", "WO Amt(L)", "JEN", "AEN", "XEN", "Contractor", "Location", "Remarks" };
+
+    private string LatestRemark(int workId) =>
+        LatestRemarksMap.TryGetValue(workId, out var r) ? r.Content : "";
+
+    private static string CsvVal(string? s) =>
+        s == null ? "" : $"\"{s.Replace("\"", "\"\"")}\"";
+
+    private async Task ExportCsv()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine(string.Join(",", ExportHeaders));
+        int i = 1;
+        foreach (var w in FilteredWorks)
+            sb.AppendLine(
+                $"{i++},{CsvVal(w.WorkCode)},{CsvVal(w.WorkName)},{w.Status}," +
+                $"{w.ProgressPercent ?? 0},{w.FinancialProgressPercent ?? 0}," +
+                $"{w.SanctionedAmount ?? 0},{w.AgreementAmount ?? 0}," +
+                $"{CsvVal(w.AssignedJen?.Name)},{CsvVal(w.AssignedAen?.Name)},{CsvVal(w.AssignedExen?.Name)}," +
+                $"{CsvVal(w.ContractorName)},{CsvVal(w.Location)},{CsvVal(LatestRemark(w.WorkId))}");
+        await JS.InvokeVoidAsync("bdaDownloadText", $"BDA_Works_{DateTime.Now:yyyyMMdd}.csv", sb.ToString());
+    }
+
+    private async Task ExportExcel()
+    {
+        using var wb = new ClosedXML.Excel.XLWorkbook();
+        var ws = wb.AddWorksheet("Works");
+        for (int col = 0; col < ExportHeaders.Length; col++)
+        {
+            var cell = ws.Cell(1, col + 1);
+            cell.Value = ExportHeaders[col];
+            cell.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#16a34a");
+            cell.Style.Font.Bold  = true;
+            cell.Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+        }
+        int row = 2, idx = 1;
+        foreach (var w in FilteredWorks)
+        {
+            ws.Cell(row, 1).Value  = idx++;
+            ws.Cell(row, 2).Value  = w.WorkCode ?? "";
+            ws.Cell(row, 3).Value  = w.WorkName;
+            ws.Cell(row, 4).Value  = w.Status.ToString();
+            ws.Cell(row, 5).Value  = (double)(w.ProgressPercent ?? 0);
+            ws.Cell(row, 6).Value  = (double)(w.FinancialProgressPercent ?? 0);
+            ws.Cell(row, 7).Value  = (double)(w.SanctionedAmount ?? 0);
+            ws.Cell(row, 8).Value  = (double)(w.AgreementAmount ?? 0);
+            ws.Cell(row, 9).Value  = w.AssignedJen?.Name  ?? "";
+            ws.Cell(row, 10).Value = w.AssignedAen?.Name  ?? "";
+            ws.Cell(row, 11).Value = w.AssignedExen?.Name ?? "";
+            ws.Cell(row, 12).Value = w.ContractorName     ?? "";
+            ws.Cell(row, 13).Value = w.Location           ?? "";
+            ws.Cell(row, 14).Value = LatestRemark(w.WorkId);
+            row++;
+        }
+        ws.Columns().AdjustToContents();
+        foreach (var c in ws.ColumnsUsed()) if (c.Width > 50) c.Width = 50;
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await JS.InvokeVoidAsync("bdaDownloadBase64",
+            $"BDA_Works_{DateTime.Now:yyyyMMdd}.xlsx",
+            Convert.ToBase64String(ms.ToArray()));
+    }
+
+    private async Task ExportPdf()
+    {
+        var headers = new[] { "#", "File No.", "Work Name", "Status", "Phys%", "Fin%", "Sanc(L)", "WO(L)", "JEN", "AEN", "Contractor", "Remarks" };
+        int idx = 1;
+        var rows = FilteredWorks.Select(w => new string[]
+        {
+            (idx++).ToString(), w.WorkCode ?? "", w.WorkName, w.Status.ToString(),
+            $"{w.ProgressPercent ?? 0}%", $"{w.FinancialProgressPercent ?? 0}%",
+            $"{w.SanctionedAmount ?? 0:F2}", $"{w.AgreementAmount ?? 0:F2}",
+            w.AssignedJen?.Name ?? "", w.AssignedAen?.Name ?? "",
+            w.ContractorName ?? "", LatestRemark(w.WorkId)
+        }).ToArray();
+        await JS.InvokeVoidAsync("bdaExportPdf", "BDA Works Report", "Bharatpur Development Authority", headers, rows);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    static string StatusLabel(WorkStatus s) => s switch
+    {
+        WorkStatus.ONGOING   => "Ongoing",
+        WorkStatus.COMPLETED => "Completed",
+        WorkStatus.STALLED   => "Stalled",
+        WorkStatus.CANCELLED => "Cancelled",
+        _                    => s.ToString()
+    };
+
+    static string ProgColor(decimal pct) => pct switch
+    {
+        >= 100 => "prog-green",
+        >= 75  => "prog-blue",
+        >= 40  => "prog-yellow",
+        _      => "prog-red"
+    };
+}

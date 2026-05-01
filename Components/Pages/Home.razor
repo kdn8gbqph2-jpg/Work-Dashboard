@@ -24,7 +24,11 @@
         if (user.Identity?.IsAuthenticated == true)
         {
             var role = user.FindFirst(ClaimTypes.Role)?.Value;
-            Nav.NavigateTo(role == "ADMIN" ? "/admin" : "/jen", forceLoad: true);
+            Nav.NavigateTo(role switch {
+                "ADMIN"       => "/admin",
+                "ACCOUNTANT"  => "/accountant",
+                _             => "/jen"
+            }, forceLoad: true);
         }
     }
 }

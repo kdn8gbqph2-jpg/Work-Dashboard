@@ -131,9 +131,12 @@ app.MapPost("/account/login", async (
     var principal = new ClaimsPrincipal(identity);
     await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-    return engineer.Role == EngineerRole.ADMIN
-        ? Results.Redirect("/admin")
-        : Results.Redirect("/jen");
+    return engineer.Role switch
+    {
+        EngineerRole.ADMIN       => Results.Redirect("/admin"),
+        EngineerRole.ACCOUNTANT  => Results.Redirect("/accountant"),
+        _                        => Results.Redirect("/jen")
+    };
 
 }).DisableAntiforgery();
 
