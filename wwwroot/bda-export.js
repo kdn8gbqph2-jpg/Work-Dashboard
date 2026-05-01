@@ -23,28 +23,55 @@ window.bdaDownloadText = function (filename, text) {
 };
 
 window.bdaExportPdf = function (title, subtitle, headers, rows) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const generated = new Date().toLocaleString('en-IN');
+    const date      = new Date().toISOString().slice(0, 10);
 
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.text(title, 14, 14);
+    const thCells = headers.map(h =>
+        `<th>${h}</th>`).join('');
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(subtitle, 14, 20);
-    doc.text('Generated: ' + new Date().toLocaleString('en-IN'), 14, 25);
+    const trRows = rows.map((row, i) =>
+        `<tr class="${i % 2 === 1 ? 'alt' : ''}">${row.map(c => `<td>${c ?? ''}</td>`).join('')}</tr>`
+    ).join('');
 
-    doc.autoTable({
-        head: [headers],
-        body: rows,
-        startY: 30,
-        styles: { fontSize: 6.5, cellPadding: 1.8, overflow: 'linebreak' },
-        headStyles: { fillColor: [255, 140, 0], textColor: 255, fontStyle: 'bold', fontSize: 7 },
-        alternateRowStyles: { fillColor: [255, 251, 240] },
-        columnStyles: { 2: { cellWidth: 55 } },
-        margin: { left: 10, right: 10 }
-    });
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+  body { margin: 0; font-size: 8pt; color: #111; }
+  .report-header { margin-bottom: 10px; }
+  .report-header h2 { margin: 0 0 2px; font-size: 14pt; }
+  .report-header p  { margin: 0; font-size: 8pt; color: #555; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: #FF8C00; color: #fff; font-weight: 700;
+    padding: 5px 6px; text-align: left; font-size: 7.5pt;
+    border: 1px solid #e06000;
+  }
+  td { padding: 4px 6px; border: 1px solid #e0e0e0; vertical-align: top; font-size: 7.5pt; }
+  tr.alt td { background: #FFF8F0; }
+  @media print { button { display: none; } }
+</style>
+</head>
+<body>
+<div class="report-header">
+  <h2>${title}</h2>
+  <p>${subtitle}</p>
+  <p>Generated: ${generated}</p>
+</div>
+<table>
+  <thead><tr>${thCells}</tr></thead>
+  <tbody>${trRows}</tbody>
+</table>
+</body>
+</html>`;
 
-    doc.save(title.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 800);
 };
