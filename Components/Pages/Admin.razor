@@ -78,29 +78,47 @@
             @* ══ OVERVIEW ══════════════════════════════════════ *@
             if (Section == "overview")
             {
+                @* ── Year filter ── *@
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="text-muted fw-medium" style="font-size:0.82rem">Financial Year:</span>
+                    <select class="filter-select-sm" style="min-width:110px"
+                            @bind="OverviewYear" @bind:after="StateHasChanged">
+                        <option value="ALL">All Years</option>
+                        @foreach (var yr in OverviewYears)
+                        { <option value="@yr">@yr</option> }
+                    </select>
+                </div>
+
+                var ov = OverviewWorks;
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-warning">
                             <div class="stat-label">Total Works</div>
-                            <div class="stat-value">@AllWorks.Count</div>
+                            <div class="stat-value">@ov.Count</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-primary">
                             <div class="stat-label">Ongoing</div>
-                            <div class="stat-value text-primary">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</div>
+                            <div class="stat-value text-primary">@ov.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-success">
                             <div class="stat-label">Completed</div>
-                            <div class="stat-value text-success">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</div>
+                            <div class="stat-value text-success">@ov.Count(w => w.Status == WorkStatus.COMPLETED)</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-info">
                             <div class="stat-label">Annual Contract</div>
-                            <div class="stat-value text-info">@AllWorks.Count(w => w.IsAnnualContract)</div>
+                            <div class="stat-value text-info">@ov.Count(w => w.IsAnnualContract)</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="stat-card border-start border-4 border-warning">
+                            <div class="stat-label">Total Workorder Amount</div>
+                            <div class="stat-value" style="font-size:1.4rem">₹ @ov.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                 </div>
@@ -109,9 +127,9 @@
                         <div class="content-card p-3">
                             <h6 class="fw-bold mb-3">Category Wise Summary</h6>
                             <table class="table table-sm bda-table mb-0">
-                                <thead><tr><th>Category</th><th class="text-end">Amount (लाखों)</th><th class="text-center">Count</th></tr></thead>
+                                <thead><tr><th>Category</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
                                 <tbody>
-                                    @foreach (var g in AllWorks.GroupBy(w => w.Category?.CategoryCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
+                                    @foreach (var g in ov.GroupBy(w => w.Category?.CategoryCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
                                     {
                                         <tr>
                                             <td>@g.Key</td>
@@ -127,9 +145,9 @@
                         <div class="content-card p-3">
                             <h6 class="fw-bold mb-3">Fund Source Summary</h6>
                             <table class="table table-sm bda-table mb-0">
-                                <thead><tr><th>Fund Source</th><th class="text-end">Amount (लाखों)</th><th class="text-center">Count</th></tr></thead>
+                                <thead><tr><th>Fund Source</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
                                 <tbody>
-                                    @foreach (var g in AllWorks.GroupBy(w => w.FundSource?.SourceCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
+                                    @foreach (var g in ov.GroupBy(w => w.FundSource?.SourceCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
                                     {
                                         <tr>
                                             <td>@g.Key</td>
@@ -137,6 +155,50 @@
                                             <td class="text-center"><span class="badge bg-secondary">@g.Count()</span></td>
                                         </tr>
                                     }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="content-card p-3">
+                            <h6 class="fw-bold mb-3">Scheme / Non-Scheme Summary</h6>
+                            <table class="table table-sm bda-table mb-0">
+                                <thead><tr><th>Type</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
+                                <tbody>
+                                    @{ var scheme    = ov.Where(w =>  w.IsScheme).ToList();
+                                       var nonScheme = ov.Where(w => !w.IsScheme).ToList(); }
+                                    <tr>
+                                        <td><span class="badge bg-success me-1">Scheme</span></td>
+                                        <td class="text-end">@scheme.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
+                                        <td class="text-center"><span class="badge bg-secondary">@scheme.Count</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-light text-dark border me-1">Non-Scheme</span></td>
+                                        <td class="text-end">@nonScheme.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
+                                        <td class="text-center"><span class="badge bg-secondary">@nonScheme.Count</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="content-card p-3">
+                            <h6 class="fw-bold mb-3">CM Budget / Non-CM Budget Summary</h6>
+                            <table class="table table-sm bda-table mb-0">
+                                <thead><tr><th>Type</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
+                                <tbody>
+                                    @{ var cmBudget    = ov.Where(w =>  w.IsCmBudget).ToList();
+                                       var nonCmBudget = ov.Where(w => !w.IsCmBudget).ToList(); }
+                                    <tr>
+                                        <td><span class="badge bg-warning text-dark me-1">CM Budget</span></td>
+                                        <td class="text-end">@cmBudget.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
+                                        <td class="text-center"><span class="badge bg-secondary">@cmBudget.Count</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-light text-dark border me-1">Non-CM Budget</span></td>
+                                        <td class="text-end">@nonCmBudget.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
+                                        <td class="text-center"><span class="badge bg-secondary">@nonCmBudget.Count</span></td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -208,55 +270,24 @@
             @* ══ WORKS ══════════════════════════════════════════ *@
             if (Section == "works")
             {
-                @* ── Stat Cards ── *@
-                <div class="row g-3 mb-3">
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-blue">
-                                <i class="bi bi-briefcase-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Total Works</div>
-                                <div class="wstat-value">@AllWorks.Count</div>
-                                <div class="wstat-sub">All works</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-orange">
-                                <i class="bi bi-hourglass-split"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Ongoing Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING)</div>
-                                <div class="wstat-sub">In Progress</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-green">
-                                <i class="bi bi-check-circle-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Completed Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</div>
-                                <div class="wstat-sub">Completed</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-red">
-                                <i class="bi bi-exclamation-circle-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Delayed Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.STALLED)</div>
-                                <div class="wstat-sub">Delayed</div>
-                            </div>
-                        </div>
+                @* ── Work Tabs ── *@
+                <div class="content-card p-0 mb-3">
+                    <div class="works-tab-bar">
+                        <span class="works-tab-total">
+                            <i class="bi bi-briefcase-fill me-1"></i>Total <strong>@AllWorks.Count</strong>
+                        </span>
+                        <button class="works-tab @(WorkTab == "ONGOING"   ? "active" : "")" @onclick='() => SetWorkTab("ONGOING")'>
+                            <i class="bi bi-hourglass-split me-1"></i>Ongoing
+                            <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</span>
+                        </button>
+                        <button class="works-tab @(WorkTab == "COMPLETED" ? "active" : "")" @onclick='() => SetWorkTab("COMPLETED")'>
+                            <i class="bi bi-check-circle-fill me-1"></i>Completed
+                            <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</span>
+                        </button>
+                        <button class="works-tab @(WorkTab == "ANNUAL"    ? "active" : "")" @onclick='() => SetWorkTab("ANNUAL")'>
+                            <i class="bi bi-arrow-repeat me-1"></i>Annual Works
+                            <span class="works-tab-count">@AllWorks.Count(w => w.IsAnnualContract)</span>
+                        </button>
                     </div>
                 </div>
 
@@ -271,18 +302,6 @@
                                 <input type="search" class="filter-search-input"
                                        placeholder="Search file no…"
                                        @bind="WorkSearchText" @bind:after="FilterWorks" />
-                            </div>
-
-                            @* Status *@
-                            <div class="filter-group">
-                                <span class="filter-group-label">Status</span>
-                                <select class="filter-select-sm"
-                                        @bind="WorkFilter" @bind:after="FilterWorks">
-                                    <option value="ALL">All</option>
-                                    <option value="ONGOING">Ongoing</option>
-                                    <option value="COMPLETED">Completed</option>
-                                    <option value="STALLED">Stalled</option>
-                                </select>
                             </div>
 
                             @* JEN *@
@@ -318,27 +337,15 @@
                                 </select>
                             </div>
 
-                            @* Annual *@
+                            @* Year Filter *@
                             <div class="filter-group">
-                                <span class="filter-group-label">Annual</span>
+                                <span class="filter-group-label"><i class="bi bi-calendar3 me-1"></i>Year</span>
                                 <select class="filter-select-sm"
-                                        @bind="WorkAnnualFilter" @bind:after="FilterWorks">
-                                    <option value="ALL">All</option>
-                                    <option value="YES">Annual Only</option>
-                                    <option value="NO">Non-Annual</option>
+                                        @bind="WorkYearFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    @foreach (var y in WorkYears)
+                                    { <option value="@y">@y</option> }
                                 </select>
-                            </div>
-
-                            @* Date Range *@
-                            <div class="filter-daterange">
-                                <i class="bi bi-calendar3 text-muted me-1"></i>
-                                <input type="date" class="filter-date-input" placeholder="Start date"
-                                       value="@WorkStartDateFilter"
-                                       @onchange="@((ChangeEventArgs e) => { WorkStartDateFilter = e?.Value?.ToString() ?? ""; FilterWorks(); })" />
-                                <span class="text-muted mx-1">—</span>
-                                <input type="date" class="filter-date-input" placeholder="End date"
-                                       value="@WorkEndDateFilter"
-                                       @onchange="@((ChangeEventArgs e) => { WorkEndDateFilter = e?.Value?.ToString() ?? ""; FilterWorks(); })" />
                             </div>
 
                             @* Reset *@
@@ -346,9 +353,17 @@
                                 <i class="bi bi-arrow-clockwise"></i> Reset
                             </button>
 
+                            @* Works Count *@
+                            <span class="works-total-badge">
+                                <i class="bi bi-briefcase-fill me-1"></i>@FilteredWorks.Count works
+                            </span>
+
                             @* Export + Add Work *@
                             <div class="ms-auto d-flex align-items-center gap-2">
                                 <div class="export-btn-group">
+                                    <button class="btn-export btn-export-customize" title="Customize report columns" @onclick="() => ShowColPicker = true">
+                                        <i class="bi bi-layout-three-columns"></i>
+                                    </button>
                                     <button class="btn-export btn-export-csv" title="Download CSV" @onclick="ExportCsv">
                                         <i class="bi bi-filetype-csv"></i>
                                     </button>
@@ -374,10 +389,7 @@
                                     <th style="width:44px">#</th>
                                     <th style="min-width:260px">Work Name / File No.</th>
                                     <th style="min-width:110px">Status</th>
-                                    <th style="min-width:90px">Progress</th>
-                                    <th style="min-width:110px">JEN</th>
-                                    <th style="min-width:100px">AEN</th>
-                                    <th style="min-width:100px">XEN</th>
+                                    <th style="min-width:130px">Progress</th>
                                     <th style="min-width:220px">Latest Remark</th>
                                     <th style="min-width:120px">Files</th>
                                     <th class="text-center" style="min-width:100px">Actions</th>
@@ -386,7 +398,7 @@
                             <tbody>
                                 @if (!FilteredWorks.Any())
                                 {
-                                    <tr><td colspan="10" class="text-center text-muted py-5">No records found.</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted py-5">No records found.</td></tr>
                                 }
                                 @{ int wi = 1; }
                                 @foreach (var w in FilteredWorks)
@@ -426,6 +438,7 @@
                                             @if (w.ProgressPercent.HasValue)
                                             {
                                                 <div class="mini-prog-wrap">
+                                                    <div style="font-size:0.68rem;color:#6b7280;margin-bottom:1px">Phys</div>
                                                     <div class="mini-prog-bar">
                                                         <div class="mini-prog-fill @ProgColor(w.ProgressPercent.Value)"
                                                              style="width:@(w.ProgressPercent)%"></div>
@@ -433,11 +446,20 @@
                                                     <span class="mini-prog-label">@w.ProgressPercent%</span>
                                                 </div>
                                             }
-                                            else { <span class="text-muted">—</span> }
+                                            @if (w.FinancialProgressPercent.HasValue)
+                                            {
+                                                <div class="mini-prog-wrap mt-1">
+                                                    <div style="font-size:0.68rem;color:#6b7280;margin-bottom:1px">Fin</div>
+                                                    <div class="mini-prog-bar">
+                                                        <div class="mini-prog-fill mini-prog-fill-fin"
+                                                             style="width:@(w.FinancialProgressPercent)%"></div>
+                                                    </div>
+                                                    <span class="mini-prog-label">@w.FinancialProgressPercent%</span>
+                                                </div>
+                                            }
+                                            @if (!w.ProgressPercent.HasValue && !w.FinancialProgressPercent.HasValue)
+                                            { <span class="text-muted">—</span> }
                                         </td>
-                                        <td><span class="eng-name">@(w.AssignedJen?.Name ?? "—")</span></td>
-                                        <td><span class="eng-name">@(w.AssignedAen?.Name ?? "—")</span></td>
-                                        <td><span class="eng-name">@(w.AssignedExen?.Name ?? "—")</span></td>
                                         <td>
                                             @if (remarkText != null)
                                             {
@@ -483,7 +505,7 @@
                                     @if (isExpanded)
                                     {
                                         <tr class="work-expand-row">
-                                            <td colspan="10">
+                                            <td colspan="7">
                                                 <div class="work-expand-panel">
                                                     <div class="expand-fullname">@w.WorkName</div>
                                                     <div class="expand-grid">
@@ -503,10 +525,20 @@
                                                         </div>
                                                         <div class="expand-item">
                                                             <div class="expand-label">Financial Progress</div>
-                                                            <div class="expand-val">@(w.FinancialProgressPercent.HasValue ? $"{w.FinancialProgressPercent}%" : "—")</div>
+                                                            <div class="expand-val">
+                                                                @if (w.FinancialProgressPercent.HasValue)
+                                                                {
+                                                                    <div class="progress-pill mb-1">
+                                                                        <div class="progress-fill progress-fill-fin"
+                                                                             style="width:@(w.FinancialProgressPercent)%"></div>
+                                                                    </div>
+                                                                    <text>@w.FinancialProgressPercent%</text>
+                                                                }
+                                                                else { <text>—</text> }
+                                                            </div>
                                                         </div>
                                                         <div class="expand-item">
-                                                            <div class="expand-label">Agreement Amount</div>
+                                                            <div class="expand-label">Workorder Amount</div>
                                                             <div class="expand-val">@(w.AgreementAmount.HasValue ? $"₹ {w.AgreementAmount:N2} L" : "—")</div>
                                                         </div>
                                                         <div class="expand-item">
@@ -528,6 +560,15 @@
                                                         <div class="expand-item">
                                                             <div class="expand-label">Fund Source</div>
                                                             <div class="expand-val">@(w.FundSource?.SourceName ?? w.FundSource?.SourceCode ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Flags</div>
+                                                            <div class="expand-val">
+                                                                @if (w.IsCmBudget)       { <span class="badge bg-warning text-dark me-1" style="font-size:0.65rem">CM Budget</span> }
+                                                                @if (w.IsScheme)         { <span class="badge bg-success me-1" style="font-size:0.65rem">Scheme</span> }
+                                                                @if (w.IsAnnualContract) { <span class="badge bg-info text-dark me-1" style="font-size:0.65rem">Annual</span> }
+                                                                @if (!w.IsCmBudget && !w.IsScheme && !w.IsAnnualContract) { <text>—</text> }
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     @if (lr != null)
@@ -805,6 +846,7 @@
                             <option value="JEN">JEN (Junior Engineer)</option>
                             <option value="AEN">AEN (Asst. Engineer)</option>
                             <option value="XEN">XEN (Exec. Engineer)</option>
+                            <option value="ACCOUNTANT">Accountant</option>
                             <option value="ADMIN">ADMIN</option>
                         </select>
                     </div>
@@ -979,7 +1021,7 @@
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.SanctionedAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Agreement Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">Workorder Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.AgreementAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
@@ -1078,10 +1120,15 @@
                             }
                             <div class="remark-add-box">
                                 @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
-                                <textarea class="form-control form-control-sm" rows="2"
-                                          placeholder="Add a remark…"
-                                          @bind="NewRemarkText"></textarea>
-                                <div class="d-flex justify-content-end mt-1">
+                                <textarea id="adminRemarkInput" class="form-control form-control-sm @(HindiMode ? "hindi-input-on" : "")" rows="2"
+                                          placeholder="@(HindiMode ? "Add a remark… (type in English, e.g. 'namaste' → नमस्ते)" : "Add a remark…")"
+                                          @bind="NewRemarkText"
+                                          @bind:event="oninput"></textarea>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <button type="button" class="btn btn-sm btn-link p-0 hindi-toggle @(HindiMode ? "active" : "")"
+                                            @onclick="ToggleHindiMode" title="Toggle Hindi typing">
+                                        <i class="bi bi-translate me-1"></i>@(HindiMode ? "हिन्दी ON" : "Type in हिन्दी")
+                                    </button>
                                     <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
                                         <i class="bi bi-send-fill me-1"></i>Add Remark
                                     </button>
@@ -1184,7 +1231,7 @@
                         <div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Agreement Amount (लाखों)</div>
+                        <div class="detail-label">Workorder Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
@@ -1219,7 +1266,17 @@
                     </div>
                     <div>
                         <div class="detail-label">Financial Progress</div>
-                        <div class="detail-val">@(DetailWork.FinancialProgressPercent.HasValue ? $"{DetailWork.FinancialProgressPercent}%" : "—")</div>
+                        <div class="detail-val">
+                            @if (DetailWork.FinancialProgressPercent.HasValue)
+                            {
+                                <div class="progress-pill mb-1">
+                                    <div class="progress-fill progress-fill-fin"
+                                         style="width:@(DetailWork.FinancialProgressPercent)%"></div>
+                                </div>
+                                @($"{DetailWork.FinancialProgressPercent}%")
+                            }
+                            else { <text>—</text> }
+                        </div>
                     </div>
                     <div>
                         <div class="detail-label">Actual Completion</div>
@@ -1293,6 +1350,55 @@
     </div>
 }
 
+@* ══ REPORT COLUMN PICKER ═════════════════════════════════════ *@
+@if (ShowColPicker)
+{
+    <div class="modal-overlay" @onclick="() => ShowColPicker = false">
+        <div class="modal-box col-picker-modal" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-layout-three-columns me-1"></i>Customize Report Columns
+                </h6>
+                <button class="btn-close" @onclick="() => ShowColPicker = false"></button>
+            </div>
+            <div class="modal-box-body">
+                <p class="text-muted mb-3" style="font-size:0.82rem">
+                    Select the columns to include in CSV, Excel, and PDF exports.
+                    <strong>Work Name</strong> and <strong>Status</strong> are always included.
+                </p>
+                <div class="col-picker-grid">
+                    @foreach (var col in AllCols)
+                    {
+                        var isRequired = col.Required;
+                        var isChecked  = _selectedCols.Contains(col.Key);
+                        <label class="col-picker-item @(isRequired ? "col-picker-locked" : "")">
+                            <input type="checkbox"
+                                   checked="@isChecked"
+                                   disabled="@isRequired"
+                                   @onchange="e => {
+                                       if ((bool)e.Value!) _selectedCols.Add(col.Key);
+                                       else _selectedCols.Remove(col.Key);
+                                   }" />
+                            <span class="col-picker-label">@col.Label</span>
+                            @if (isRequired)
+                            {
+                                <span class="col-picker-badge">required</span>
+                            }
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="modal-box-footer">
+                <small class="text-muted me-auto">@_selectedCols.Count of @AllCols.Length columns selected</small>
+                <button class="btn btn-secondary btn-sm" @onclick="() => ShowColPicker = false">Cancel</button>
+                <button class="btn btn-primary btn-sm" @onclick="SaveColSelection">
+                    <i class="bi bi-check2 me-1"></i>Apply &amp; Save
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @* ══ FILES MODAL ══════════════════════════════════════════════ *@
 <Work_Dashboard.Components.Shared.WorkFilesModal
     Work="@FilesModalWork"
@@ -1342,14 +1448,36 @@
     }
 
     // ── Works filter ──────────────────────────────────────────
+    string WorkTab             = "ONGOING";   // ONGOING | COMPLETED | ANNUAL
     string WorkFilter          = "ALL";
     string WorkSearchText      = "";
     string WorkJenFilter       = "";
     string WorkAenFilter       = "";
     string WorkXenFilter       = "";
     string WorkAnnualFilter    = "ALL";
-    string WorkStartDateFilter = "";
-    string WorkEndDateFilter   = "";
+    string WorkYearFilter      = "";
+
+    List<string> WorkYears => AllWorks
+        .Where(w => w.StartDate.HasValue)
+        .Select(w => FinYear(w.StartDate!.Value))
+        .Distinct().OrderByDescending(y => y).ToList();
+
+    // ── Overview year filter ──────────────────────────────────
+    string OverviewYear = "ALL";
+
+    List<string> OverviewYears => AllWorks
+        .Where(w => w.StartDate.HasValue)
+        .Select(w => FinYear(w.StartDate!.Value))
+        .Distinct().OrderByDescending(y => y).ToList();
+
+    static string FinYear(DateOnly d) =>
+        d.Month >= 4
+            ? $"{d.Year}-{d.Year + 1 - 2000:D2}"
+            : $"{d.Year - 1}-{d.Year - 2000:D2}";
+
+    List<Work> OverviewWorks => OverviewYear == "ALL"
+        ? AllWorks
+        : AllWorks.Where(w => w.StartDate.HasValue && FinYear(w.StartDate!.Value) == OverviewYear).ToList();
 
     // ── User modal ────────────────────────────────────────────
     bool      ShowUserModal            = false;
@@ -1525,16 +1653,22 @@
         FilterWorks();
     }
 
+    void SetWorkTab(string tab)
+    {
+        WorkTab = tab;
+        FilterWorks();
+    }
+
     void FilterWorks()
     {
         var q = AllWorks.AsEnumerable();
 
-        // Status filter
-        q = WorkFilter switch
+        // Tab filter (primary scope)
+        q = WorkTab switch
         {
-            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING),
+            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract),
             "COMPLETED" => q.Where(w => w.Status == WorkStatus.COMPLETED),
-            "STALLED"   => q.Where(w => w.Status == WorkStatus.STALLED),
+            "ANNUAL"    => q.Where(w => w.IsAnnualContract),
             _           => q
         };
 
@@ -1557,22 +1691,18 @@
         if (WorkAnnualFilter == "YES") q = q.Where(w => w.IsAnnualContract);
         if (WorkAnnualFilter == "NO")  q = q.Where(w => !w.IsAnnualContract);
 
-        // Date range filters
-        if (!string.IsNullOrWhiteSpace(WorkStartDateFilter) && DateOnly.TryParse(WorkStartDateFilter, out var startDate))
-            q = q.Where(w => w.StartDate >= startDate);
-        if (!string.IsNullOrWhiteSpace(WorkEndDateFilter) && DateOnly.TryParse(WorkEndDateFilter, out var endDate))
-            q = q.Where(w => w.ExpectedCompletion <= endDate || w.ActualCompletion <= endDate);
+        // Financial year filter
+        if (!string.IsNullOrEmpty(WorkYearFilter))
+            q = q.Where(w => w.StartDate.HasValue && FinYear(w.StartDate!.Value) == WorkYearFilter);
 
         FilteredWorks = q.ToList();
     }
 
     void ResetWorkFilters()
     {
-        WorkFilter = "ALL";
         WorkSearchText = "";
         WorkJenFilter = WorkAenFilter = WorkXenFilter = "";
-        WorkAnnualFilter = "ALL";
-        WorkStartDateFilter = WorkEndDateFilter = "";
+        WorkYearFilter = "";
         FilterWorks();
     }
 
@@ -1968,10 +2098,11 @@
 
     static string RoleBadge(EngineerRole r) => r switch
     {
-        EngineerRole.ADMIN => "bg-danger",
-        EngineerRole.XEN   => "bg-dark",
-        EngineerRole.AEN   => "bg-secondary",
-        _                  => "bg-primary"
+        EngineerRole.ADMIN       => "bg-danger",
+        EngineerRole.XEN         => "bg-dark",
+        EngineerRole.AEN         => "bg-secondary",
+        EngineerRole.ACCOUNTANT  => "bg-success",
+        _                        => "bg-primary"
     };
 
     static string CatBadge(string? code) => (code ?? "").ToUpperInvariant() switch

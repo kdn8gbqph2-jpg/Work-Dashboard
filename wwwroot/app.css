@@ -332,6 +332,7 @@ h1:focus {
 .progress-fill-green  { background: #22c55e; }
 .progress-fill-orange { background: #f97316; }
 .progress-fill-red    { background: #ef4444; }
+.progress-fill-fin    { background: #6366f1; }  /* indigo — financial progress */
 
 /* Remarks cell — clamp to 3 lines */
 .remarks-cell {
@@ -490,6 +491,26 @@ h1:focus {
     color: #868e96;
     margin-bottom: 0.2rem;
     font-style: italic;
+}
+
+/* Hindi typing toggle */
+.hindi-toggle {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-decoration: none;
+    transition: color 0.12s;
+}
+.hindi-toggle:hover { color: #f97316; }
+.hindi-toggle.active { color: #f97316; font-weight: 600; }
+
+.hindi-input-on {
+    background-color: #fff8ec;
+    border-color: #f97316;
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15);
+}
+.hindi-input-on:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 0.2rem rgba(249, 115, 22, 0.25);
 }
 
 .remark-add-box {
@@ -723,9 +744,102 @@ h1:focus {
 .btn-export:hover  { opacity: 0.85; transform: translateY(-1px); }
 .btn-export:active { transform: translateY(0); }
 
-.btn-export-csv  { background: #6b7280; }
-.btn-export-xlsx { background: #16a34a; }
-.btn-export-pdf  { background: #dc2626; }
+.btn-export-csv       { background: #6b7280; }
+.btn-export-xlsx      { background: #16a34a; }
+.btn-export-pdf       { background: #dc2626; }
+.btn-export-customize { background: #7c3aed; }
+
+/* ── Works tab bar ───────────────────────────────────────── */
+.works-tab-bar {
+    display: flex;
+    border-bottom: 2px solid #e9ecef;
+    padding: 0 0.5rem;
+}
+.works-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.25rem;
+    border: none;
+    background: none;
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    white-space: nowrap;
+}
+.works-tab:hover { color: #f97316; background: #fff8f0; }
+.works-tab.active {
+    color: #f97316;
+    border-bottom-color: #f97316;
+    font-weight: 700;
+}
+.works-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9ecef;
+    color: #495057;
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 24px;
+}
+.works-tab.active .works-tab-count {
+    background: #f97316;
+    color: #fff;
+}
+.works-tab-total {
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 1rem 0.85rem 0.75rem;
+    color: #374151;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-right: 1px solid #e9ecef;
+    margin-right: 0.25rem;
+    white-space: nowrap;
+}
+.works-tab-total strong { color: #f97316; margin-left: 0.2rem; }
+
+/* ── Column picker modal ─────────────────────────────────── */
+.col-picker-modal { max-width: 560px; }
+
+.col-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 1rem;
+}
+
+.col-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.83rem;
+    cursor: pointer;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    transition: background 0.12s;
+}
+.col-picker-item:hover { background: #f1f5f9; }
+.col-picker-item input[type="checkbox"] { flex-shrink: 0; accent-color: #0d6efd; }
+
+.col-picker-locked { opacity: 0.65; cursor: default; }
+.col-picker-locked:hover { background: transparent; }
+
+.col-picker-badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    background: #e2e8f0;
+    color: #64748b;
+    border-radius: 3px;
+    padding: 1px 5px;
+    white-space: nowrap;
+}
 
 /* ── Filter search box ───────────────────────────────────── */
 .filter-search-wrap {
@@ -950,6 +1064,19 @@ h1:focus {
     padding: 0.85rem 1.1rem;
     border-bottom: 1px solid #f0f0f0;
     background: #fafafa;
+}
+
+.works-total-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .filter-group {
@@ -1261,6 +1388,7 @@ h1:focus {
 .mini-prog-fill.progress-fill-green  { background: #16a34a; }
 .mini-prog-fill.progress-fill-orange { background: #f59e0b; }
 .mini-prog-fill.progress-fill-red    { background: #dc2626; }
+.mini-prog-fill-fin                  { height: 100%; border-radius: 3px; background: #6366f1; }
 .mini-prog-label {
     font-size: 0.72rem;
     font-weight: 600;

@@ -282,7 +282,7 @@
                                                         <div class="expand-val">@(w.FinancialProgressPercent.HasValue ? $"{w.FinancialProgressPercent}%" : "—")</div>
                                                     </div>
                                                     <div class="expand-item">
-                                                        <div class="expand-label">Agreement Amount</div>
+                                                        <div class="expand-label">Workorder Amount</div>
                                                         <div class="expand-val">@(w.AgreementAmount.HasValue ? $"₹ {w.AgreementAmount:N2} L" : "—")</div>
                                                     </div>
                                                     <div class="expand-item">
@@ -398,7 +398,7 @@
                         <div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Agreement Amount (लाखों)</div>
+                        <div class="detail-label">Workorder Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
@@ -512,10 +512,15 @@
                 }
                 <div class="remark-add-box">
                     @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
-                    <textarea class="form-control form-control-sm" rows="2"
-                              placeholder="Add a remark…"
-                              @bind="NewRemarkText"></textarea>
-                    <div class="d-flex justify-content-end mt-1">
+                    <textarea id="jenRemarkInput" class="form-control form-control-sm @(HindiMode ? "hindi-input-on" : "")" rows="2"
+                              placeholder="@(HindiMode ? "Add a remark… (type in English, e.g. 'namaste' → नमस्ते)" : "Add a remark…")"
+                              @bind="NewRemarkText"
+                              @bind:event="oninput"></textarea>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <button type="button" class="btn btn-sm btn-link p-0 hindi-toggle @(HindiMode ? "active" : "")"
+                                @onclick="ToggleHindiMode" title="Toggle Hindi typing">
+                            <i class="bi bi-translate me-1"></i>@(HindiMode ? "हिन्दी ON" : "Type in हिन्दी")
+                        </button>
                         <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
                             <i class="bi bi-send-fill me-1"></i>Add Remark
                         </button>
@@ -631,7 +636,7 @@
                         <input type="number" step="0.01" class="form-control" @bind="NewWork.SanctionedAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Agreement Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">Workorder Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="NewWork.AgreementAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
@@ -800,7 +805,7 @@
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.SanctionedAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Agreement Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">Workorder Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.AgreementAmount" />
                     </div>
                     <div class="col-md-4 mb-3">

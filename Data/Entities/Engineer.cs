@@ -1,6 +1,6 @@
 namespace Work_Dashboard.Data.Entities;
 
-public enum EngineerRole { ADMIN, JEN, AEN, XEN }
+public enum EngineerRole { ADMIN, JEN, AEN, XEN, ACCOUNTANT }
 
 public class Engineer
 {
