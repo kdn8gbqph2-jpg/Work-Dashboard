@@ -1,5 +1,8 @@
 // BDA Export Helpers
 
+window.bdaGetItem = function (key) { return localStorage.getItem(key); };
+window.bdaSetItem = function (key, value) { localStorage.setItem(key, value); };
+
 window.bdaDownloadBase64 = function (filename, base64) {
     const bytes = atob(base64);
     const ab = new ArrayBuffer(bytes.length);

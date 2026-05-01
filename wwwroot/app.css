@@ -723,9 +723,45 @@ h1:focus {
 .btn-export:hover  { opacity: 0.85; transform: translateY(-1px); }
 .btn-export:active { transform: translateY(0); }
 
-.btn-export-csv  { background: #6b7280; }
-.btn-export-xlsx { background: #16a34a; }
-.btn-export-pdf  { background: #dc2626; }
+.btn-export-csv       { background: #6b7280; }
+.btn-export-xlsx      { background: #16a34a; }
+.btn-export-pdf       { background: #dc2626; }
+.btn-export-customize { background: #7c3aed; }
+
+/* ── Column picker modal ─────────────────────────────────── */
+.col-picker-modal { max-width: 560px; }
+
+.col-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 1rem;
+}
+
+.col-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.83rem;
+    cursor: pointer;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    transition: background 0.12s;
+}
+.col-picker-item:hover { background: #f1f5f9; }
+.col-picker-item input[type="checkbox"] { flex-shrink: 0; accent-color: #0d6efd; }
+
+.col-picker-locked { opacity: 0.65; cursor: default; }
+.col-picker-locked:hover { background: transparent; }
+
+.col-picker-badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    background: #e2e8f0;
+    color: #64748b;
+    border-radius: 3px;
+    padding: 1px 5px;
+    white-space: nowrap;
+}
 
 /* ── Filter search box ───────────────────────────────────── */
 .filter-search-wrap {

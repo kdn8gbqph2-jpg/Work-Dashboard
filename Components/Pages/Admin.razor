@@ -349,6 +349,9 @@
                             @* Export + Add Work *@
                             <div class="ms-auto d-flex align-items-center gap-2">
                                 <div class="export-btn-group">
+                                    <button class="btn-export btn-export-customize" title="Customize report columns" @onclick="() => ShowColPicker = true">
+                                        <i class="bi bi-layout-three-columns"></i>
+                                    </button>
                                     <button class="btn-export btn-export-csv" title="Download CSV" @onclick="ExportCsv">
                                         <i class="bi bi-filetype-csv"></i>
                                     </button>
@@ -1287,6 +1290,55 @@
                 <button class="btn btn-secondary btn-sm" @onclick="ClosePasswordModal">Close</button>
                 <button class="btn btn-primary btn-sm" @onclick="ChangePassword">
                     <i class="bi bi-check2 me-1"></i>Update Password
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* ══ REPORT COLUMN PICKER ═════════════════════════════════════ *@
+@if (ShowColPicker)
+{
+    <div class="modal-overlay" @onclick="() => ShowColPicker = false">
+        <div class="modal-box col-picker-modal" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-layout-three-columns me-1"></i>Customize Report Columns
+                </h6>
+                <button class="btn-close" @onclick="() => ShowColPicker = false"></button>
+            </div>
+            <div class="modal-box-body">
+                <p class="text-muted mb-3" style="font-size:0.82rem">
+                    Select the columns to include in CSV, Excel, and PDF exports.
+                    <strong>Work Name</strong> and <strong>Status</strong> are always included.
+                </p>
+                <div class="col-picker-grid">
+                    @foreach (var col in AllCols)
+                    {
+                        var isRequired = col.Required;
+                        var isChecked  = _selectedCols.Contains(col.Key);
+                        <label class="col-picker-item @(isRequired ? "col-picker-locked" : "")">
+                            <input type="checkbox"
+                                   checked="@isChecked"
+                                   disabled="@isRequired"
+                                   @onchange="e => {
+                                       if ((bool)e.Value!) _selectedCols.Add(col.Key);
+                                       else _selectedCols.Remove(col.Key);
+                                   }" />
+                            <span class="col-picker-label">@col.Label</span>
+                            @if (isRequired)
+                            {
+                                <span class="col-picker-badge">required</span>
+                            }
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="modal-box-footer">
+                <small class="text-muted me-auto">@_selectedCols.Count of @AllCols.Length columns selected</small>
+                <button class="btn btn-secondary btn-sm" @onclick="() => ShowColPicker = false">Cancel</button>
+                <button class="btn btn-primary btn-sm" @onclick="SaveColSelection">
+                    <i class="bi bi-check2 me-1"></i>Apply &amp; Save
                 </button>
             </div>
         </div>
