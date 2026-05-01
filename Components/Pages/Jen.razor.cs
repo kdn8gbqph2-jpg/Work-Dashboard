@@ -14,13 +14,13 @@ public partial class Jen
     {
         "#", "File No.", "Work Name", "Status",
         "Progress (%)", "Sanctioned Amt (Lakhs)",
-        "JEN", "AEN", "XEN", "Contractor", "Location"
+        "JEN", "AEN", "XEN", "Contractor", "Location", "Remarks"
     };
 
     private static readonly string[] PdfHeaders =
     {
         "#", "File No.", "Work Name", "Status",
-        "Progress%", "Amt(L)", "JEN", "AEN", "XEN", "Contractor"
+        "Progress%", "Amt(L)", "JEN", "AEN", "XEN", "Contractor", "Remarks"
     };
 
     private async Task ExportCsv()
@@ -33,7 +33,8 @@ public partial class Jen
                 $"{i++},{CsvVal(w.WorkCode)},{CsvVal(w.WorkName)}," +
                 $"{w.Status},{w.ProgressPercent ?? 0},{w.SanctionedAmount ?? 0}," +
                 $"{CsvVal(w.AssignedJen?.Name)},{CsvVal(w.AssignedAen?.Name)}," +
-                $"{CsvVal(w.AssignedExen?.Name)},{CsvVal(w.ContractorName)},{CsvVal(w.Location)}");
+                $"{CsvVal(w.AssignedExen?.Name)},{CsvVal(w.ContractorName)},{CsvVal(w.Location)}," +
+                $"{CsvVal(w.Remarks)}");
         await JS.InvokeVoidAsync("bdaDownloadText", $"BDA_Works_{DateTime.Now:yyyyMMdd}.csv", sb.ToString());
     }
 
@@ -67,10 +68,12 @@ public partial class Jen
             ws.Cell(row, 9).Value  = w.AssignedExen?.Name ?? "";
             ws.Cell(row, 10).Value = w.ContractorName      ?? "";
             ws.Cell(row, 11).Value = w.Location            ?? "";
+            ws.Cell(row, 12).Value = w.Remarks             ?? "";
             row++;
         }
 
         ws.Columns().AdjustToContents();
+        ws.Column(12).Width = 40; // Remarks column wider
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
         await JS.InvokeVoidAsync("bdaDownloadBase64",
@@ -91,7 +94,8 @@ public partial class Jen
             w.AssignedJen?.Name  ?? "",
             w.AssignedAen?.Name  ?? "",
             w.AssignedExen?.Name ?? "",
-            w.ContractorName     ?? ""
+            w.ContractorName     ?? "",
+            w.Remarks            ?? ""
         }).ToArray();
 
         await JS.InvokeVoidAsync("bdaExportPdf",
