@@ -4,6 +4,7 @@
 @inject IDbContextFactory<BdaDbContext> DbFactory
 @inject NavigationManager Nav
 @inject Work_Dashboard.Services.AuditService AuditSvc
+@inject IJSRuntime JS
 @using Microsoft.EntityFrameworkCore
 @using Work_Dashboard.Data
 @using Work_Dashboard.Data.Entities
@@ -104,14 +105,25 @@
                         <button class="btn-filter-reset" @onclick="ResetFilters">
                             <i class="bi bi-arrow-clockwise"></i> Reset
                         </button>
-                        @if (CurrentRole == "XEN" || CurrentRole == "AEN")
-                        {
-                            <div class="ms-auto">
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <div class="export-btn-group">
+                                <button class="btn-export btn-export-csv" title="Download CSV" @onclick="ExportCsv">
+                                    <i class="bi bi-filetype-csv"></i>
+                                </button>
+                                <button class="btn-export btn-export-xlsx" title="Download Excel" @onclick="ExportExcel">
+                                    <i class="bi bi-file-earmark-excel-fill"></i>
+                                </button>
+                                <button class="btn-export btn-export-pdf" title="Download PDF" @onclick="ExportPdf">
+                                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                                </button>
+                            </div>
+                            @if (CurrentRole == "XEN" || CurrentRole == "AEN")
+                            {
                                 <button class="btn btn-sm btn-primary px-3" @onclick="OpenAddWork">
                                     <i class="bi bi-plus-lg me-1"></i>Add Work
                                 </button>
-                            </div>
-                        }
+                            }
+                        </div>
                     </div>
                     <div class="mt-2">
                         <small class="text-muted">

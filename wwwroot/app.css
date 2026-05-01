@@ -510,6 +510,34 @@ h1:focus {
     text-decoration: underline;
 }
 
+/* ── Export buttons ──────────────────────────────────────── */
+.export-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    color: #fff;
+}
+
+.btn-export:hover  { opacity: 0.85; transform: translateY(-1px); }
+.btn-export:active { transform: translateY(0); }
+
+.btn-export-csv  { background: #6b7280; }
+.btn-export-xlsx { background: #16a34a; }
+.btn-export-pdf  { background: #dc2626; }
+
 /* ── Filter search box ───────────────────────────────────── */
 .filter-search-wrap {
     position: relative;
