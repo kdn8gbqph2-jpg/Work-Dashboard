@@ -492,6 +492,26 @@ h1:focus {
     font-style: italic;
 }
 
+/* Hindi typing toggle */
+.hindi-toggle {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-decoration: none;
+    transition: color 0.12s;
+}
+.hindi-toggle:hover { color: #f97316; }
+.hindi-toggle.active { color: #f97316; font-weight: 600; }
+
+.hindi-input-on {
+    background-color: #fff8ec;
+    border-color: #f97316;
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15);
+}
+.hindi-input-on:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 0.2rem rgba(249, 115, 22, 0.25);
+}
+
 .remark-add-box {
     border-top: 1px solid #e9ecef;
     padding-top: 0.75rem;

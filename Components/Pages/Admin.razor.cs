@@ -47,19 +47,33 @@ public partial class Admin
     private bool _colsLoaded = false;
     bool ShowColPicker = false;
 
+    // Hindi transliteration mode for the remark textarea
+    bool HindiMode = false;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || _colsLoaded) return;
-        _colsLoaded = true;
-
-        var saved = await JS.InvokeAsync<string?>("bdaGetItem", LocalStorageKey);
-        if (!string.IsNullOrEmpty(saved))
+        if (firstRender && !_colsLoaded)
         {
-            var keys = saved.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
-            foreach (var c in AllCols.Where(c => c.Required)) keys.Add(c.Key);
-            _selectedCols = keys;
-            StateHasChanged();
+            _colsLoaded = true;
+            var saved = await JS.InvokeAsync<string?>("bdaGetItem", LocalStorageKey);
+            if (!string.IsNullOrEmpty(saved))
+            {
+                var keys = saved.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+                foreach (var c in AllCols.Where(c => c.Required)) keys.Add(c.Key);
+                _selectedCols = keys;
+                StateHasChanged();
+            }
         }
+
+        // Attach Hindi handler if the remark textarea is on screen.
+        // The JS function is idempotent — it checks _bdaHindiAttached internally.
+        try { await JS.InvokeVoidAsync("bdaHindi.attach", "adminRemarkInput"); } catch { }
+    }
+
+    async Task ToggleHindiMode()
+    {
+        HindiMode = !HindiMode;
+        try { await JS.InvokeVoidAsync("bdaHindi.setMode", "adminRemarkInput", HindiMode); } catch { }
     }
 
     private async Task SaveColSelection()

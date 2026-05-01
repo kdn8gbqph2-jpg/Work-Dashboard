@@ -3,6 +3,69 @@
 window.bdaGetItem = function (key) { return localStorage.getItem(key); };
 window.bdaSetItem = function (key, value) { localStorage.setItem(key, value); };
 
+// ── Hindi transliteration via Google Input Tools ────────────────────
+window.bdaHindi = (function () {
+    const TRIGGERS = new Set([' ', 'Enter', '.', ',', '?', '!', ';', ':']);
+
+    async function translit(word) {
+        try {
+            const url = 'https://inputtools.google.com/request?text=' +
+                encodeURIComponent(word) +
+                '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8';
+            const r = await fetch(url);
+            const j = await r.json();
+            if (j && j[0] === 'SUCCESS' && j[1] && j[1][0] && j[1][0][1] && j[1][0][1][0]) {
+                return j[1][0][1][0];
+            }
+        } catch (e) { console.warn('Hindi transliteration failed', e); }
+        return null;
+    }
+
+    function attach(textareaId) {
+        const ta = document.getElementById(textareaId);
+        if (!ta || ta._bdaHindiAttached) return;
+        ta._bdaHindiAttached = true;
+
+        ta.addEventListener('keydown', async function (e) {
+            if (ta.dataset.hindi !== 'true') return;
+            if (!TRIGGERS.has(e.key)) return;
+
+            const pos = ta.selectionStart;
+            const before = ta.value.slice(0, pos);
+            const after = ta.value.slice(pos);
+
+            const m = before.match(/([a-zA-Z][a-zA-Z'-]*)$/);
+            if (!m) return;
+
+            const word = m[1];
+            e.preventDefault();
+
+            const sep = e.key === 'Enter' ? '\n' : e.key;
+            // Optimistic insert with original word, then replace once API responds
+            const placeholder = before + sep + after;
+            ta.value = placeholder;
+            const cursorAfter = before.length + sep.length;
+            ta.setSelectionRange(cursorAfter, cursorAfter);
+
+            const hindi = await translit(word);
+            if (hindi) {
+                const newBefore = before.slice(0, -word.length) + hindi;
+                ta.value = newBefore + sep + after;
+                const newPos = newBefore.length + sep.length;
+                ta.setSelectionRange(newPos, newPos);
+            }
+            ta.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    }
+
+    function setMode(textareaId, on) {
+        const ta = document.getElementById(textareaId);
+        if (ta) ta.dataset.hindi = on ? 'true' : 'false';
+    }
+
+    return { attach: attach, setMode: setMode };
+})();
+
 window.bdaDownloadBase64 = function (filename, base64) {
     const bytes = atob(base64);
     const ab = new ArrayBuffer(bytes.length);

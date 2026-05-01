@@ -107,4 +107,18 @@ public partial class Jen
             PdfHeaders,
             rows);
     }
+
+    // ── Hindi transliteration ─────────────────────────────────
+    bool HindiMode = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try { await JS.InvokeVoidAsync("bdaHindi.attach", "jenRemarkInput"); } catch { }
+    }
+
+    async Task ToggleHindiMode()
+    {
+        HindiMode = !HindiMode;
+        try { await JS.InvokeVoidAsync("bdaHindi.setMode", "jenRemarkInput", HindiMode); } catch { }
+    }
 }
