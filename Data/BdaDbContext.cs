@@ -12,8 +12,6 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
     public DbSet<WorkProgressLog> WorkProgressLogs => Set<WorkProgressLog>();
     public DbSet<WorkRemark>      WorkRemarks      => Set<WorkRemark>();
     public DbSet<WorkFile>            WorkFiles            => Set<WorkFile>();
-    public DbSet<DriveFolder>         DriveFolders         => Set<DriveFolder>();
-    public DbSet<GoogleOAuthToken>    GoogleOAuthTokens    => Set<GoogleOAuthToken>();
     public DbSet<AuditLog>            AuditLogs            => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder mb)
@@ -153,38 +151,6 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
 
             e.HasOne(x => x.Work).WithMany().HasForeignKey(x => x.WorkId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.UploadedByEngineer).WithMany().HasForeignKey(x => x.UploadedBy).OnDelete(DeleteBehavior.SetNull);
-        });
-
-        // ── drive_folders ────────────────────────────────────────
-        mb.Entity<DriveFolder>(e =>
-        {
-            e.ToTable("drive_folders");
-            e.HasKey(x => x.FolderId);
-            e.Property(x => x.FolderId).HasColumnName("folder_id");
-            e.Property(x => x.WorkId).HasColumnName("work_id");
-            e.Property(x => x.RootFolderId).HasColumnName("root_folder_id").HasMaxLength(150);
-            e.Property(x => x.PhotosFolderId).HasColumnName("photos_folder_id").HasMaxLength(150);
-            e.Property(x => x.PdfsFolderId).HasColumnName("pdfs_folder_id").HasMaxLength(150);
-            e.Property(x => x.VideosFolderId).HasColumnName("videos_folder_id").HasMaxLength(150);
-            e.Property(x => x.DrawingsFolderId).HasColumnName("drawings_folder_id").HasMaxLength(150);
-            e.Property(x => x.CreatedAt).HasColumnName("created_at");
-            e.HasIndex(x => x.WorkId).IsUnique();
-
-            e.HasOne(x => x.Work).WithOne(x => x.DriveFolder).HasForeignKey<DriveFolder>(x => x.WorkId).OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ── google_oauth_token ───────────────────────────────────
-        mb.Entity<GoogleOAuthToken>(e =>
-        {
-            e.ToTable("google_oauth_token");
-            e.HasKey(x => x.TokenId);
-            e.Property(x => x.TokenId).HasColumnName("token_id").ValueGeneratedNever();
-            e.Property(x => x.ClientId).HasColumnName("client_id").HasMaxLength(200);
-            e.Property(x => x.ClientSecret).HasColumnName("client_secret").HasMaxLength(200);
-            e.Property(x => x.RefreshToken).HasColumnName("refresh_token");
-            e.Property(x => x.AccessToken).HasColumnName("access_token");
-            e.Property(x => x.TokenExpiry).HasColumnName("token_expiry");
-            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         });
 
         // ── audit_log ────────────────────────────────────────────

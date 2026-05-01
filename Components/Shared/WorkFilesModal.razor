@@ -1,0 +1,299 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using Work_Dashboard.Data.Entities
+@using Work_Dashboard.Services
+@inject FileUploadService FileSvc
+
+@if (Work is not null)
+{
+    <div class="modal-overlay" @onclick="OnClose">
+        <div class="modal-box modal-box-lg files-modal" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-paperclip me-1"></i>Files —
+                    <span class="text-muted">@Work.WorkName</span>
+                </h6>
+                <button class="btn-close" @onclick="OnClose"></button>
+            </div>
+
+            <div class="modal-box-body">
+                @if (!string.IsNullOrEmpty(ErrorMsg))
+                {
+                    <div class="alert alert-danger py-2 d-flex align-items-start">
+                        <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                        <span>@ErrorMsg</span>
+                        <button class="btn-close ms-auto" style="font-size:0.65rem" @onclick="() => ErrorMsg = string.Empty"></button>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(SuccessMsg))
+                {
+                    <div class="alert alert-success py-2 d-flex align-items-start">
+                        <i class="bi bi-check2-circle me-2 mt-1"></i>
+                        <span>@SuccessMsg</span>
+                        <button class="btn-close ms-auto" style="font-size:0.65rem" @onclick="() => SuccessMsg = string.Empty"></button>
+                    </div>
+                }
+
+                @* ── PDFs ──────────────────────────────────────── *@
+                <div class="files-section">
+                    <div class="files-section-header">
+                        <h6 class="files-section-title">
+                            <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                            PDFs <span class="text-muted">(@PdfFiles.Count)</span>
+                        </h6>
+                    </div>
+
+                    @if (CanUpload)
+                    {
+                        <label class="upload-dropzone @(UploadingPdf ? "upload-busy" : "")">
+                            <InputFile OnChange="OnPdfSelected"
+                                       accept="application/pdf"
+                                       multiple
+                                       disabled="@UploadingPdf"
+                                       class="upload-input-hidden" />
+                            @if (UploadingPdf)
+                            {
+                                <div class="upload-busy-state">
+                                    <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+                                    <span>Uploading…</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <i class="bi bi-cloud-arrow-up-fill upload-dropzone-icon"></i>
+                                <div class="upload-dropzone-title">Drop PDFs here or click to browse</div>
+                                <div class="upload-dropzone-hint">Multiple files allowed · Max 20 MB each</div>
+                            }
+                        </label>
+                    }
+
+                    @if (PdfFiles.Count == 0)
+                    {
+                        <div class="files-empty">
+                            <i class="bi bi-inbox"></i> No PDFs uploaded yet.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="files-pdf-list">
+                            @foreach (var f in PdfFiles)
+                            {
+                                <div class="files-pdf-row">
+                                    <i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i>
+                                    <span class="files-pdf-name">@System.IO.Path.GetFileName(f.FileUrl)</span>
+                                    <span class="files-pdf-meta">@f.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</span>
+                                    <a class="btn-files-action" href="@f.FileUrl" target="_blank" title="Open in new tab">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                    @if (CanDelete)
+                                    {
+                                        <button class="btn-files-action btn-files-delete"
+                                                title="Delete"
+                                                @onclick="() => DeleteFileAsync(f.Id)">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <hr class="my-3" />
+
+                @* ── Photos ────────────────────────────────────── *@
+                <div class="files-section">
+                    <div class="files-section-header">
+                        <h6 class="files-section-title">
+                            <i class="bi bi-camera-fill text-primary"></i>
+                            Photos
+                            <span class="text-muted">(@PhotoFiles.Count / @FileUploadService.MaxPhotosPerWork)</span>
+                        </h6>
+                    </div>
+
+                    @if (CanUpload)
+                    {
+                        @if (PhotoFiles.Count >= FileUploadService.MaxPhotosPerWork)
+                        {
+                            <div class="upload-dropzone upload-dropzone-disabled">
+                                <i class="bi bi-slash-circle-fill upload-dropzone-icon text-danger"></i>
+                                <div class="upload-dropzone-title text-danger">Photo limit reached (10/10)</div>
+                                <div class="upload-dropzone-hint">Delete some photos below first.</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <label class="upload-dropzone @(UploadingPhoto ? "upload-busy" : "")">
+                                <InputFile OnChange="OnPhotosSelected"
+                                           accept="image/jpeg,image/png,image/webp"
+                                           multiple
+                                           disabled="@UploadingPhoto"
+                                           class="upload-input-hidden" />
+                                @if (UploadingPhoto)
+                                {
+                                    <div class="upload-busy-state">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                        <span>Uploading…</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-cloud-arrow-up-fill upload-dropzone-icon"></i>
+                                    <div class="upload-dropzone-title">Drop photos here or click to browse</div>
+                                    <div class="upload-dropzone-hint">
+                                        @SlotsRemaining slot(s) remaining · JPG/PNG/WEBP · Max 5 MB each
+                                    </div>
+                                }
+                            </label>
+                        }
+                    }
+
+                    @if (PhotoFiles.Count == 0)
+                    {
+                        <div class="files-empty">
+                            <i class="bi bi-images"></i> No photos uploaded yet.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="photo-grid">
+                            @foreach (var p in PhotoFiles)
+                            {
+                                <div class="photo-thumb">
+                                    <a href="@p.FileUrl" target="_blank">
+                                        <img src="@p.FileUrl" alt="" loading="lazy" />
+                                    </a>
+                                    @if (CanDelete)
+                                    {
+                                        <button class="photo-thumb-delete"
+                                                title="Delete photo"
+                                                @onclick="() => DeleteFileAsync(p.Id)">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="modal-box-footer">
+                <small class="text-muted me-auto">
+                    Max @(FileUploadService.MaxPhotoBytes / 1024 / 1024) MB per photo
+                    · Max @(FileUploadService.MaxPdfBytes / 1024 / 1024) MB per PDF
+                </small>
+                <button class="btn btn-secondary btn-sm" @onclick="OnClose">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Work?         Work          { get; set; }
+    [Parameter] public int?          UploadedById  { get; set; }
+    [Parameter] public bool          CanUpload     { get; set; }
+    [Parameter] public bool          CanDelete     { get; set; }
+    [Parameter] public EventCallback OnClose       { get; set; }
+    [Parameter] public EventCallback OnChanged     { get; set; }
+
+    List<WorkFile> PdfFiles   = [];
+    List<WorkFile> PhotoFiles = [];
+    string         ErrorMsg   = "";
+    string         SuccessMsg = "";
+    bool           UploadingPdf   = false;
+    bool           UploadingPhoto = false;
+
+    int SlotsRemaining => Math.Max(0, FileUploadService.MaxPhotosPerWork - PhotoFiles.Count);
+
+    int? _lastWorkId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Work is not null && Work.WorkId != _lastWorkId)
+        {
+            _lastWorkId = Work.WorkId;
+            ErrorMsg = SuccessMsg = "";
+            await ReloadAsync();
+        }
+    }
+
+    async Task ReloadAsync()
+    {
+        if (Work is null) return;
+        var all    = await FileSvc.ListForWorkAsync(Work.WorkId);
+        PdfFiles   = all.Where(f => f.FileType == WorkFileType.pdf).ToList();
+        PhotoFiles = all.Where(f => f.FileType == WorkFileType.image).ToList();
+    }
+
+    async Task OnPdfSelected(InputFileChangeEventArgs e)
+    {
+        if (Work is null || !CanUpload) return;
+        ErrorMsg = SuccessMsg = "";
+        UploadingPdf = true;
+        try
+        {
+            int saved = 0;
+            foreach (var f in e.GetMultipleFiles(20))
+            {
+                using var stream = f.OpenReadStream(FileUploadService.MaxPdfBytes);
+                await FileSvc.SaveAsync(Work.WorkId, WorkFileType.pdf, f.Name, f.ContentType, f.Size, stream, UploadedById);
+                saved++;
+            }
+            SuccessMsg = $"Uploaded {saved} PDF(s).";
+            await ReloadAsync();
+            await NotifyChanged();
+        }
+        catch (Exception ex) { ErrorMsg = ex.Message; }
+        finally { UploadingPdf = false; }
+    }
+
+    async Task OnPhotosSelected(InputFileChangeEventArgs e)
+    {
+        if (Work is null || !CanUpload) return;
+        ErrorMsg = SuccessMsg = "";
+
+        var picked = e.GetMultipleFiles(FileUploadService.MaxPhotosPerWork).ToList();
+        var available = SlotsRemaining;
+
+        if (picked.Count > available)
+        {
+            ErrorMsg = $"Only {available} slot(s) available. You selected {picked.Count} photo(s). Delete some existing photos first or reduce your selection.";
+            return;
+        }
+
+        UploadingPhoto = true;
+        try
+        {
+            int saved = 0;
+            foreach (var f in picked)
+            {
+                using var stream = f.OpenReadStream(FileUploadService.MaxPhotoBytes);
+                await FileSvc.SaveAsync(Work.WorkId, WorkFileType.image, f.Name, f.ContentType, f.Size, stream, UploadedById);
+                saved++;
+            }
+            SuccessMsg = $"Uploaded {saved} photo(s).";
+            await ReloadAsync();
+            await NotifyChanged();
+        }
+        catch (Exception ex) { ErrorMsg = ex.Message; }
+        finally { UploadingPhoto = false; }
+    }
+
+    async Task DeleteFileAsync(int id)
+    {
+        if (!CanDelete) return;
+        ErrorMsg = SuccessMsg = "";
+        try
+        {
+            await FileSvc.DeleteAsync(id);
+            await ReloadAsync();
+            await NotifyChanged();
+        }
+        catch (Exception ex) { ErrorMsg = ex.Message; }
+    }
+
+    async Task NotifyChanged()
+    {
+        if (OnChanged.HasDelegate) await OnChanged.InvokeAsync();
+    }
+}

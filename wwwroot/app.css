@@ -510,6 +510,188 @@ h1:focus {
     text-decoration: underline;
 }
 
+/* ── Files cell (works table) ─────────────────────────────── */
+.files-badge-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 8px;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+.files-badge-cell:hover {
+    background: #fff5e6;
+    box-shadow: 0 0 0 1px #ff8c00;
+}
+
+.files-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 14px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+.files-pill i { font-size: 1.05rem; }
+
+.files-pill-pdf {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+.files-pill-pdf.empty { background: #f3f4f6; color: #9ca3af; }
+
+.files-pill-img {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.files-pill-img.empty { background: #f3f4f6; color: #9ca3af; }
+.files-pill-img.full  { background: #fef3c7; color: #b45309; }
+
+.files-section { margin-bottom: 0.5rem; }
+.files-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+.files-section-title { font-size: 0.9rem; margin: 0; font-weight: 600; }
+
+.btn-files-upload {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #ff8c00; color: white; border: none;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 0.78rem; font-weight: 500;
+    cursor: pointer; transition: opacity 0.15s;
+}
+.btn-files-upload:hover { opacity: 0.85; }
+
+/* ── Upload dropzone ─────────────────────────────────────── */
+.upload-dropzone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 4px;
+    padding: 1.2rem 1rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+.upload-dropzone:hover {
+    border-color: #ff8c00;
+    background: #fff8f0;
+}
+.upload-dropzone.upload-busy {
+    border-color: #ff8c00;
+    background: #fff8f0;
+    cursor: wait;
+}
+.upload-dropzone.upload-dropzone-disabled {
+    border-color: #fecaca;
+    background: #fef2f2;
+    cursor: not-allowed;
+}
+.upload-dropzone.upload-dropzone-disabled:hover {
+    border-color: #fecaca;
+    background: #fef2f2;
+}
+.upload-dropzone-icon {
+    font-size: 1.7rem;
+    color: #9ca3af;
+    line-height: 1;
+}
+.upload-dropzone:hover .upload-dropzone-icon { color: #ff8c00; }
+.upload-dropzone-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #374151;
+}
+.upload-dropzone-hint {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+.upload-input-hidden {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.upload-dropzone.upload-dropzone-disabled .upload-input-hidden { display: none; }
+.upload-busy-state {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.85rem; color: #555;
+}
+
+.files-empty {
+    padding: 1.5rem; text-align: center; color: #888;
+    background: #f8f9fa; border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.files-pdf-list { display: flex; flex-direction: column; gap: 4px; }
+.files-pdf-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; background: #f8f9fa; border-radius: 6px;
+    font-size: 0.82rem;
+}
+.files-pdf-name { flex: 1; word-break: break-all; }
+.files-pdf-meta { color: #888; font-size: 0.75rem; margin-right: 4px; }
+.btn-files-action {
+    background: transparent; border: none;
+    width: 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 4px; color: #555; cursor: pointer;
+    text-decoration: none;
+}
+.btn-files-action:hover { background: #e5e7eb; color: #111; }
+.btn-files-delete:hover { background: #fee2e2; color: #dc2626; }
+
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px;
+}
+.photo-thumb {
+    position: relative; aspect-ratio: 1;
+    border-radius: 6px; overflow: hidden;
+    background: #f3f4f6; border: 2px solid transparent;
+    transition: border-color 0.15s;
+}
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb-delete {
+    position: absolute; top: 4px; right: 4px;
+    width: 22px; height: 22px;
+    background: rgba(220, 38, 38, 0.95); color: white;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.1s, background 0.1s;
+}
+.photo-thumb-delete:hover {
+    background: #b91c1c;
+    transform: scale(1.1);
+}
+.photo-grid-pickable .photo-thumb { cursor: pointer; }
+.photo-grid-pickable .photo-thumb:hover { border-color: #ff8c00; }
+.photo-thumb-selected { border-color: #dc2626 !important; }
+.photo-thumb-check {
+    position: absolute; top: 4px; right: 4px;
+    width: 24px; height: 24px;
+    background: #dc2626; color: white;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: bold;
+}
+
 /* ── Export buttons ──────────────────────────────────────── */
 .export-btn-group {
     display: flex;
