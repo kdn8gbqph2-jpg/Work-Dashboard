@@ -14,6 +14,10 @@ public class WorkRemark
     public int? AuthorId { get; set; }              // nullable FK to engineers
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public string? EditedByName { get; set; }       // null = never edited
+    public int? EditedById { get; set; }
+    public DateTime? EditedAt { get; set; }
+
     public Work Work { get; set; } = null!;
     public Engineer? Author { get; set; }
 }
