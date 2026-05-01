@@ -54,6 +54,13 @@ builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<Work_Dashboard.Services.FileUploadService>();
+
+// Allow larger SignalR messages so InputFile can stream files up to 25 MB
+builder.Services.Configure<Microsoft.AspNetCore.SignalR.HubOptions>(o =>
+{
+    o.MaximumReceiveMessageSize = 25 * 1024 * 1024; // 25 MB
+});
 
 // ── Blazor ────────────────────────────────────────────────────
 builder.Services.AddRazorComponents()
