@@ -27,6 +27,13 @@ h1:focus {
     margin-bottom: 0.35rem;
 }
 
+.stat-sub {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 0.2rem;
+}
+
 .stat-card small {
     font-size: 0.75rem !important;
     color: #6c757d;

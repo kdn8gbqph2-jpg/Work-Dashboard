@@ -89,36 +89,37 @@
                     </select>
                 </div>
 
-                var ov = OverviewWorks;
+                var ov      = OverviewWorks;
+                var ongoing  = ov.Where(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract).ToList();
+                var complete = ov.Where(w => w.Status == WorkStatus.COMPLETED).ToList();
+                var annual   = ov.Where(w => w.IsAnnualContract).ToList();
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-warning">
                             <div class="stat-label">Total Works</div>
                             <div class="stat-value">@ov.Count</div>
+                            <div class="stat-sub">₹ @ov.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-primary">
                             <div class="stat-label">Ongoing</div>
-                            <div class="stat-value text-primary">@ov.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</div>
+                            <div class="stat-value text-primary">@ongoing.Count</div>
+                            <div class="stat-sub">₹ @ongoing.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-success">
                             <div class="stat-label">Completed</div>
-                            <div class="stat-value text-success">@ov.Count(w => w.Status == WorkStatus.COMPLETED)</div>
+                            <div class="stat-value text-success">@complete.Count</div>
+                            <div class="stat-sub">₹ @complete.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-info">
                             <div class="stat-label">Annual Contract</div>
-                            <div class="stat-value text-info">@ov.Count(w => w.IsAnnualContract)</div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-xl-3">
-                        <div class="stat-card border-start border-4 border-warning">
-                            <div class="stat-label">Total Workorder Amount</div>
-                            <div class="stat-value" style="font-size:1.4rem">₹ @ov.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
+                            <div class="stat-value text-info">@annual.Count</div>
+                            <div class="stat-sub">₹ @annual.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                 </div>
@@ -424,7 +425,7 @@
                                                     </div>
                                                 </div>
                                                 <button class="btn-expand-row" title="@(isExpanded ? "Collapse" : "Quick view")"
-                                                        @onclick="() => ToggleExpand(w.WorkId)">
+                                                        @onclick="async () => await ToggleExpand(w.WorkId)">
                                                     <i class="bi bi-chevron-@(isExpanded ? "up" : "down")"></i>
                                                 </button>
                                             </div>
@@ -540,6 +541,25 @@
                                                         <div class="expand-item">
                                                             <div class="expand-label">Workorder Amount</div>
                                                             <div class="expand-val">@(w.AgreementAmount.HasValue ? $"₹ {w.AgreementAmount:N2} L" : "—")</div>
+                                                        </div>
+                                                        @{
+                                                            var woAmt     = w.AgreementAmount ?? 0;
+                                                            var billed    = BillTotalsCache.GetValueOrDefault(w.WorkId);
+                                                            var billPct   = woAmt > 0 ? Math.Min(100, (double)(billed / woAmt * 100)) : 0;
+                                                            var billPctStr = billPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                                                        }
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Bill Payment</div>
+                                                            <div class="expand-val">
+                                                                @if (woAmt > 0)
+                                                                {
+                                                                    <div class="progress-pill mb-1" style="position:relative;overflow:hidden">
+                                                                        <div style="height:100%;background:#10b981;border-radius:inherit;width:@(billPctStr.Replace(",","."))%"></div>
+                                                                    </div>
+                                                                    <text>₹ @billed.ToString("N2") L &nbsp;<span style="color:#6b7280;font-size:0.72rem">(@billPctStr% of WO)</span></text>
+                                                                }
+                                                                else { <text>—</text> }
+                                                            </div>
                                                         </div>
                                                         <div class="expand-item">
                                                             <div class="expand-label">Contractor</div>
@@ -1535,8 +1555,21 @@
     Work? ConfirmDeleteWorkItem = null;
 
     // ── Inline expand ─────────────────────────────────────────
-    HashSet<int> ExpandedWorkIds = new();
-    void ToggleExpand(int workId) { if (!ExpandedWorkIds.Remove(workId)) ExpandedWorkIds.Add(workId); }
+    HashSet<int>          ExpandedWorkIds   = new();
+    Dictionary<int, decimal> BillTotalsCache = new();
+
+    async Task ToggleExpand(int workId)
+    {
+        if (ExpandedWorkIds.Remove(workId)) return;
+        ExpandedWorkIds.Add(workId);
+        if (!BillTotalsCache.ContainsKey(workId))
+        {
+            await using var db = await DbFactory.CreateDbContextAsync();
+            BillTotalsCache[workId] = await db.WorkBills
+                .Where(b => b.WorkId == workId)
+                .SumAsync(b => (decimal?)b.NetAmount) ?? 0m;
+        }
+    }
 
     // ── Remarks (inline in edit modal) ────────────────────────
     Work?            RemarksWork      = null;
