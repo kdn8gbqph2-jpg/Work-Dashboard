@@ -296,15 +296,22 @@ h1:focus {
     color: #fff !important;
 }
 
-.bda-table tbody tr:nth-child(odd) {
-    background: #2d2d2d08;
+.bda-table tbody tr:nth-child(odd):not(.work-expand-row) {
+    background: #fff8f2;
+}
+.bda-table tbody tr:nth-child(even):not(.work-expand-row) {
+    background: #ffffff;
+}
+.bda-table tbody tr:not(.work-expand-row):not(.work-row-expanded):hover > td {
+    background: #ffeedd !important;
+    transition: background 0.12s;
 }
 
 .bda-table tbody td {
     font-size: 0.82rem;
     padding: 0.6rem 0.9rem;
     vertical-align: middle;
-    border-color: #f0f0f0;
+    border-color: #f5e8dc;
 }
 
 .bda-table tfoot td {
@@ -1443,19 +1450,19 @@ h1:focus {
 
 /* ── Expanded work row highlight ─────────────────────────── */
 .work-row-expanded > td {
-    background: #f5f8ff !important;
+    background: #fff3e8 !important;
     border-bottom: none !important;
 }
 
 /* ── Inline expand sub-row ───────────────────────────────── */
 .work-expand-row > td {
-    background: #f0f5ff;
+    background: #fff8f2;
     border-top: none !important;
     padding: 0 !important;
 }
 .work-expand-panel {
     padding: 10px 16px 12px 52px;
-    border-bottom: 2px solid #dbeafe;
+    border-bottom: 2px solid #fed7aa;
 }
 .expand-fullname {
     font-size: 0.9rem;
