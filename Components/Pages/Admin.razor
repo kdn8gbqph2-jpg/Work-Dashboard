@@ -126,7 +126,10 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">Category Wise Summary</h6>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="fw-bold mb-0">Category Wise Summary</h6>
+                                <span class="text-muted" style="font-size:0.8rem">Total: <strong class="text-dark">₹ @ov.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</strong></span>
+                            </div>
                             <table class="table table-sm bda-table mb-0">
                                 <thead><tr><th>Category</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
                                 <tbody>
