@@ -361,6 +361,39 @@
                                 </select>
                             </div>
 
+                            @* Category Filter *@
+                            <div class="filter-group">
+                                <span class="filter-group-label">Category</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkCategoryFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    @foreach (var c in Categories)
+                                    { <option value="@c.CategoryCode">@c.CategoryCode</option> }
+                                </select>
+                            </div>
+
+                            @* Fund Source Filter *@
+                            <div class="filter-group">
+                                <span class="filter-group-label">Fund</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkFundFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    @foreach (var f in FundSources)
+                                    { <option value="@f.SourceCode">@f.SourceCode</option> }
+                                </select>
+                            </div>
+
+                            @* Flag Filter *@
+                            <div class="filter-group">
+                                <span class="filter-group-label">Flag</span>
+                                <select class="filter-select-sm"
+                                        @bind="WorkFlagFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    <option value="SCHEME">Scheme</option>
+                                    <option value="CM_BUDGET">CM Budget</option>
+                                </select>
+                            </div>
+
                             @* Reset *@
                             <button class="btn-filter-reset" @onclick="ResetWorkFilters">
                                 <i class="bi bi-arrow-clockwise"></i> Reset
@@ -1490,13 +1523,16 @@
     }
 
     // ── Works filter ──────────────────────────────────────────
-    string WorkTab          = "ONGOING";   // ONGOING | COMPLETED | ANNUAL
-    string WorkSearchText   = "";
-    string WorkJenFilter       = "";
-    string WorkAenFilter       = "";
-    string WorkXenFilter       = "";
-    string WorkAnnualFilter    = "ALL";
-    string WorkYearFilter      = "";
+    string WorkTab           = "ONGOING";   // ONGOING | COMPLETED | ANNUAL
+    string WorkSearchText    = "";
+    string WorkJenFilter     = "";
+    string WorkAenFilter     = "";
+    string WorkXenFilter     = "";
+    string WorkAnnualFilter  = "ALL";
+    string WorkYearFilter    = "";
+    string WorkCategoryFilter = "";     // CategoryCode or ""
+    string WorkFundFilter    = "";      // SourceCode or ""
+    string WorkFlagFilter    = "";      // "SCHEME" | "CM_BUDGET" | ""
 
     List<string> WorkYears => AllWorks
         .Where(w => w.StartDate.HasValue)
@@ -1746,15 +1782,30 @@
         if (!string.IsNullOrEmpty(WorkYearFilter))
             q = q.Where(w => w.StartDate.HasValue && FinYear(w.StartDate!.Value) == WorkYearFilter);
 
+        // Category filter
+        if (!string.IsNullOrEmpty(WorkCategoryFilter))
+            q = q.Where(w => (w.Category?.CategoryCode ?? "N/A") == WorkCategoryFilter);
+
+        // Fund source filter
+        if (!string.IsNullOrEmpty(WorkFundFilter))
+            q = q.Where(w => (w.FundSource?.SourceCode ?? "N/A") == WorkFundFilter);
+
+        // Flag filter
+        if (WorkFlagFilter == "SCHEME")    q = q.Where(w =>  w.IsScheme);
+        if (WorkFlagFilter == "CM_BUDGET") q = q.Where(w =>  w.IsCmBudget);
+
         FilteredWorks = q.ToList();
     }
 
     void ResetWorkFilters()
     {
-        WorkSearchText   = "";
-        WorkJenFilter    = WorkAenFilter = WorkXenFilter = "";
-        WorkYearFilter   = "";
-        WorkAnnualFilter = "ALL";
+        WorkSearchText    = "";
+        WorkJenFilter     = WorkAenFilter = WorkXenFilter = "";
+        WorkYearFilter    = "";
+        WorkAnnualFilter  = "ALL";
+        WorkCategoryFilter = "";
+        WorkFundFilter    = "";
+        WorkFlagFilter    = "";
         FilterWorks();
     }
 
