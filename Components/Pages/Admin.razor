@@ -226,19 +226,19 @@
                         <span class="works-tab-total">
                             <i class="bi bi-briefcase-fill me-1"></i>Total <strong>@AllWorks.Count</strong>
                         </span>
-                        <button class="works-tab @(WorkTab == "ONGOING"   ? "active" : "")" @onclick='() => SetWorkTab("ONGOING")'>
+                        <button class="works-tab tab-ongoing @(WorkTab == "ONGOING"   ? "active" : "")" @onclick='() => SetWorkTab("ONGOING")'>
                             <i class="bi bi-hourglass-split me-1"></i>Ongoing
                             <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</span>
                         </button>
-                        <button class="works-tab @(WorkTab == "COMPLETED" ? "active" : "")" @onclick='() => SetWorkTab("COMPLETED")'>
+                        <button class="works-tab tab-completed @(WorkTab == "COMPLETED" ? "active" : "")" @onclick='() => SetWorkTab("COMPLETED")'>
                             <i class="bi bi-check-circle-fill me-1"></i>Completed
                             <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED && !w.IsAnnualContract)</span>
                         </button>
-                        <button class="works-tab @(WorkTab == "STALLED"   ? "active" : "")" @onclick='() => SetWorkTab("STALLED")'>
+                        <button class="works-tab tab-stalled @(WorkTab == "STALLED"   ? "active" : "")" @onclick='() => SetWorkTab("STALLED")'>
                             <i class="bi bi-slash-circle me-1"></i>Stalled / Cancelled
                             <span class="works-tab-count">@AllWorks.Count(w => (w.Status == WorkStatus.STALLED || w.Status == WorkStatus.CANCELLED) && !w.IsAnnualContract)</span>
                         </button>
-                        <button class="works-tab @(WorkTab == "ANNUAL"    ? "active" : "")" @onclick='() => SetWorkTab("ANNUAL")'>
+                        <button class="works-tab tab-annual @(WorkTab == "ANNUAL"    ? "active" : "")" @onclick='() => SetWorkTab("ANNUAL")'>
                             <i class="bi bi-arrow-repeat me-1"></i>Annual Works
                             <span class="works-tab-count">@AllWorks.Count(w => w.IsAnnualContract)</span>
                         </button>

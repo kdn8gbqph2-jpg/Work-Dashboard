@@ -765,10 +765,16 @@ h1:focus {
     transition: color 0.15s, border-color 0.15s, background 0.15s;
     white-space: nowrap;
 }
-.works-tab:hover { color: #f97316; background: #fff8f0; }
+.works-tab { --tab-color: #6c757d; --tab-bg: #f8f9fa; }
+.works-tab.tab-ongoing   { --tab-color: #3b82f6; --tab-bg: #eff6ff; }
+.works-tab.tab-completed { --tab-color: #16a34a; --tab-bg: #f0fdf4; }
+.works-tab.tab-stalled   { --tab-color: #dc2626; --tab-bg: #fef2f2; }
+.works-tab.tab-annual    { --tab-color: #0891b2; --tab-bg: #ecfeff; }
+
+.works-tab:hover { color: var(--tab-color); background: var(--tab-bg); }
 .works-tab.active {
-    color: #f97316;
-    border-bottom-color: #f97316;
+    color: var(--tab-color);
+    border-bottom-color: var(--tab-color);
     font-weight: 700;
 }
 .works-tab-count {
@@ -784,7 +790,7 @@ h1:focus {
     min-width: 24px;
 }
 .works-tab.active .works-tab-count {
-    background: #f97316;
+    background: var(--tab-color);
     color: #fff;
 }
 .works-tab-total {
