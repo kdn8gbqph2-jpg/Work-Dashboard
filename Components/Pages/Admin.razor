@@ -79,7 +79,7 @@
             if (Section == "overview")
             {
                 var ov        = OverviewWorks.ToList();
-                var ovOngoing = ov.Where(w => w.Status == WorkStatus.ONGOING   && !w.IsAnnualContract).ToList();
+                var ovOngoing = ov.Where(w => (w.Status == WorkStatus.ONGOING || w.Status == WorkStatus.STALLED) && !w.IsAnnualContract).ToList();
                 var ovDone    = ov.Where(w => w.Status == WorkStatus.COMPLETED && !w.IsAnnualContract).ToList();
                 var ovAnnual  = ov.Where(w => w.IsAnnualContract).ToList();
                 <div class="row g-3 mb-3">
