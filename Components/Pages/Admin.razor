@@ -147,7 +147,10 @@
                     </div>
                     <div class="col-md-6">
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">Fund Source Summary</h6>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="fw-bold mb-0">Fund Source Summary</h6>
+                                <span class="text-muted" style="font-size:0.8rem">Total: <strong class="text-dark">₹ @ov.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</strong></span>
+                            </div>
                             <table class="table table-sm bda-table mb-0">
                                 <thead><tr><th>Fund Source</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
                                 <tbody>
@@ -164,13 +167,16 @@
                         </div>
                     </div>
                     <div class="col-md-6">
+                        @{ var scheme    = ov.Where(w =>  w.IsScheme).ToList();
+                           var nonScheme = ov.Where(w => !w.IsScheme).ToList(); }
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">Scheme / Non-Scheme Summary</h6>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="fw-bold mb-0">Scheme / Non-Scheme Summary</h6>
+                                <span class="text-muted" style="font-size:0.8rem">Total: <strong class="text-dark">₹ @ov.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</strong></span>
+                            </div>
                             <table class="table table-sm bda-table mb-0">
                                 <thead><tr><th>Type</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
                                 <tbody>
-                                    @{ var scheme    = ov.Where(w =>  w.IsScheme).ToList();
-                                       var nonScheme = ov.Where(w => !w.IsScheme).ToList(); }
                                     <tr>
                                         <td><span class="badge bg-success me-1">Scheme</span></td>
                                         <td class="text-end">@scheme.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
@@ -186,13 +192,16 @@
                         </div>
                     </div>
                     <div class="col-md-6">
+                        @{ var cmBudget    = ov.Where(w =>  w.IsCmBudget).ToList();
+                           var nonCmBudget = ov.Where(w => !w.IsCmBudget).ToList(); }
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">CM Budget / Non-CM Budget Summary</h6>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6 class="fw-bold mb-0">CM Budget / Non-CM Budget Summary</h6>
+                                <span class="text-muted" style="font-size:0.8rem">Total: <strong class="text-dark">₹ @ov.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</strong></span>
+                            </div>
                             <table class="table table-sm bda-table mb-0">
                                 <thead><tr><th>Type</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
                                 <tbody>
-                                    @{ var cmBudget    = ov.Where(w =>  w.IsCmBudget).ToList();
-                                       var nonCmBudget = ov.Where(w => !w.IsCmBudget).ToList(); }
                                     <tr>
                                         <td><span class="badge bg-warning text-dark me-1">CM Budget</span></td>
                                         <td class="text-end">@cmBudget.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
