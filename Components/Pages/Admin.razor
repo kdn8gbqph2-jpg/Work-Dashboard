@@ -1173,15 +1173,11 @@
                             }
                             <div class="remark-add-box">
                                 @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
-                                <textarea id="adminRemarkInput" class="form-control form-control-sm @(HindiMode ? "hindi-input-on" : "")" rows="2"
-                                          placeholder="@(HindiMode ? "Add a remark… (type in English, e.g. 'namaste' → नमस्ते)" : "Add a remark…")"
+                                <textarea class="form-control form-control-sm hindi-input" rows="2"
+                                          placeholder="Add a remark…"
                                           @bind="NewRemarkText"
                                           @bind:event="oninput"></textarea>
-                                <div class="d-flex justify-content-between align-items-center mt-1">
-                                    <button type="button" class="btn btn-sm btn-link p-0 hindi-toggle @(HindiMode ? "active" : "")"
-                                            @onclick="ToggleHindiMode" title="Toggle Hindi typing">
-                                        <i class="bi bi-translate me-1"></i>@(HindiMode ? "हिन्दी ON" : "Type in हिन्दी")
-                                    </button>
+                                <div class="d-flex justify-content-end mt-1">
                                     <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
                                         <i class="bi bi-send-fill me-1"></i>Add Remark
                                     </button>

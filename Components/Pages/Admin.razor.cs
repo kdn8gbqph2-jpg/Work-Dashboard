@@ -48,9 +48,6 @@ public partial class Admin
     private bool _colsLoaded = false;
     bool ShowColPicker = false;
 
-    // Hindi transliteration mode for the remark textarea
-    bool HindiMode = false;
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_colsLoaded)
@@ -65,16 +62,6 @@ public partial class Admin
                 StateHasChanged();
             }
         }
-
-        // Attach Hindi handler if the remark textarea is on screen.
-        // The JS function is idempotent — it checks _bdaHindiAttached internally.
-        try { await JS.InvokeVoidAsync("bdaHindi.attach", "adminRemarkInput"); } catch { }
-    }
-
-    async Task ToggleHindiMode()
-    {
-        HindiMode = !HindiMode;
-        try { await JS.InvokeVoidAsync("bdaHindi.setMode", "adminRemarkInput", HindiMode); } catch { }
     }
 
     private async Task SaveColSelection()
