@@ -673,6 +673,17 @@
                         <i class="bi bi-check-lg me-1"></i>Save Changes
                     </button>
                 </div>
+
+                @* ── Running Bills ── *@
+                <hr class="my-3" />
+                <Work_Dashboard.Components.Shared.WorkBillsPanel
+                    WorkId="@EditingWork.WorkId"
+                    AgreementAmount="@EditingWork.AgreementAmount"
+                    SanctionedAmount="@EditingWork.SanctionedAmount"
+                    CanEdit="true"
+                    CurrentUserId="@CurrentEngineerId"
+                    CurrentUserName="@CurrentUserName" />
+
             </div>
         </div>
     </div>

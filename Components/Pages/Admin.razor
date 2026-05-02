@@ -1304,6 +1304,16 @@
                     </div>
                 }
 
+                @* ── Running Bills ── *@
+                <hr class="my-3" />
+                <Work_Dashboard.Components.Shared.WorkBillsPanel
+                    WorkId="@DetailWork.WorkId"
+                    AgreementAmount="@DetailWork.AgreementAmount"
+                    SanctionedAmount="@DetailWork.SanctionedAmount"
+                    CanEdit="true"
+                    CurrentUserId="@CurrentEngineerId"
+                    CurrentUserName="@(DetailWork.AssignedJen?.Name ?? "")" />
+
             </div>
             <div class="modal-box-footer">
                 <button class="btn btn-secondary btn-sm" @onclick="CloseDetail">Close</button>
