@@ -84,6 +84,7 @@
     }
 
     @* ── Bill Cards ──────────────────────────────────────────────── *@
+    <div class="bill-cards-scroll">
     @for (int i = 0; i < Bills.Count; i++)
     {
         var bill  = Bills[i];
@@ -163,6 +164,8 @@
             </div>
         </div>
     }
+
+    </div>
 
     @if (!Bills.Any() && !ShowForm)
     {
