@@ -15,10 +15,12 @@ public class WorkBill
     public BillStatus Status           { get; set; } = BillStatus.SUBMITTED;
     public string?    Remarks          { get; set; }
     public string?    PdfUrl           { get; set; }
+    public int?       BudgetHeadId     { get; set; }
     public int?       CreatedBy        { get; set; }
     public DateTime   CreatedAt        { get; set; } = DateTime.UtcNow;
     public DateTime?  UpdatedAt        { get; set; }
 
-    public Work?     Work              { get; set; }
-    public Engineer? CreatedByEngineer { get; set; }
+    public Work?       Work              { get; set; }
+    public BudgetHead? BudgetHead        { get; set; }
+    public Engineer?   CreatedByEngineer { get; set; }
 }

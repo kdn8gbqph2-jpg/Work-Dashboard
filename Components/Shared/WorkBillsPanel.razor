@@ -146,11 +146,19 @@
                     </span>
                 </div>
 
-                @* Cumulative running total *@
+                @* Cumulative running total + budget head *@
                 <div class="d-flex justify-content-between mt-1" style="font-size:0.72rem;color:#9ca3af">
                     <span>Cumulative billed: <strong class="text-dark">&#8377;@Fmt(bill.CumulativeBilled) L</strong></span>
-                    @if (!string.IsNullOrEmpty(bill.Remarks))
-                    { <span class="fst-italic">@bill.Remarks</span> }
+                    <span>
+                        @if (bill.BudgetHeadId.HasValue)
+                        {
+                            var bh = BudgetHeads.FirstOrDefault(h => h.BudgetHeadId == bill.BudgetHeadId);
+                            if (bh != null)
+                            { <span class="badge bg-light text-secondary border" style="font-size:0.65rem">@bh.BudgetCode</span> }
+                        }
+                        @if (!string.IsNullOrEmpty(bill.Remarks))
+                        { <span class="fst-italic ms-1">@bill.Remarks</span> }
+                    </span>
                 </div>
             </div>
         </div>
@@ -216,7 +224,17 @@
                            value="@FNet" readonly style="background:#f0fdf4;font-weight:700;color:#16a34a" />
                     <div class="form-text">Gross &minus; Deductions</div>
                 </div>
-                <div class="col-md-8">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Budget Head</label>
+                    <select class="form-select" @bind="FBudgetHeadId">
+                        <option value="">— None —</option>
+                        @foreach (var h in BudgetHeads)
+                        {
+                            <option value="@h.BudgetHeadId">@h.BudgetCode — @h.BudgetName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
                     <label class="form-label fw-semibold">Remarks</label>
                     <input type="text" class="form-control" placeholder="Optional notes…"
                            @bind="FRemarks" />

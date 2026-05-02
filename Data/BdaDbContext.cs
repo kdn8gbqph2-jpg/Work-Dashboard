@@ -192,10 +192,12 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
             e.Property(x => x.Status).HasColumnName("status").HasConversion<string>();
             e.Property(x => x.Remarks).HasColumnName("remarks").HasColumnType("text");
             e.Property(x => x.PdfUrl).HasColumnName("pdf_url").HasMaxLength(1000);
+            e.Property(x => x.BudgetHeadId).HasColumnName("budget_head_id");
             e.Property(x => x.CreatedBy).HasColumnName("created_by");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasOne(x => x.Work).WithMany().HasForeignKey(x => x.WorkId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.BudgetHead).WithMany().HasForeignKey(x => x.BudgetHeadId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(x => x.CreatedByEngineer).WithMany().HasForeignKey(x => x.CreatedBy).OnDelete(DeleteBehavior.SetNull);
         });
 

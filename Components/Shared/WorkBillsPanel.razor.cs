@@ -11,12 +11,12 @@ namespace Work_Dashboard.Components.Shared;
 public partial class WorkBillsPanel
 {
     // ── Parameters ────────────────────────────────────────────────
-    [Parameter] public int      WorkId          { get; set; }
-    [Parameter] public decimal? AgreementAmount { get; set; }
+    [Parameter] public int      WorkId           { get; set; }
+    [Parameter] public decimal? AgreementAmount  { get; set; }
     [Parameter] public decimal? SanctionedAmount { get; set; }
-    [Parameter] public bool     CanEdit         { get; set; } = true;
-    [Parameter] public int?     CurrentUserId   { get; set; }
-    [Parameter] public string   CurrentUserName { get; set; } = "";
+    [Parameter] public bool     CanEdit          { get; set; } = true;
+    [Parameter] public int?     CurrentUserId    { get; set; }
+    [Parameter] public string   CurrentUserName  { get; set; } = "";
 
     // ── Injected services ─────────────────────────────────────────
     [Inject] IDbContextFactory<BdaDbContext> DbFactory { get; set; } = default!;
@@ -24,30 +24,32 @@ public partial class WorkBillsPanel
     [Inject] IJSRuntime                      JS        { get; set; } = default!;
 
     // ── State ─────────────────────────────────────────────────────
-    List<WorkBill> Bills      = [];
-    bool           ShowForm   = false;
-    bool           Saving     = false;
-    string         BillError  = "";
+    List<WorkBill>  Bills       = [];
+    List<BudgetHead> BudgetHeads = [];
+    bool            ShowForm    = false;
+    bool            Saving      = false;
+    string          BillError   = "";
 
-    // Form fields for new bill
-    string     FBillNumber  = "";
-    DateOnly?  FBillDate    = null;
-    decimal    FGross       = 0;
-    decimal    FDeductions  = 0;
-    decimal    FNet         = 0;
-    string     FStatusStr   = "SUBMITTED";
-    string     FRemarks     = "";
-    IBrowserFile? FPdfFile  = null;
-    string     FPdfName     = "";
+    // Form fields
+    string        FBillNumber    = "";
+    DateOnly?     FBillDate      = null;
+    decimal       FGross         = 0;
+    decimal       FDeductions    = 0;
+    decimal       FNet           = 0;
+    string        FStatusStr     = "SUBMITTED";
+    string        FRemarks       = "";
+    int?          FBudgetHeadId  = null;
+    IBrowserFile? FPdfFile       = null;
+    string        FPdfName       = "";
 
     // Edit state
-    int        EditingBillId = 0;
+    int EditingBillId = 0;
 
     // ── Computed ──────────────────────────────────────────────────
-    decimal TotalBilled  => Bills.Sum(b => b.NetAmount);
-    decimal WoAmt        => AgreementAmount ?? 0;
-    decimal Remaining    => WoAmt - TotalBilled;
-    double  BilledPct    => WoAmt > 0 ? Math.Min(100, (double)(TotalBilled / WoAmt * 100)) : 0;
+    decimal TotalBilled => Bills.Sum(b => b.NetAmount);
+    decimal WoAmt       => AgreementAmount ?? 0;
+    decimal Remaining   => WoAmt - TotalBilled;
+    double  BilledPct   => WoAmt > 0 ? Math.Min(100, (double)(TotalBilled / WoAmt * 100)) : 0;
 
     static readonly string[] BillColors =
         { "#3b82f6", "#f97316", "#10b981", "#8b5cf6", "#ef4444", "#eab308" };
@@ -61,6 +63,7 @@ public partial class WorkBillsPanel
     protected override async Task OnParametersSetAsync()
     {
         await LoadBills();
+        if (BudgetHeads.Count == 0) await LoadBudgetHeads();
     }
 
     async Task LoadBills()
@@ -72,7 +75,16 @@ public partial class WorkBillsPanel
             .ToListAsync();
     }
 
-    // ── Add Bill ──────────────────────────────────────────────────
+    async Task LoadBudgetHeads()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        BudgetHeads = await db.BudgetHeads
+            .Where(h => h.IsActive)
+            .OrderBy(h => h.BudgetCode)
+            .ToListAsync();
+    }
+
+    // ── Form open / close ─────────────────────────────────────────
     void OpenAddForm()
     {
         EditingBillId = 0;
@@ -81,6 +93,7 @@ public partial class WorkBillsPanel
         FGross        = 0; FDeductions = 0; FNet = 0;
         FStatusStr    = "SUBMITTED";
         FRemarks      = "";
+        FBudgetHeadId = null;
         FPdfFile      = null;
         FPdfName      = "";
         BillError     = "";
@@ -97,6 +110,7 @@ public partial class WorkBillsPanel
         FNet          = b.NetAmount;
         FStatusStr    = b.Status.ToString();
         FRemarks      = b.Remarks ?? "";
+        FBudgetHeadId = b.BudgetHeadId;
         FPdfFile      = null;
         FPdfName      = b.PdfUrl != null ? Path.GetFileName(b.PdfUrl) : "";
         BillError     = "";
@@ -127,7 +141,6 @@ public partial class WorkBillsPanel
 
         string? pdfUrl = null;
 
-        // Upload PDF if a new file is chosen
         if (FPdfFile != null)
         {
             var mime = FPdfFile.ContentType;
@@ -152,7 +165,6 @@ public partial class WorkBillsPanel
 
         if (EditingBillId == 0)
         {
-            // New bill — compute cumulative
             var cumulative = TotalBilled + FNet;
             db.WorkBills.Add(new WorkBill
             {
@@ -165,6 +177,7 @@ public partial class WorkBillsPanel
                 CumulativeBilled = cumulative,
                 Status           = status,
                 Remarks          = string.IsNullOrWhiteSpace(FRemarks) ? null : FRemarks.Trim(),
+                BudgetHeadId     = FBudgetHeadId,
                 PdfUrl           = pdfUrl,
                 CreatedBy        = CurrentUserId,
                 CreatedAt        = DateTime.UtcNow
@@ -175,14 +188,15 @@ public partial class WorkBillsPanel
             var existing = await db.WorkBills.FindAsync(EditingBillId);
             if (existing != null)
             {
-                existing.BillNumber  = FBillNumber.Trim();
-                existing.BillDate    = FBillDate;
-                existing.GrossAmount = FGross;
-                existing.Deductions  = FDeductions;
-                existing.NetAmount   = FNet;
-                existing.Status      = status;
-                existing.Remarks     = string.IsNullOrWhiteSpace(FRemarks) ? null : FRemarks.Trim();
-                existing.UpdatedAt   = DateTime.UtcNow;
+                existing.BillNumber    = FBillNumber.Trim();
+                existing.BillDate      = FBillDate;
+                existing.GrossAmount   = FGross;
+                existing.Deductions    = FDeductions;
+                existing.NetAmount     = FNet;
+                existing.Status        = status;
+                existing.Remarks       = string.IsNullOrWhiteSpace(FRemarks) ? null : FRemarks.Trim();
+                existing.BudgetHeadId  = FBudgetHeadId;
+                existing.UpdatedAt     = DateTime.UtcNow;
                 if (pdfUrl != null) existing.PdfUrl = pdfUrl;
             }
         }
@@ -211,8 +225,8 @@ public partial class WorkBillsPanel
         await LoadBills();
     }
 
-    // ── Helpers — delegate to shared WorkHelpers ─────────────────
-    static string StatusBadge(BillStatus s)  => WorkHelpers.BillStatusBadge(s);
-    static string StatusLabel(BillStatus s)  => WorkHelpers.BillStatusLabel(s);
-    static string Fmt(decimal d)             => d.ToString("N2");
+    // ── Helpers ───────────────────────────────────────────────────
+    static string StatusBadge(BillStatus s) => WorkHelpers.BillStatusBadge(s);
+    static string StatusLabel(BillStatus s) => WorkHelpers.BillStatusLabel(s);
+    static string Fmt(decimal d)            => d.ToString("N2");
 }
