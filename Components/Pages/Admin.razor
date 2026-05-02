@@ -90,8 +90,8 @@
                 </div>
 
                 var ov      = OverviewWorks;
-                var ongoing  = ov.Where(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract).ToList();
-                var complete = ov.Where(w => w.Status == WorkStatus.COMPLETED).ToList();
+                var ongoing  = ov.Where(w => w.Status == WorkStatus.ONGOING   && !w.IsAnnualContract).ToList();
+                var complete = ov.Where(w => w.Status == WorkStatus.COMPLETED && !w.IsAnnualContract).ToList();
                 var annual   = ov.Where(w => w.IsAnnualContract).ToList();
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6 col-xl-3">
@@ -295,7 +295,7 @@
                         </button>
                         <button class="works-tab @(WorkTab == "COMPLETED" ? "active" : "")" @onclick='() => SetWorkTab("COMPLETED")'>
                             <i class="bi bi-check-circle-fill me-1"></i>Completed
-                            <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</span>
+                            <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED && !w.IsAnnualContract)</span>
                         </button>
                         <button class="works-tab @(WorkTab == "ANNUAL"    ? "active" : "")" @onclick='() => SetWorkTab("ANNUAL")'>
                             <i class="bi bi-arrow-repeat me-1"></i>Annual Works
@@ -1717,8 +1717,8 @@
         // Tab filter (primary scope)
         q = WorkTab switch
         {
-            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract),
-            "COMPLETED" => q.Where(w => w.Status == WorkStatus.COMPLETED),
+            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING   && !w.IsAnnualContract),
+            "COMPLETED" => q.Where(w => w.Status == WorkStatus.COMPLETED && !w.IsAnnualContract),
             "ANNUAL"    => q.Where(w => w.IsAnnualContract),
             _           => q
         };
