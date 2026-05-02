@@ -62,6 +62,12 @@ public partial class Admin
                 StateHasChanged();
             }
         }
+
+        if (Section == "overview" && !IsLoading && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderOverviewCharts();
+        }
     }
 
     private async Task SaveColSelection()
