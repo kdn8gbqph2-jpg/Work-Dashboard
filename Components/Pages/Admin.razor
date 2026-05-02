@@ -253,8 +253,8 @@
                             @* File No Search *@
                             <div class="filter-search-wrap">
                                 <i class="bi bi-search filter-search-icon"></i>
-                                <input type="search" class="filter-search-input"
-                                       placeholder="Search file no…"
+                                <input type="search" class="filter-search-input" autocomplete="off"
+                                       placeholder="Search work name / file no…"
                                        @bind="WorkSearchText" @bind:after="FilterWorks" />
                             </div>
 
@@ -1704,7 +1704,9 @@
         if (!string.IsNullOrWhiteSpace(WorkSearchText))
         {
             var t = WorkSearchText.Trim();
-            q = q.Where(w => w.WorkCode != null && w.WorkCode.Contains(t, StringComparison.OrdinalIgnoreCase));
+            q = q.Where(w =>
+                (w.WorkCode != null && w.WorkCode.Contains(t, StringComparison.OrdinalIgnoreCase)) ||
+                (w.WorkName != null && w.WorkName.Contains(t, StringComparison.OrdinalIgnoreCase)));
         }
 
         // Engineer filters
