@@ -78,29 +78,37 @@
             @* ══ OVERVIEW ══════════════════════════════════════ *@
             if (Section == "overview")
             {
+                var ov        = OverviewWorks.ToList();
+                var ovOngoing = ov.Where(w => w.Status == WorkStatus.ONGOING   && !w.IsAnnualContract).ToList();
+                var ovDone    = ov.Where(w => w.Status == WorkStatus.COMPLETED && !w.IsAnnualContract).ToList();
+                var ovAnnual  = ov.Where(w => w.IsAnnualContract).ToList();
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-warning">
                             <div class="stat-label">Total Works</div>
-                            <div class="stat-value">@AllWorks.Count</div>
+                            <div class="stat-value">@ov.Count</div>
+                            <div class="stat-sub">₹ @ov.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-primary">
                             <div class="stat-label">Ongoing</div>
-                            <div class="stat-value text-primary">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</div>
+                            <div class="stat-value text-primary">@ovOngoing.Count</div>
+                            <div class="stat-sub">₹ @ovOngoing.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-success">
                             <div class="stat-label">Completed</div>
-                            <div class="stat-value text-success">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</div>
+                            <div class="stat-value text-success">@ovDone.Count</div>
+                            <div class="stat-sub">₹ @ovDone.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="stat-card border-start border-4 border-info">
                             <div class="stat-label">Annual Contract</div>
-                            <div class="stat-value text-info">@AllWorks.Count(w => w.IsAnnualContract)</div>
+                            <div class="stat-value text-info">@ovAnnual.Count</div>
+                            <div class="stat-sub">₹ @ovAnnual.Sum(w => w.AgreementAmount ?? 0).ToString("N2") L</div>
                         </div>
                     </div>
                 </div>

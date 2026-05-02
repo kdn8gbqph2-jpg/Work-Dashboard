@@ -50,14 +50,13 @@ window.bdaCharts = (function () {
             xAxis, yAxis,
             valueXField: "amount",
             categoryYField: "label",
-            tooltip: am5.Tooltip.new(root, {
-                labelText: "{categoryY}: ₹{valueX} L ({count} works)"
-            })
         }));
         series.columns.template.setAll({
             cornerRadiusTR: 4, cornerRadiusBR: 4,
             fillOpacity: 0.9,
-            templateField: "columnSettings"
+            templateField: "columnSettings",
+            tooltipText: "{categoryY}\n₹{valueX} L  ({count} works)",
+            tooltipY: am5.percent(50)
         });
 
         // Assign colours cycling through a palette
