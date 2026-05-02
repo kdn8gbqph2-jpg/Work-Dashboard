@@ -14,6 +14,7 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
     public DbSet<WorkFile>            WorkFiles            => Set<WorkFile>();
     public DbSet<AuditLog>            AuditLogs            => Set<AuditLog>();
     public DbSet<BudgetHead>          BudgetHeads          => Set<BudgetHead>();
+    public DbSet<WorkBill>            WorkBills            => Set<WorkBill>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -173,6 +174,31 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
             e.Property(x => x.IsActive).HasColumnName("is_active");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.HasIndex(x => x.BudgetCode).IsUnique();
+        });
+
+        // ── work_bills ───────────────────────────────────────────
+        mb.Entity<WorkBill>(e =>
+        {
+            e.ToTable("work_bills");
+            e.HasKey(x => x.BillId);
+            e.Property(x => x.BillId).HasColumnName("bill_id");
+            e.Property(x => x.WorkId).HasColumnName("work_id");
+            e.Property(x => x.BillNumber).HasColumnName("bill_number").HasMaxLength(100);
+            e.Property(x => x.BillDate).HasColumnName("bill_date");
+            e.Property(x => x.GrossAmount).HasColumnName("gross_amount").HasPrecision(12, 4);
+            e.Property(x => x.Deductions).HasColumnName("deductions").HasPrecision(12, 4);
+            e.Property(x => x.NetAmount).HasColumnName("net_amount").HasPrecision(12, 4);
+            e.Property(x => x.CumulativeBilled).HasColumnName("cumulative_billed").HasPrecision(12, 4);
+            e.Property(x => x.Status).HasColumnName("status").HasConversion<string>();
+            e.Property(x => x.Remarks).HasColumnName("remarks").HasColumnType("text");
+            e.Property(x => x.PdfUrl).HasColumnName("pdf_url").HasMaxLength(1000);
+            e.Property(x => x.BudgetHeadId).HasColumnName("budget_head_id");
+            e.Property(x => x.CreatedBy).HasColumnName("created_by");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.HasOne(x => x.Work).WithMany().HasForeignKey(x => x.WorkId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.BudgetHead).WithMany().HasForeignKey(x => x.BudgetHeadId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.CreatedByEngineer).WithMany().HasForeignKey(x => x.CreatedBy).OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── audit_log ────────────────────────────────────────────

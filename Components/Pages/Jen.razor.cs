@@ -1,14 +1,15 @@
 using ClosedXML.Excel;
 using Microsoft.JSInterop;
 using Work_Dashboard.Data.Entities;
+using Work_Dashboard.Services;
 
 namespace Work_Dashboard.Components.Pages;
 
 public partial class Jen
 {
     // ── Export helpers ────────────────────────────────────────
-    private static string CsvVal(string? s) =>
-        s == null ? "" : $"\"{s.Replace("\"", "\"\"")}\"";
+    // CsvVal is in WorkHelpers; keep a local alias for brevity.
+    private static string CsvVal(string? s) => WorkHelpers.CsvVal(s);
 
     private static readonly string[] ExportHeaders =
     {
@@ -108,17 +109,4 @@ public partial class Jen
             rows);
     }
 
-    // ── Hindi transliteration ─────────────────────────────────
-    bool HindiMode = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        try { await JS.InvokeVoidAsync("bdaHindi.attach", "jenRemarkInput"); } catch { }
-    }
-
-    async Task ToggleHindiMode()
-    {
-        HindiMode = !HindiMode;
-        try { await JS.InvokeVoidAsync("bdaHindi.setMode", "jenRemarkInput", HindiMode); } catch { }
-    }
 }

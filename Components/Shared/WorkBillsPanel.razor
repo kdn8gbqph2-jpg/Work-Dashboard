@@ -1,0 +1,264 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using Work_Dashboard.Data.Entities
+@using System.Globalization
+
+<div class="bill-panel">
+
+    @* ── Header ─────────────────────────────────────────────────── *@
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-receipt-cutoff text-success fs-5"></i>
+            <span class="fw-bold" style="font-size:0.95rem">Running Bills / Payment History</span>
+            <span class="badge bg-secondary">@Bills.Count</span>
+        </div>
+        @if (CanEdit && !ShowForm)
+        {
+            <button class="btn btn-sm btn-success px-3" @onclick="OpenAddForm">
+                <i class="bi bi-plus-lg me-1"></i>New Bill
+            </button>
+        }
+    </div>
+
+    @* ── Summary cards ───────────────────────────────────────────── *@
+    <div class="bill-summary-grid mb-3">
+        <div class="bill-summary-card">
+            <div class="bill-summary-label">WO Amount</div>
+            <div class="bill-summary-val text-dark">&#8377;@Fmt(WoAmt) L</div>
+        </div>
+        <div class="bill-summary-card">
+            <div class="bill-summary-label">Total Billed</div>
+            <div class="bill-summary-val text-primary">&#8377;@Fmt(TotalBilled) L</div>
+            <div style="font-size:0.68rem;color:#6b7280">@BilledPct.ToString("F1", CultureInfo.InvariantCulture)% of WO</div>
+        </div>
+        <div class="bill-summary-card">
+            <div class="bill-summary-label">Unbilled</div>
+            <div class="bill-summary-val @(Remaining < 0 ? "text-danger" : "text-success")">
+                &#8377;@Fmt(Remaining < 0 ? 0 : Remaining) L
+            </div>
+            @if (Remaining < 0)
+            { <div style="font-size:0.68rem;color:#dc2626">Over by &#8377;@Fmt(-Remaining) L</div> }
+        </div>
+    </div>
+
+    @* ── Stacked cumulative bar ──────────────────────────────────── *@
+    @if (Bills.Any())
+    {
+        <div class="bill-stacked-wrap mb-3">
+            <div class="bill-stacked-bar">
+                @for (int i = 0; i < Bills.Count; i++)
+                {
+                    var bill   = Bills[i];
+                    var color  = BillColor(i);
+                    var pctStr = SegPct(bill).ToString("F2", CultureInfo.InvariantCulture);
+                    <div class="bill-bar-seg"
+                         style="width:@(pctStr)%;background:@color"
+                         title="@bill.BillNumber: &#8377;@Fmt(bill.NetAmount) L (@pctStr%)">
+                    </div>
+                }
+                @{
+                    var remPct = Math.Max(0, 100 - BilledPct);
+                    var remPctStr = remPct.ToString("F2", CultureInfo.InvariantCulture);
+                }
+                <div class="bill-bar-seg bill-bar-remaining"
+                     style="width:@(remPctStr)%"
+                     title="Unbilled: &#8377;@Fmt(Remaining < 0 ? 0 : Remaining) L">
+                </div>
+            </div>
+            @* Legend *@
+            <div class="bill-stacked-legend">
+                @for (int i = 0; i < Bills.Count; i++)
+                {
+                    var bill  = Bills[i];
+                    var color = BillColor(i);
+                    <span class="bill-legend-item">
+                        <span class="bill-legend-dot" style="background:@color"></span>
+                        @bill.BillNumber
+                    </span>
+                }
+                <span class="bill-legend-item">
+                    <span class="bill-legend-dot" style="background:#d1d5db"></span>
+                    Unbilled
+                </span>
+            </div>
+        </div>
+    }
+
+    @* ── Bill Cards ──────────────────────────────────────────────── *@
+    @for (int i = 0; i < Bills.Count; i++)
+    {
+        var bill  = Bills[i];
+        var color = BillColor(i);
+        var pct   = SegPct(bill);
+        var pctStr = pct.ToString("F2", CultureInfo.InvariantCulture);
+        <div class="bill-card">
+            <div class="bill-card-header">
+                <div class="bill-legend-dot" style="background:@color;width:12px;height:12px;border-radius:50%;flex-shrink:0"></div>
+                <div class="flex-grow-1">
+                    <span class="bill-number">@bill.BillNumber</span>
+                    @if (bill.BillDate.HasValue)
+                    { <span class="bill-date ms-2">@bill.BillDate.Value.ToString("dd MMM yyyy")</span> }
+                </div>
+                <span class="badge @StatusBadge(bill.Status)">@StatusLabel(bill.Status)</span>
+                @if (bill.PdfUrl != null)
+                {
+                    <a href="@bill.PdfUrl" target="_blank" class="action-btn action-btn-view ms-1"
+                       title="View attached PDF" style="text-decoration:none">
+                        <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                    </a>
+                }
+                @if (CanEdit)
+                {
+                    <button class="action-btn action-btn-edit ms-1" title="Edit Bill"
+                            @onclick="() => OpenEditForm(bill)">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    <button class="action-btn action-btn-delete ms-1" title="Delete Bill"
+                            @onclick="() => DeleteBill(bill)">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                }
+            </div>
+            <div class="bill-card-body">
+                <div class="bill-amounts">
+                    <div>
+                        <div class="bill-amt-label">Gross Amount</div>
+                        <div class="bill-amt-val">&#8377;@Fmt(bill.GrossAmount) L</div>
+                    </div>
+                    <div>
+                        <div class="bill-amt-label">Deductions</div>
+                        <div class="bill-amt-val text-danger">&#8211;&#8377;@Fmt(bill.Deductions) L</div>
+                    </div>
+                    <div>
+                        <div class="bill-amt-label">Net Paid</div>
+                        <div class="bill-amt-val bill-amt-net">&#8377;@Fmt(bill.NetAmount) L</div>
+                    </div>
+                </div>
+
+                @* Progress meter for this bill *@
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bill-mini-bar flex-grow-1">
+                        <div class="bill-mini-fill"
+                             style="width:@(pctStr)%;background:@color">
+                        </div>
+                    </div>
+                    <span style="font-size:0.72rem;color:#6b7280;white-space:nowrap">
+                        @pctStr% of WO
+                    </span>
+                </div>
+
+                @* Cumulative running total + budget head *@
+                <div class="d-flex justify-content-between mt-1" style="font-size:0.72rem;color:#9ca3af">
+                    <span>Cumulative billed: <strong class="text-dark">&#8377;@Fmt(bill.CumulativeBilled) L</strong></span>
+                    <span>
+                        @if (bill.BudgetHeadId.HasValue)
+                        {
+                            var bh = BudgetHeads.FirstOrDefault(h => h.BudgetHeadId == bill.BudgetHeadId);
+                            if (bh != null)
+                            { <span class="badge bg-light text-secondary border" style="font-size:0.65rem">@bh.BudgetCode</span> }
+                        }
+                        @if (!string.IsNullOrEmpty(bill.Remarks))
+                        { <span class="fst-italic ms-1">@bill.Remarks</span> }
+                    </span>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!Bills.Any() && !ShowForm)
+    {
+        <div class="text-center text-muted py-4" style="font-size:0.88rem">
+            <i class="bi bi-receipt-cutoff fs-4 d-block mb-1 text-muted"></i>
+            No bills recorded yet.
+            @if (CanEdit) { <span> Click <strong>New Bill</strong> to add the first bill.</span> }
+        </div>
+    }
+
+    @* ── Add / Edit Bill Form ────────────────────────────────────── *@
+    @if (ShowForm)
+    {
+        <div class="bill-add-form mt-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="mb-0 fw-bold text-success">
+                    <i class="bi bi-plus-circle-fill me-1"></i>
+                    @(EditingBillId == 0 ? "Add New Bill" : "Edit Bill")
+                </h6>
+                <button class="btn-close" @onclick="CancelForm"></button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(BillError))
+            { <div class="alert alert-danger py-2 mb-3">@BillError</div> }
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Bill No. / Label <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" placeholder="e.g. 1st Bill"
+                           @bind="FBillNumber" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Bill Date</label>
+                    <input type="date" class="form-control" @bind="FBillDate" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select class="form-select" @bind="FStatusStr">
+                        <option value="SUBMITTED">Submitted</option>
+                        <option value="PASSED">Passed</option>
+                        <option value="PAID">Paid</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Gross Amount (&#8377; Lakhs)</label>
+                    <input type="number" step="0.01" min="0" class="form-control"
+                           @bind="FGross" @bind:after="RecomputeNet" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Deductions (&#8377; Lakhs)</label>
+                    <input type="number" step="0.01" min="0" class="form-control"
+                           @bind="FDeductions" @bind:after="RecomputeNet" />
+                    <div class="form-text">TDS, retention, etc.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Net Amount (&#8377; Lakhs)</label>
+                    <input type="number" step="0.01" class="form-control"
+                           value="@FNet" readonly style="background:#f0fdf4;font-weight:700;color:#16a34a" />
+                    <div class="form-text">Gross &minus; Deductions</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Budget Head</label>
+                    <select class="form-select" @bind="FBudgetHeadId">
+                        <option value="">— None —</option>
+                        @foreach (var h in BudgetHeads)
+                        {
+                            <option value="@h.BudgetHeadId">@h.BudgetCode — @h.BudgetName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Remarks</label>
+                    <input type="text" class="form-control" placeholder="Optional notes…"
+                           @bind="FRemarks" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>Attach Bill PDF
+                    </label>
+                    <InputFile OnChange="OnPdfSelected" accept="application/pdf"
+                               class="form-control" style="font-size:0.82rem" />
+                    @if (!string.IsNullOrEmpty(FPdfName))
+                    { <div class="form-text text-success"><i class="bi bi-check2 me-1"></i>@FPdfName</div> }
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end mt-3">
+                <button class="btn btn-secondary btn-sm px-3" @onclick="CancelForm">Cancel</button>
+                <button class="btn btn-success btn-sm px-4" @onclick="SaveBill" disabled="@Saving">
+                    @if (Saving)
+                    { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    <i class="bi bi-check-lg me-1"></i>Save Bill
+                </button>
+            </div>
+        </div>
+    }
+
+</div>

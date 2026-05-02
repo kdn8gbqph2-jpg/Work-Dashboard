@@ -3,68 +3,148 @@
 window.bdaGetItem = function (key) { return localStorage.getItem(key); };
 window.bdaSetItem = function (key, value) { localStorage.setItem(key, value); };
 
-// ── Hindi transliteration via Google Input Tools ────────────────────
-window.bdaHindi = (function () {
-    const TRIGGERS = new Set([' ', 'Enter', '.', ',', '?', '!', ';', ':']);
+// ── amCharts 5 Overview Charts ────────────────────────────────────────
+window.bdaCharts = (function () {
+    // Registry of active amCharts roots so we can dispose before re-render
+    const _roots = {};
 
-    async function translit(word) {
-        try {
-            const url = 'https://inputtools.google.com/request?text=' +
-                encodeURIComponent(word) +
-                '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8';
-            const r = await fetch(url);
-            const j = await r.json();
-            if (j && j[0] === 'SUCCESS' && j[1] && j[1][0] && j[1][0][1] && j[1][0][1][0]) {
-                return j[1][0][1][0];
-            }
-        } catch (e) { console.warn('Hindi transliteration failed', e); }
-        return null;
+    function dispose(divId) {
+        if (_roots[divId]) {
+            _roots[divId].dispose();
+            delete _roots[divId];
+        }
     }
 
-    function attach(textareaId) {
-        const ta = document.getElementById(textareaId);
-        if (!ta || ta._bdaHindiAttached) return;
-        ta._bdaHindiAttached = true;
+    // Horizontal bar chart — Category Wise
+    function renderCategoryBar(divId, data) {
+        dispose(divId);
+        const el = document.getElementById(divId);
+        if (!el) return;
 
-        ta.addEventListener('keydown', async function (e) {
-            if (ta.dataset.hindi !== 'true') return;
-            if (!TRIGGERS.has(e.key)) return;
+        const root = am5.Root.new(divId);
+        _roots[divId] = root;
+        root.setThemes([am5themes_Animated.new(root)]);
 
-            const pos = ta.selectionStart;
-            const before = ta.value.slice(0, pos);
-            const after = ta.value.slice(pos);
+        const chart = root.container.children.push(
+            am5xy.XYChart.new(root, { panX: false, panY: false, layout: root.verticalLayout })
+        );
 
-            const m = before.match(/([a-zA-Z][a-zA-Z'-]*)$/);
-            if (!m) return;
+        // Sort descending by amount
+        const sorted = [...data].sort((a, b) => b.amount - a.amount);
 
-            const word = m[1];
-            e.preventDefault();
+        const yRenderer = am5xy.AxisRendererY.new(root, { minGridDistance: 20 });
+        yRenderer.labels.template.setAll({ fontSize: 12, maxWidth: 90, oversizedBehavior: "truncate" });
 
-            const sep = e.key === 'Enter' ? '\n' : e.key;
-            // Optimistic insert with original word, then replace once API responds
-            const placeholder = before + sep + after;
-            ta.value = placeholder;
-            const cursorAfter = before.length + sep.length;
-            ta.setSelectionRange(cursorAfter, cursorAfter);
+        const yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+            categoryField: "label",
+            renderer: yRenderer
+        }));
+        yAxis.data.setAll(sorted);
 
-            const hindi = await translit(word);
-            if (hindi) {
-                const newBefore = before.slice(0, -word.length) + hindi;
-                ta.value = newBefore + sep + after;
-                const newPos = newBefore.length + sep.length;
-                ta.setSelectionRange(newPos, newPos);
-            }
-            ta.dispatchEvent(new Event('input', { bubbles: true }));
+        const xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+            renderer: am5xy.AxisRendererX.new(root, {}),
+            numberFormat: "#,###.##"
+        }));
+
+        const series = chart.series.push(am5xy.ColumnSeries.new(root, {
+            xAxis, yAxis,
+            valueXField: "amount",
+            categoryYField: "label",
+        }));
+        series.columns.template.setAll({
+            cornerRadiusTR: 4, cornerRadiusBR: 4,
+            fillOpacity: 0.9,
+            templateField: "columnSettings",
+            tooltipText: "{categoryY}\n₹{valueX} L  ({count} works)",
+            tooltipY: am5.percent(50)
         });
+
+        // Assign colours cycling through a palette
+        const palette = ["#f97316","#3b82f6","#10b981","#8b5cf6","#ef4444","#eab308","#06b6d4","#ec4899","#84cc16"];
+        sorted.forEach((d, i) => d.columnSettings = { fill: am5.color(palette[i % palette.length]) });
+
+        series.data.setAll(sorted);
+        series.appear(800);
+        chart.appear(800, 100);
     }
 
-    function setMode(textareaId, on) {
-        const ta = document.getElementById(textareaId);
-        if (ta) ta.dataset.hindi = on ? 'true' : 'false';
+    // Donut chart — Fund Source
+    function renderFundDonut(divId, data) {
+        dispose(divId);
+        const el = document.getElementById(divId);
+        if (!el) return;
+
+        const root = am5.Root.new(divId);
+        _roots[divId] = root;
+        root.setThemes([am5themes_Animated.new(root)]);
+
+        const chart = root.container.children.push(
+            am5percent.PieChart.new(root, { innerRadius: am5.percent(55), layout: root.horizontalLayout })
+        );
+
+        const series = chart.series.push(am5percent.PieSeries.new(root, {
+            valueField: "amount",
+            categoryField: "label",
+            tooltip: am5.Tooltip.new(root, { labelText: "{category}: ₹{value} L" })
+        }));
+        series.labels.template.set("forceHidden", true);
+        series.ticks.template.set("forceHidden", true);
+        series.data.setAll(data);
+
+        const legend = chart.children.push(am5.Legend.new(root, {
+            centerY: am5.percent(50), y: am5.percent(50), layout: root.verticalLayout
+        }));
+        legend.labels.template.setAll({ fontSize: 12 });
+        legend.valueLabels.template.set("forceHidden", true);
+        legend.data.setAll(series.dataItems);
+
+        series.appear(800);
+        chart.appear(800, 100);
     }
 
-    return { attach: attach, setMode: setMode };
+    // Semi-donut (half pie) — Scheme / CM Budget splits
+    function renderSemiDonut(divId, data) {
+        dispose(divId);
+        const el = document.getElementById(divId);
+        if (!el) return;
+
+        const root = am5.Root.new(divId);
+        _roots[divId] = root;
+        root.setThemes([am5themes_Animated.new(root)]);
+
+        const chart = root.container.children.push(
+            am5percent.PieChart.new(root, {
+                startAngle: 180, endAngle: 360,
+                innerRadius: am5.percent(50),
+                layout: root.verticalLayout,
+                paddingBottom: 0
+            })
+        );
+
+        const series = chart.series.push(am5percent.PieSeries.new(root, {
+            startAngle: 180, endAngle: 360,
+            valueField: "amount",
+            categoryField: "label",
+            tooltip: am5.Tooltip.new(root, { labelText: "{category}: ₹{value} L ({count} works)" })
+        }));
+        series.labels.template.setAll({ radius: 8, fontSize: 12 });
+        series.ticks.template.set("forceHidden", true);
+        series.data.setAll(data);
+
+        const legend = chart.children.push(am5.Legend.new(root, {
+            centerX: am5.percent(50), x: am5.percent(50)
+        }));
+        legend.labels.template.setAll({ fontSize: 12 });
+        legend.valueLabels.template.set("forceHidden", true);
+        legend.data.setAll(series.dataItems);
+
+        series.appear(800);
+        chart.appear(800, 100);
+    }
+
+    return { renderCategoryBar, renderFundDonut, renderSemiDonut };
 })();
+
 
 window.bdaDownloadBase64 = function (filename, base64) {
     const bytes = atob(base64);

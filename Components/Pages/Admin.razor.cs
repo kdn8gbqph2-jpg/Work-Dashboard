@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using Microsoft.JSInterop;
 using Work_Dashboard.Data.Entities;
+using Work_Dashboard.Services;
 
 namespace Work_Dashboard.Components.Pages;
 
@@ -47,9 +48,6 @@ public partial class Admin
     private bool _colsLoaded = false;
     bool ShowColPicker = false;
 
-    // Hindi transliteration mode for the remark textarea
-    bool HindiMode = false;
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_colsLoaded)
@@ -65,15 +63,11 @@ public partial class Admin
             }
         }
 
-        // Attach Hindi handler if the remark textarea is on screen.
-        // The JS function is idempotent — it checks _bdaHindiAttached internally.
-        try { await JS.InvokeVoidAsync("bdaHindi.attach", "adminRemarkInput"); } catch { }
-    }
-
-    async Task ToggleHindiMode()
-    {
-        HindiMode = !HindiMode;
-        try { await JS.InvokeVoidAsync("bdaHindi.setMode", "adminRemarkInput", HindiMode); } catch { }
+        if (Section == "overview" && !IsLoading && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderOverviewCharts();
+        }
     }
 
     private async Task SaveColSelection()
@@ -120,8 +114,8 @@ public partial class Admin
     private string LatestRemark(int workId) =>
         LatestRemarksMap.TryGetValue(workId, out var r) ? r.Content : "";
 
-    private static string CsvVal(string s) =>
-        $"\"{s.Replace("\"", "\"\"")}\"";
+    // CsvVal is in WorkHelpers; keep a local alias for brevity.
+    private static string CsvVal(string? s) => WorkHelpers.CsvVal(s);
 
     // ── Export methods ────────────────────────────────────────
     private async Task ExportCsv()
