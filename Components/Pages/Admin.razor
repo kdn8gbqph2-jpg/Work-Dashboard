@@ -365,9 +365,6 @@
                                     <th style="min-width:260px">Work Name / File No.</th>
                                     <th style="min-width:110px">Status</th>
                                     <th style="min-width:90px">Progress</th>
-                                    <th style="min-width:110px">JEN</th>
-                                    <th style="min-width:100px">AEN</th>
-                                    <th style="min-width:100px">XEN</th>
                                     <th style="min-width:220px">Latest Remark</th>
                                     <th style="min-width:120px">Files</th>
                                     <th class="text-center" style="min-width:100px">Actions</th>
@@ -376,7 +373,7 @@
                             <tbody>
                                 @if (!FilteredWorks.Any())
                                 {
-                                    <tr><td colspan="10" class="text-center text-muted py-5">No records found.</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted py-5">No records found.</td></tr>
                                 }
                                 @{ int wi = 1; }
                                 @foreach (var w in FilteredWorks)
@@ -425,9 +422,6 @@
                                             }
                                             else { <span class="text-muted">—</span> }
                                         </td>
-                                        <td><span class="eng-name">@(w.AssignedJen?.Name ?? "—")</span></td>
-                                        <td><span class="eng-name">@(w.AssignedAen?.Name ?? "—")</span></td>
-                                        <td><span class="eng-name">@(w.AssignedExen?.Name ?? "—")</span></td>
                                         <td>
                                             @if (remarkText != null)
                                             {
@@ -473,7 +467,7 @@
                                     @if (isExpanded)
                                     {
                                         <tr class="work-expand-row">
-                                            <td colspan="10">
+                                            <td colspan="7">
                                                 <div class="work-expand-panel">
                                                     <div class="expand-fullname">@w.WorkName</div>
                                                     <div class="expand-grid">
@@ -537,6 +531,27 @@
                                                         <div class="expand-item">
                                                             <div class="expand-label">Fund Source</div>
                                                             <div class="expand-val">@(w.FundSource?.SourceName ?? w.FundSource?.SourceCode ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Flags</div>
+                                                            <div class="expand-val">
+                                                                @if (w.IsScheme)         { <span class="badge bg-primary me-1" style="font-size:0.68rem">Scheme</span> }
+                                                                @if (w.IsCmBudget)       { <span class="badge bg-success me-1" style="font-size:0.68rem">CM Budget</span> }
+                                                                @if (w.IsAnnualContract) { <span class="badge bg-info text-dark me-1" style="font-size:0.68rem">Annual</span> }
+                                                                @if (!w.IsScheme && !w.IsCmBudget && !w.IsAnnualContract) { <text>—</text> }
+                                                            </div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">JEN</div>
+                                                            <div class="expand-val">@(w.AssignedJen?.Name ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">AEN</div>
+                                                            <div class="expand-val">@(w.AssignedAen?.Name ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">XEN</div>
+                                                            <div class="expand-val">@(w.AssignedExen?.Name ?? "—")</div>
                                                         </div>
                                                     </div>
                                                     @if (lr != null)
