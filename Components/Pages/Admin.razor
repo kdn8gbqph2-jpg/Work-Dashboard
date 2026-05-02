@@ -126,82 +126,26 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">Category Wise Summary</h6>
-                            <table class="table table-sm bda-table mb-0">
-                                <thead><tr><th>Category</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
-                                <tbody>
-                                    @foreach (var g in ov.GroupBy(w => w.Category?.CategoryCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
-                                    {
-                                        <tr>
-                                            <td>@g.Key</td>
-                                            <td class="text-end">@g.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
-                                            <td class="text-center"><span class="badge bg-secondary">@g.Count()</span></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                            <h6 class="fw-bold mb-2">Category Wise</h6>
+                            <div id="chart-category" style="height:320px"></div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">Fund Source Summary</h6>
-                            <table class="table table-sm bda-table mb-0">
-                                <thead><tr><th>Fund Source</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
-                                <tbody>
-                                    @foreach (var g in ov.GroupBy(w => w.FundSource?.SourceCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
-                                    {
-                                        <tr>
-                                            <td>@g.Key</td>
-                                            <td class="text-end">@g.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
-                                            <td class="text-center"><span class="badge bg-secondary">@g.Count()</span></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                            <h6 class="fw-bold mb-2">Fund Source</h6>
+                            <div id="chart-fund" style="height:320px"></div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        @{ var scheme    = ov.Where(w =>  w.IsScheme).ToList();
-                           var nonScheme = ov.Where(w => !w.IsScheme).ToList(); }
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">Scheme / Non-Scheme Summary</h6>
-                            <table class="table table-sm bda-table mb-0">
-                                <thead><tr><th>Type</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
-                                <tbody>
-                                    <tr>
-                                        <td><span class="badge bg-success me-1">Scheme</span></td>
-                                        <td class="text-end">@scheme.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
-                                        <td class="text-center"><span class="badge bg-secondary">@scheme.Count</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="badge bg-light text-dark border me-1">Non-Scheme</span></td>
-                                        <td class="text-end">@nonScheme.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
-                                        <td class="text-center"><span class="badge bg-secondary">@nonScheme.Count</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <h6 class="fw-bold mb-2">Scheme / Non-Scheme</h6>
+                            <div id="chart-scheme" style="height:260px"></div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        @{ var cmBudget    = ov.Where(w =>  w.IsCmBudget).ToList();
-                           var nonCmBudget = ov.Where(w => !w.IsCmBudget).ToList(); }
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">CM Budget / Non-CM Budget Summary</h6>
-                            <table class="table table-sm bda-table mb-0">
-                                <thead><tr><th>Type</th><th class="text-end">Workorder Amt (लाखों)</th><th class="text-center">Count</th></tr></thead>
-                                <tbody>
-                                    <tr>
-                                        <td><span class="badge bg-warning text-dark me-1">CM Budget</span></td>
-                                        <td class="text-end">@cmBudget.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
-                                        <td class="text-center"><span class="badge bg-secondary">@cmBudget.Count</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="badge bg-light text-dark border me-1">Non-CM Budget</span></td>
-                                        <td class="text-end">@nonCmBudget.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
-                                        <td class="text-center"><span class="badge bg-secondary">@nonCmBudget.Count</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <h6 class="fw-bold mb-2">CM Budget / Non-CM Budget</h6>
+                            <div id="chart-cmbudget" style="height:260px"></div>
                         </div>
                     </div>
                 </div>
