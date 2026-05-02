@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Work_Dashboard.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.JSInterop;
 using Work_Dashboard.Data;
@@ -210,24 +211,8 @@ public partial class WorkBillsPanel
         await LoadBills();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────
-    static string StatusBadge(BillStatus s) => s switch
-    {
-        BillStatus.SUBMITTED => "bg-primary",
-        BillStatus.PASSED    => "bg-warning text-dark",
-        BillStatus.PAID      => "bg-success",
-        BillStatus.REJECTED  => "bg-danger",
-        _                    => "bg-secondary"
-    };
-
-    static string StatusLabel(BillStatus s) => s switch
-    {
-        BillStatus.SUBMITTED => "Submitted",
-        BillStatus.PASSED    => "Passed",
-        BillStatus.PAID      => "Paid",
-        BillStatus.REJECTED  => "Rejected",
-        _                    => s.ToString()
-    };
-
-    static string Fmt(decimal d) => d.ToString("N2");
+    // ── Helpers — delegate to shared WorkHelpers ─────────────────
+    static string StatusBadge(BillStatus s)  => WorkHelpers.BillStatusBadge(s);
+    static string StatusLabel(BillStatus s)  => WorkHelpers.BillStatusLabel(s);
+    static string Fmt(decimal d)             => d.ToString("N2");
 }

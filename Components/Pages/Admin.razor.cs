@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using Microsoft.JSInterop;
 using Work_Dashboard.Data.Entities;
+using Work_Dashboard.Services;
 
 namespace Work_Dashboard.Components.Pages;
 
@@ -120,8 +121,8 @@ public partial class Admin
     private string LatestRemark(int workId) =>
         LatestRemarksMap.TryGetValue(workId, out var r) ? r.Content : "";
 
-    private static string CsvVal(string s) =>
-        $"\"{s.Replace("\"", "\"\"")}\"";
+    // CsvVal is in WorkHelpers; keep a local alias for brevity.
+    private static string CsvVal(string? s) => WorkHelpers.CsvVal(s);
 
     // ── Export methods ────────────────────────────────────────
     private async Task ExportCsv()

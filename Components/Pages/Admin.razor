@@ -1458,9 +1458,8 @@
     }
 
     // ── Works filter ──────────────────────────────────────────
-    string WorkTab             = "ONGOING";   // ONGOING | COMPLETED | ANNUAL
-    string WorkFilter          = "ALL";
-    string WorkSearchText      = "";
+    string WorkTab          = "ONGOING";   // ONGOING | COMPLETED | ANNUAL
+    string WorkSearchText   = "";
     string WorkJenFilter       = "";
     string WorkAenFilter       = "";
     string WorkXenFilter       = "";
@@ -1480,10 +1479,7 @@
         .Select(w => FinYear(w.StartDate!.Value))
         .Distinct().OrderByDescending(y => y).ToList();
 
-    static string FinYear(DateOnly d) =>
-        d.Month >= 4
-            ? $"{d.Year}-{d.Year + 1 - 2000:D2}"
-            : $"{d.Year - 1}-{d.Year - 2000:D2}";
+    static string FinYear(DateOnly d) => WorkHelpers.FinYear(d);
 
     List<Work> OverviewWorks => OverviewYear == "ALL"
         ? AllWorks
@@ -1710,9 +1706,10 @@
 
     void ResetWorkFilters()
     {
-        WorkSearchText = "";
-        WorkJenFilter = WorkAenFilter = WorkXenFilter = "";
-        WorkYearFilter = "";
+        WorkSearchText   = "";
+        WorkJenFilter    = WorkAenFilter = WorkXenFilter = "";
+        WorkYearFilter   = "";
+        WorkAnnualFilter = "ALL";
         FilterWorks();
     }
 
@@ -2120,14 +2117,8 @@
         _                    => "bg-light text-dark"
     };
 
-    static string StatusLabel(WorkStatus s) => s switch
-    {
-        WorkStatus.ONGOING   => "Ongoing",
-        WorkStatus.COMPLETED => "Completed",
-        WorkStatus.STALLED   => "Stalled",
-        WorkStatus.CANCELLED => "Cancelled",
-        _                    => s.ToString()
-    };
+    // StatusLabel and ProgColor live in WorkHelpers — delegate for Razor template access.
+    static string StatusLabel(WorkStatus s) => WorkHelpers.StatusLabel(s);
 
     static string RoleBadge(EngineerRole r) => r switch
     {
@@ -2151,11 +2142,6 @@
         _           => "bg-secondary"
     };
 
-    static string ProgColor(decimal pct) => pct switch
-    {
-        >= 75 => "progress-fill-green",
-        >= 40 => "progress-fill-orange",
-        _     => "progress-fill-red"
-    };
+    static string ProgColor(decimal pct) => WorkHelpers.ProgColor(pct);
 }
 

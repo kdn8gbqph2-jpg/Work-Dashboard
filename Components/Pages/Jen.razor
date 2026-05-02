@@ -423,7 +423,7 @@
                             @if (DetailWork.ProgressPercent.HasValue)
                             {
                                 <div class="progress-pill mb-1">
-                                    <div class="progress-fill @ProgressColor(DetailWork.ProgressPercent.Value)"
+                                    <div class="progress-fill @ProgColor(DetailWork.ProgressPercent.Value)"
                                          style="width:@(DetailWork.ProgressPercent)%"></div>
                                 </div>
                                 @($"{DetailWork.ProgressPercent}%")
@@ -1308,27 +1308,7 @@
         PwdCurrent = PwdNew = PwdConfirm = "";
     }
 
-    // ── Helpers ───────────────────────────────────────────────
-    static string ProgColor(decimal pct) => pct switch
-    {
-        >= 75 => "progress-fill-green",
-        >= 40 => "progress-fill-orange",
-        _     => "progress-fill-red"
-    };
-
-    static string StatusLabel(WorkStatus s) => s switch
-    {
-        WorkStatus.ONGOING   => "Ongoing",
-        WorkStatus.COMPLETED => "Completed",
-        WorkStatus.STALLED   => "Stalled",
-        WorkStatus.CANCELLED => "Cancelled",
-        _                    => s.ToString()
-    };
-
-    static string ProgressColor(decimal pct) => pct switch
-    {
-        >= 75 => "progress-fill-green",
-        >= 40 => "progress-fill-orange",
-        _     => "progress-fill-red"
-    };
+    // ── Helpers — delegate to shared WorkHelpers ─────────────
+    static string ProgColor(decimal pct)    => WorkHelpers.ProgColor(pct);
+    static string StatusLabel(WorkStatus s) => WorkHelpers.StatusLabel(s);
 }

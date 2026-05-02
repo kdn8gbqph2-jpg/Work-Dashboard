@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using Microsoft.JSInterop;
 using Work_Dashboard.Data.Entities;
+using Work_Dashboard.Services;
 
 namespace Work_Dashboard.Components.Pages;
 
@@ -17,8 +18,8 @@ public partial class Accountant
     private string LatestRemark(int workId) =>
         LatestRemarksMap.TryGetValue(workId, out var r) ? r.Content : "";
 
-    private static string CsvVal(string? s) =>
-        s == null ? "" : "\"" + s.Replace("\"", "\"\"") + "\"";
+    // CsvVal is in WorkHelpers; keep a local alias for brevity.
+    private static string CsvVal(string? s) => WorkHelpers.CsvVal(s);
 
     private async Task ExportCsv()
     {
@@ -111,20 +112,7 @@ public partial class Accountant
             headers, rows);
     }
 
-    static string StatusLabel(WorkStatus s) => s switch
-    {
-        WorkStatus.ONGOING   => "Ongoing",
-        WorkStatus.COMPLETED => "Completed",
-        WorkStatus.STALLED   => "Stalled",
-        WorkStatus.CANCELLED => "Cancelled",
-        _                    => s.ToString()
-    };
-
-    static string ProgColor(decimal pct) => pct switch
-    {
-        >= 100 => "prog-green",
-        >= 75  => "prog-blue",
-        >= 40  => "prog-yellow",
-        _      => "prog-red"
-    };
+    // StatusLabel and ProgColor live in WorkHelpers — delegate for Razor template access.
+    static string StatusLabel(WorkStatus s)  => WorkHelpers.StatusLabel(s);
+    static string ProgColor(decimal pct)     => WorkHelpers.ProgColor(pct);
 }

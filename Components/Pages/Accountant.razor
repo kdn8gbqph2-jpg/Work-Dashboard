@@ -812,10 +812,7 @@
         .Select(w => FinYear(w.StartDate!.Value))
         .Distinct().OrderByDescending(y => y).ToList();
 
-    static string FinYear(DateOnly d) =>
-        d.Month >= 4
-            ? $"{d.Year}-{d.Year + 1 - 2000:D2}"
-            : $"{d.Year - 1}-{d.Year - 2000:D2}";
+    static string FinYear(DateOnly d) => WorkHelpers.FinYear(d);
 
     // ── Detail modal ─────────────────────────────────────────────
     bool  ShowDetailModal = false;

@@ -1,14 +1,15 @@
 using ClosedXML.Excel;
 using Microsoft.JSInterop;
 using Work_Dashboard.Data.Entities;
+using Work_Dashboard.Services;
 
 namespace Work_Dashboard.Components.Pages;
 
 public partial class Jen
 {
     // ── Export helpers ────────────────────────────────────────
-    private static string CsvVal(string? s) =>
-        s == null ? "" : $"\"{s.Replace("\"", "\"\"")}\"";
+    // CsvVal is in WorkHelpers; keep a local alias for brevity.
+    private static string CsvVal(string? s) => WorkHelpers.CsvVal(s);
 
     private static readonly string[] ExportHeaders =
     {
