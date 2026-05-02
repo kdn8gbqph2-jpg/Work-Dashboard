@@ -558,27 +558,28 @@ h1:focus {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 5px 11px;
-    border-radius: 14px;
-    font-size: 0.92rem;
+    padding: 6px 13px;
+    border-radius: 20px;
+    font-size: 0.88rem;
     font-weight: 700;
     line-height: 1;
     white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
-.files-pill i { font-size: 1.05rem; }
+.files-pill i { font-size: 1.2rem; }
 
 .files-pill-pdf {
-    background: #fee2e2;
-    color: #b91c1c;
+    background: #dc2626;
+    color: #fff;
 }
-.files-pill-pdf.empty { background: #f3f4f6; color: #9ca3af; }
+.files-pill-pdf.empty { background: #f3f4f6; color: #9ca3af; box-shadow: none; }
 
 .files-pill-img {
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: #2563eb;
+    color: #fff;
 }
-.files-pill-img.empty { background: #f3f4f6; color: #9ca3af; }
-.files-pill-img.full  { background: #fef3c7; color: #b45309; }
+.files-pill-img.empty { background: #f3f4f6; color: #9ca3af; box-shadow: none; }
+.files-pill-img.full  { background: #d97706; color: #fff; }
 
 .files-section { margin-bottom: 0.5rem; }
 .files-section-header {
