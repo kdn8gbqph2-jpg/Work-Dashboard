@@ -26,7 +26,7 @@
         </div>
 
         <nav class="sidebar-nav">
-            <button class="nav-item @(Section == "overview"  ? "active" : "")" @onclick='() => Section = "overview"'>
+            <button class="nav-item @(Section == "overview"  ? "active" : "")" @onclick="NavigateToOverview">
                 <i class="bi bi-speedometer2"></i><span>Overview</span>
             </button>
             <button class="nav-item @(Section == "users"     ? "active" : "")" @onclick='() => Section = "users"'>
@@ -104,41 +104,37 @@
                         </div>
                     </div>
                 </div>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="text-muted" style="font-size:0.83rem">Financial Year:</span>
+                    <select class="filter-select-sm" @bind="OverviewYear" @bind:after="OnOverviewYearChanged">
+                        <option value="0">All Years</option>
+                        @foreach (var y in OverviewYears)
+                        { <option value="@y">@y–@(y+1)</option> }
+                    </select>
+                </div>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">Category Wise Summary</h6>
-                            <table class="table table-sm bda-table mb-0">
-                                <thead><tr><th>Category</th><th class="text-end">Amount (लाखों)</th><th class="text-center">Count</th></tr></thead>
-                                <tbody>
-                                    @foreach (var g in AllWorks.GroupBy(w => w.Category?.CategoryCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
-                                    {
-                                        <tr>
-                                            <td>@g.Key</td>
-                                            <td class="text-end">@g.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
-                                            <td class="text-center"><span class="badge bg-secondary">@g.Count()</span></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                            <h6 class="fw-bold mb-3">Category Wise</h6>
+                            <div id="chart-category" style="height:320px"></div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="content-card p-3">
-                            <h6 class="fw-bold mb-3">Fund Source Summary</h6>
-                            <table class="table table-sm bda-table mb-0">
-                                <thead><tr><th>Fund Source</th><th class="text-end">Amount (लाखों)</th><th class="text-center">Count</th></tr></thead>
-                                <tbody>
-                                    @foreach (var g in AllWorks.GroupBy(w => w.FundSource?.SourceCode ?? "N/A").OrderByDescending(g => g.Sum(w => w.AgreementAmount ?? 0)))
-                                    {
-                                        <tr>
-                                            <td>@g.Key</td>
-                                            <td class="text-end">@g.Sum(w => w.AgreementAmount ?? 0).ToString("N2")</td>
-                                            <td class="text-center"><span class="badge bg-secondary">@g.Count()</span></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                            <h6 class="fw-bold mb-3">Fund Source</h6>
+                            <div id="chart-fund" style="height:320px"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="content-card p-3">
+                            <h6 class="fw-bold mb-3">Scheme / Non-Scheme</h6>
+                            <div id="chart-scheme" style="height:260px"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="content-card p-3">
+                            <h6 class="fw-bold mb-3">CM Budget</h6>
+                            <div id="chart-cmbudget" style="height:260px"></div>
                         </div>
                     </div>
                 </div>
@@ -1394,6 +1390,67 @@
     bool  ShowConfirmDeleteWork = false;
     Work? ConfirmDeleteWorkItem = null;
 
+    // ── Overview charts ───────────────────────────────────────
+    int        OverviewYear   = 0;
+    List<int>  OverviewYears  = [];
+    bool       _chartsReady   = false;
+
+    IEnumerable<Work> OverviewWorks =>
+        OverviewYear == 0 ? AllWorks : AllWorks.Where(w => w.StartDate?.Year == OverviewYear);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Section == "overview" && !IsLoading && !_chartsReady)
+        {
+            _chartsReady = true;
+            await RenderOverviewCharts();
+        }
+    }
+
+    async Task NavigateToOverview()
+    {
+        Section = "overview";
+        _chartsReady = false;
+        StateHasChanged();
+    }
+
+    async Task OnOverviewYearChanged()
+    {
+        await RenderOverviewCharts();
+    }
+
+    async Task RenderOverviewCharts()
+    {
+        var ov = OverviewWorks.ToList();
+
+        var categoryData = ov
+            .GroupBy(w => w.Category?.CategoryCode ?? "N/A")
+            .Select(g => new { label = g.Key, amount = (double)g.Sum(w => w.AgreementAmount ?? 0), count = g.Count() })
+            .ToArray();
+
+        var fundData = ov
+            .GroupBy(w => w.FundSource?.SourceCode ?? "N/A")
+            .Select(g => new { label = g.Key, amount = (double)g.Sum(w => w.AgreementAmount ?? 0), count = g.Count() })
+            .ToArray();
+
+        var schemeData = new[]
+        {
+            new { label = "Scheme",     amount = (double)ov.Where(w =>  w.IsScheme).Sum(w => w.AgreementAmount ?? 0), count = ov.Count(w =>  w.IsScheme) },
+            new { label = "Non-Scheme", amount = (double)ov.Where(w => !w.IsScheme).Sum(w => w.AgreementAmount ?? 0), count = ov.Count(w => !w.IsScheme) }
+        };
+
+        var cmData = new[]
+        {
+            new { label = "CM Budget",     amount = (double)ov.Where(w =>  w.IsCmBudget).Sum(w => w.AgreementAmount ?? 0), count = ov.Count(w =>  w.IsCmBudget) },
+            new { label = "Non-CM Budget", amount = (double)ov.Where(w => !w.IsCmBudget).Sum(w => w.AgreementAmount ?? 0), count = ov.Count(w => !w.IsCmBudget) }
+        };
+
+        await JS.InvokeVoidAsync("bdaCharts.renderCategoryBar", "chart-category", categoryData);
+        await JS.InvokeVoidAsync("bdaCharts.renderFundDonut",   "chart-fund",     fundData);
+        await JS.InvokeVoidAsync("bdaCharts.renderSemiDonut",   "chart-scheme",   schemeData);
+        await JS.InvokeVoidAsync("bdaCharts.renderSemiDonut",   "chart-cmbudget", cmData);
+    }
+
     // ── Inline expand ─────────────────────────────────────────
     HashSet<int> ExpandedWorkIds = new();
     void ToggleExpand(int workId) { if (!ExpandedWorkIds.Remove(workId)) ExpandedWorkIds.Add(workId); }
@@ -1503,6 +1560,14 @@
 
         // File counts per work
         await ReloadFileCountsAsync();
+
+        // Overview year dropdown
+        OverviewYears = AllWorks
+            .Where(w => w.StartDate.HasValue)
+            .Select(w => w.StartDate!.Value.Year)
+            .Distinct()
+            .OrderByDescending(y => y)
+            .ToList();
 
         // Departments: union of DB-stored list + distinct values from works
         var fromWorks = AllWorks
