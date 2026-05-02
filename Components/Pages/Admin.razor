@@ -212,55 +212,24 @@
             @* ══ WORKS ══════════════════════════════════════════ *@
             if (Section == "works")
             {
-                @* ── Stat Cards ── *@
-                <div class="row g-3 mb-3">
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-blue">
-                                <i class="bi bi-briefcase-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Total Works</div>
-                                <div class="wstat-value">@AllWorks.Count</div>
-                                <div class="wstat-sub">All works</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-orange">
-                                <i class="bi bi-hourglass-split"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Ongoing Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING)</div>
-                                <div class="wstat-sub">In Progress</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-green">
-                                <i class="bi bi-check-circle-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Completed Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED)</div>
-                                <div class="wstat-sub">Completed</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="wstat-card">
-                            <div class="wstat-icon wstat-icon-red">
-                                <i class="bi bi-exclamation-circle-fill"></i>
-                            </div>
-                            <div>
-                                <div class="wstat-label">Delayed Works</div>
-                                <div class="wstat-value">@AllWorks.Count(w => w.Status == WorkStatus.STALLED)</div>
-                                <div class="wstat-sub">Delayed</div>
-                            </div>
-                        </div>
+                @* ── Tab Bar ── *@
+                <div class="content-card p-0 mb-3">
+                    <div class="works-tab-bar">
+                        <span class="works-tab-total">
+                            <i class="bi bi-briefcase-fill me-1"></i>Total <strong>@AllWorks.Count</strong>
+                        </span>
+                        <button class="works-tab @(WorkTab == "ONGOING"   ? "active" : "")" @onclick='() => SetWorkTab("ONGOING")'>
+                            <i class="bi bi-hourglass-split me-1"></i>Ongoing
+                            <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</span>
+                        </button>
+                        <button class="works-tab @(WorkTab == "COMPLETED" ? "active" : "")" @onclick='() => SetWorkTab("COMPLETED")'>
+                            <i class="bi bi-check-circle-fill me-1"></i>Completed
+                            <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.COMPLETED && !w.IsAnnualContract)</span>
+                        </button>
+                        <button class="works-tab @(WorkTab == "ANNUAL"    ? "active" : "")" @onclick='() => SetWorkTab("ANNUAL")'>
+                            <i class="bi bi-arrow-repeat me-1"></i>Annual Works
+                            <span class="works-tab-count">@AllWorks.Count(w => w.IsAnnualContract)</span>
+                        </button>
                     </div>
                 </div>
 
@@ -275,18 +244,6 @@
                                 <input type="search" class="filter-search-input"
                                        placeholder="Search file no…"
                                        @bind="WorkSearchText" @bind:after="FilterWorks" />
-                            </div>
-
-                            @* Status *@
-                            <div class="filter-group">
-                                <span class="filter-group-label">Status</span>
-                                <select class="filter-select-sm"
-                                        @bind="WorkFilter" @bind:after="FilterWorks">
-                                    <option value="ALL">All</option>
-                                    <option value="ONGOING">Ongoing</option>
-                                    <option value="COMPLETED">Completed</option>
-                                    <option value="STALLED">Stalled</option>
-                                </select>
                             </div>
 
                             @* JEN *@
@@ -322,27 +279,15 @@
                                 </select>
                             </div>
 
-                            @* Annual *@
+                            @* Financial Year *@
                             <div class="filter-group">
-                                <span class="filter-group-label">Annual</span>
+                                <span class="filter-group-label"><i class="bi bi-calendar3 me-1"></i>Year</span>
                                 <select class="filter-select-sm"
-                                        @bind="WorkAnnualFilter" @bind:after="FilterWorks">
-                                    <option value="ALL">All</option>
-                                    <option value="YES">Annual Only</option>
-                                    <option value="NO">Non-Annual</option>
+                                        @bind="WorkYearFilter" @bind:after="FilterWorks">
+                                    <option value="">All</option>
+                                    @foreach (var y in WorkYears)
+                                    { <option value="@y">@y</option> }
                                 </select>
-                            </div>
-
-                            @* Date Range *@
-                            <div class="filter-daterange">
-                                <i class="bi bi-calendar3 text-muted me-1"></i>
-                                <input type="date" class="filter-date-input" placeholder="Start date"
-                                       value="@WorkStartDateFilter"
-                                       @onchange="@((ChangeEventArgs e) => { WorkStartDateFilter = e?.Value?.ToString() ?? ""; FilterWorks(); })" />
-                                <span class="text-muted mx-1">—</span>
-                                <input type="date" class="filter-date-input" placeholder="End date"
-                                       value="@WorkEndDateFilter"
-                                       @onchange="@((ChangeEventArgs e) => { WorkEndDateFilter = e?.Value?.ToString() ?? ""; FilterWorks(); })" />
                             </div>
 
                             @* Category Filter *@
@@ -383,9 +328,17 @@
                                 <i class="bi bi-arrow-clockwise"></i> Reset
                             </button>
 
+                            @* Works Count *@
+                            <span class="works-total-badge">
+                                <i class="bi bi-briefcase-fill me-1"></i>@FilteredWorks.Count works
+                            </span>
+
                             @* Export + Add Work *@
                             <div class="ms-auto d-flex align-items-center gap-2">
                                 <div class="export-btn-group">
+                                    <button class="btn-export btn-export-customize" title="Customize report columns" @onclick="() => ShowColPicker = true">
+                                        <i class="bi bi-layout-three-columns"></i>
+                                    </button>
                                     <button class="btn-export btn-export-csv" title="Download CSV" @onclick="ExportCsv">
                                         <i class="bi bi-filetype-csv"></i>
                                     </button>
@@ -1318,6 +1271,40 @@
     </div>
 }
 
+@* ══ COLUMN PICKER MODAL ════════════════════════════════════════ *@
+@if (ShowColPicker)
+{
+    <div class="modal-overlay" @onclick="() => ShowColPicker = false">
+        <div class="modal-box col-picker-modal" @onclick:stopPropagation>
+            <div class="modal-box-header">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-layout-three-columns me-1"></i>Customize Report Columns</h6>
+                <button class="btn-close" @onclick="() => ShowColPicker = false"></button>
+            </div>
+            <div class="modal-box-body">
+                <p class="text-muted mb-3" style="font-size:0.82rem">Select columns for CSV, Excel, and PDF exports. Work Name and Status are always included.</p>
+                <div class="col-picker-grid">
+                    @foreach (var col in AllCols)
+                    {
+                        var isRequired = col.Required;
+                        var isChecked  = _selectedCols.Contains(col.Key);
+                        <label class="col-picker-item @(isRequired ? "col-picker-locked" : "")">
+                            <input type="checkbox" checked="@isChecked" disabled="@isRequired"
+                                   @onchange="e => { if ((bool)e.Value!) _selectedCols.Add(col.Key); else _selectedCols.Remove(col.Key); }" />
+                            <span class="col-picker-label">@col.Label</span>
+                            @if (isRequired) { <span class="col-picker-badge">required</span> }
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="modal-box-footer">
+                <small class="text-muted me-auto">@_selectedCols.Count of @AllCols.Length columns selected</small>
+                <button class="btn btn-secondary btn-sm" @onclick="() => ShowColPicker = false">Cancel</button>
+                <button class="btn btn-primary btn-sm" @onclick="SaveColSelection"><i class="bi bi-check2 me-1"></i>Apply &amp; Save</button>
+            </div>
+        </div>
+    </div>
+}
+
 @* ══ CHANGE PASSWORD MODAL ═════════════════════════════════════ *@
 @if (ShowPasswordModal)
 {
@@ -1403,17 +1390,26 @@
     }
 
     // ── Works filter ──────────────────────────────────────────
-    string WorkFilter          = "ALL";
+    string WorkTab             = "ONGOING";
+    string WorkYearFilter      = "";
     string WorkSearchText      = "";
     string WorkJenFilter       = "";
     string WorkAenFilter       = "";
     string WorkXenFilter       = "";
-    string WorkAnnualFilter    = "ALL";
-    string WorkStartDateFilter = "";
-    string WorkEndDateFilter   = "";
     string WorkCategoryFilter  = "";
     string WorkFundFilter      = "";
     string WorkFlagFilter      = "";
+
+    List<string> WorkYears => AllWorks
+        .Where(w => w.StartDate.HasValue)
+        .Select(w => FinYear(w.StartDate!.Value))
+        .Distinct()
+        .OrderByDescending(y => y)
+        .ToList();
+
+    void SetWorkTab(string tab) { WorkTab = tab; FilterWorks(); }
+
+    static string FinYear(DateOnly d) => Work_Dashboard.Services.WorkHelpers.FinYear(d);
 
     // ── User modal ────────────────────────────────────────────
     bool      ShowUserModal            = false;
@@ -1667,12 +1663,12 @@
     {
         var q = AllWorks.AsEnumerable();
 
-        // Status filter
-        q = WorkFilter switch
+        // Tab filter
+        q = WorkTab switch
         {
-            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING),
+            "ONGOING"   => q.Where(w => w.Status == WorkStatus.ONGOING || w.Status == WorkStatus.STALLED),
             "COMPLETED" => q.Where(w => w.Status == WorkStatus.COMPLETED),
-            "STALLED"   => q.Where(w => w.Status == WorkStatus.STALLED),
+            "ANNUAL"    => q.Where(w => w.IsAnnualContract),
             _           => q
         };
 
@@ -1691,15 +1687,9 @@
         if (!string.IsNullOrEmpty(WorkXenFilter) && int.TryParse(WorkXenFilter, out var xenId))
             q = q.Where(w => w.AssignedExenId == xenId);
 
-        // Annual contract filter
-        if (WorkAnnualFilter == "YES") q = q.Where(w => w.IsAnnualContract);
-        if (WorkAnnualFilter == "NO")  q = q.Where(w => !w.IsAnnualContract);
-
-        // Date range filters
-        if (!string.IsNullOrWhiteSpace(WorkStartDateFilter) && DateOnly.TryParse(WorkStartDateFilter, out var startDate))
-            q = q.Where(w => w.StartDate >= startDate);
-        if (!string.IsNullOrWhiteSpace(WorkEndDateFilter) && DateOnly.TryParse(WorkEndDateFilter, out var endDate))
-            q = q.Where(w => w.ExpectedCompletion <= endDate || w.ActualCompletion <= endDate);
+        // Financial year filter
+        if (!string.IsNullOrEmpty(WorkYearFilter))
+            q = q.Where(w => w.StartDate.HasValue && FinYear(w.StartDate!.Value) == WorkYearFilter);
 
         // Category filter
         if (!string.IsNullOrEmpty(WorkCategoryFilter))
@@ -1718,11 +1708,9 @@
 
     void ResetWorkFilters()
     {
-        WorkFilter = "ALL";
+        WorkYearFilter = "";
         WorkSearchText = "";
         WorkJenFilter = WorkAenFilter = WorkXenFilter = "";
-        WorkAnnualFilter = "ALL";
-        WorkStartDateFilter = WorkEndDateFilter = "";
         WorkCategoryFilter = WorkFundFilter = WorkFlagFilter = "";
         FilterWorks();
     }
