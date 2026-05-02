@@ -1297,6 +1297,16 @@
                     </div>
                 }
 
+                @* ── Running Bills ── *@
+                <hr class="my-3" />
+                <Work_Dashboard.Components.Shared.WorkBillsPanel
+                    WorkId="@DetailWork.WorkId"
+                    AgreementAmount="@DetailWork.AgreementAmount"
+                    SanctionedAmount="@DetailWork.SanctionedAmount"
+                    CanEdit="true"
+                    CurrentUserId="@CurrentEngineerId"
+                    CurrentUserName="@CurrentEngineerName" />
+
             </div>
             <div class="modal-box-footer">
                 <button class="btn btn-secondary btn-sm" @onclick="CloseDetail">Close</button>
@@ -1355,9 +1365,10 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
 
-    string Section            = "overview";
-    bool   IsLoading          = true;
-    int?   CurrentEngineerId  = null;
+    string Section              = "overview";
+    bool   IsLoading            = true;
+    int?   CurrentEngineerId    = null;
+    string CurrentEngineerName  = "";
 
     // ── Data ──────────────────────────────────────────────────
     List<Work>         AllWorks      = [];
@@ -1593,6 +1604,7 @@
         var idStr = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (idStr is not null && int.TryParse(idStr, out var id))
             CurrentEngineerId = id;
+        CurrentEngineerName = auth.User.Identity?.Name ?? "";
 
         await LoadAll();
         IsLoading = false;
