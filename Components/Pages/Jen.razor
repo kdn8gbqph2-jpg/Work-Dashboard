@@ -619,8 +619,14 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Contractor Mobile</label>
-                        <input class="form-control" type="tel" @bind="NewWork.ContractorMobile"
-                               pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number" />
+                        <input class="form-control @(!string.IsNullOrEmpty(AddMobileError) ? "is-invalid" : "")"
+                               type="tel" value="@NewWork.ContractorMobile"
+                               @oninput="e => ValidateAddMobile(e.Value?.ToString())"
+                               maxlength="10" placeholder="10-digit mobile number" />
+                        @if (!string.IsNullOrEmpty(AddMobileError))
+                        {
+                            <div class="invalid-feedback">@AddMobileError</div>
+                        }
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Start Date</label>
@@ -771,8 +777,14 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Contractor Mobile</label>
-                        <input class="form-control" type="tel" @bind="EditingWork.ContractorMobile"
-                               pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number" />
+                        <input class="form-control @(!string.IsNullOrEmpty(EditMobileError) ? "is-invalid" : "")"
+                               type="tel" value="@EditingWork.ContractorMobile"
+                               @oninput="e => ValidateEditMobile(e.Value?.ToString())"
+                               maxlength="10" placeholder="10-digit mobile number" />
+                        @if (!string.IsNullOrEmpty(EditMobileError))
+                        {
+                            <div class="invalid-feedback">@EditMobileError</div>
+                        }
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Sanctioned Amount (लाखों)</label>
@@ -981,6 +993,7 @@
     string EditWorkAenId       = "";
     string EditWorkXenId       = "";
     string EditWorkError       = "";
+    string EditMobileError     = "";
 
     // Add Work modal (XEN only)
     bool   ShowAddWorkModal    = false;
@@ -992,6 +1005,7 @@
     string NewWorkAenId        = "";
     string NewWorkXenId        = "";
     string AddWorkError        = "";
+    string AddMobileError      = "";
 
     // Form data for Add Work
     List<WorkCategory> FormCategories   = [];
@@ -1204,7 +1218,22 @@
         EditingRemarkId = 0;
         EditingRemarkText = "";
         HindiRemarkMode = false;
+        EditMobileError = "";
     }
+
+    void ValidateEditMobile(string? val)
+    {
+        EditingWork.ContractorMobile = val;
+        if (string.IsNullOrWhiteSpace(val)) { EditMobileError = ""; return; }
+        val = val.Trim();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(val, @"^\d+$"))
+            EditMobileError = "Only digits are allowed.";
+        else if (val.Length != 10)
+            EditMobileError = "Must be exactly 10 digits.";
+        else
+            EditMobileError = "";
+    }
+
 
     bool _hindiAttachPending = false;
 
@@ -1230,9 +1259,7 @@
         EditWorkError = "";
         if (string.IsNullOrWhiteSpace(EditingWork.WorkName))
         { EditWorkError = "Work name is required."; return; }
-        if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile) &&
-            !System.Text.RegularExpressions.Regex.IsMatch(EditingWork.ContractorMobile.Trim(), @"^\d{10}$"))
-        { EditWorkError = "Contractor mobile number must be exactly 10 digits."; return; }
+        if (!string.IsNullOrWhiteSpace(EditMobileError)) return;
         if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile))
             EditingWork.ContractorMobile = EditingWork.ContractorMobile.Trim();
 
@@ -1300,16 +1327,27 @@
         ShowAddWorkModal   = true;
     }
 
-    void CloseAddWork() => ShowAddWorkModal = false;
+    void CloseAddWork() { ShowAddWorkModal = false; AddMobileError = ""; }
+
+    void ValidateAddMobile(string? val)
+    {
+        NewWork.ContractorMobile = val;
+        if (string.IsNullOrWhiteSpace(val)) { AddMobileError = ""; return; }
+        val = val.Trim();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(val, @"^\d+$"))
+            AddMobileError = "Only digits are allowed.";
+        else if (val.Length != 10)
+            AddMobileError = "Must be exactly 10 digits.";
+        else
+            AddMobileError = "";
+    }
 
     async Task SaveNewWork()
     {
         AddWorkError = "";
         if (string.IsNullOrWhiteSpace(NewWork.WorkName))
         { AddWorkError = "Work name is required."; return; }
-        if (!string.IsNullOrWhiteSpace(NewWork.ContractorMobile) &&
-            !System.Text.RegularExpressions.Regex.IsMatch(NewWork.ContractorMobile.Trim(), @"^\d{10}$"))
-        { AddWorkError = "Contractor mobile number must be exactly 10 digits."; return; }
+        if (!string.IsNullOrWhiteSpace(AddMobileError)) return;
         if (!string.IsNullOrWhiteSpace(NewWork.ContractorMobile))
             NewWork.ContractorMobile = NewWork.ContractorMobile.Trim();
 

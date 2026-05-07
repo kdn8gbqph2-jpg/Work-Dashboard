@@ -867,8 +867,14 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-semibold">Mobile</label>
-                        <input class="form-control" type="tel" @bind="EditingUser.Mobile"
-                               pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number" />
+                        <input class="form-control @(!string.IsNullOrEmpty(UserMobileError) ? "is-invalid" : "")"
+                               type="tel" value="@EditingUser.Mobile"
+                               @oninput="e => ValidateUserMobile(e.Value?.ToString())"
+                               maxlength="10" placeholder="10-digit mobile number" />
+                        @if (!string.IsNullOrEmpty(UserMobileError))
+                        {
+                            <div class="invalid-feedback">@UserMobileError</div>
+                        }
                     </div>
                 </div>
             </div>
@@ -1028,8 +1034,14 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Contractor Mobile</label>
-                        <input class="form-control" type="tel" @bind="EditingWork.ContractorMobile"
-                               pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number" />
+                        <input class="form-control @(!string.IsNullOrEmpty(WorkMobileError) ? "is-invalid" : "")"
+                               type="tel" value="@EditingWork.ContractorMobile"
+                               @oninput="e => ValidateWorkMobile(e.Value?.ToString())"
+                               maxlength="10" placeholder="10-digit mobile number" />
+                        @if (!string.IsNullOrEmpty(WorkMobileError))
+                        {
+                            <div class="invalid-feedback">@WorkMobileError</div>
+                        }
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Sanctioned Amount (लाखों)</label>
@@ -1445,6 +1457,7 @@
     string    UserPassword             = "";
     string    EditingUserRoleStr       = "JEN";
     string    UserError                = "";
+    string    UserMobileError          = "";
 
     // ── Confirm delete/toggle user ────────────────────────────
     bool      ShowConfirmDeleteUser    = false;
@@ -1479,6 +1492,7 @@
     string EditingWorkAenId        = "";
     string EditingWorkXenId        = "";
     string WorkError               = "";
+    string WorkMobileError         = "";
 
     // ── Work detail modal ─────────────────────────────────────
     bool  ShowDetailModal = false;
@@ -1771,7 +1785,20 @@
         ShowUserModal = true;
     }
 
-    void CloseUserModal() => ShowUserModal = false;
+    void CloseUserModal() { ShowUserModal = false; UserMobileError = ""; }
+
+    void ValidateUserMobile(string? val)
+    {
+        EditingUser.Mobile = val;
+        if (string.IsNullOrWhiteSpace(val)) { UserMobileError = ""; return; }
+        val = val.Trim();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(val, @"^\d+$"))
+            UserMobileError = "Only digits are allowed.";
+        else if (val.Length != 10)
+            UserMobileError = "Mobile number must be exactly 10 digits.";
+        else
+            UserMobileError = "";
+    }
 
     async Task SaveUser()
     {
@@ -1779,9 +1806,7 @@
         { UserError = "Name and Username are required."; return; }
         if (EditingUser.EngineerId == 0 && string.IsNullOrWhiteSpace(UserPassword))
         { UserError = "Password is required for new users."; return; }
-        if (!string.IsNullOrWhiteSpace(EditingUser.Mobile) &&
-            !System.Text.RegularExpressions.Regex.IsMatch(EditingUser.Mobile.Trim(), @"^\d{10}$"))
-        { UserError = "Mobile number must be exactly 10 digits."; return; }
+        if (!string.IsNullOrWhiteSpace(UserMobileError)) return;
         if (!string.IsNullOrWhiteSpace(EditingUser.Mobile))
             EditingUser.Mobile = EditingUser.Mobile.Trim();
 
@@ -1887,14 +1912,25 @@
         ShowWorkModal = true;
     }
 
-    void CloseWorkModal() { ShowWorkModal = false; RemarksWork = null; RemarksList = []; AdminHindiRemarkMode = false; }
+    void CloseWorkModal() { ShowWorkModal = false; RemarksWork = null; RemarksList = []; AdminHindiRemarkMode = false; WorkMobileError = ""; }
+
+    void ValidateWorkMobile(string? val)
+    {
+        EditingWork.ContractorMobile = val;
+        if (string.IsNullOrWhiteSpace(val)) { WorkMobileError = ""; return; }
+        val = val.Trim();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(val, @"^\d+$"))
+            WorkMobileError = "Only digits are allowed.";
+        else if (val.Length != 10)
+            WorkMobileError = "Mobile number must be exactly 10 digits.";
+        else
+            WorkMobileError = "";
+    }
 
     async Task SaveWork()
     {
         if (string.IsNullOrWhiteSpace(EditingWork.WorkName)) { WorkError = "Work Name is required."; return; }
-        if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile) &&
-            !System.Text.RegularExpressions.Regex.IsMatch(EditingWork.ContractorMobile.Trim(), @"^\d{10}$"))
-        { WorkError = "Contractor mobile number must be exactly 10 digits."; return; }
+        if (!string.IsNullOrWhiteSpace(WorkMobileError)) return;
         if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile))
             EditingWork.ContractorMobile = EditingWork.ContractorMobile.Trim();
         EditingWork.Status         = Enum.Parse<WorkStatus>(EditingWorkStatusStr);
