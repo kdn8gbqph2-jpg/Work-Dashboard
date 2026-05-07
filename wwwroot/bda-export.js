@@ -1,7 +1,79 @@
 // BDA Export Helpers
 
-window.bdaGetItem = function (key) { return localStorage.getItem(key); };
-window.bdaSetItem = function (key, value) { localStorage.setItem(key, value); };
+window.bdaGetItem  = function (key)        { return localStorage.getItem(key); };
+window.bdaSetItem  = function (key, value) { localStorage.setItem(key, value); };
+window.bdaGetValue = function (id)         { return document.getElementById(id)?.value ?? ''; };
+
+// ── Hindi Transliteration via Google Input Tools ─────────────────────────
+// On Space/Enter, the last typed Roman word is sent to Google Input Tools
+// and replaced with the best Devanagari suggestion.
+window.bdaHindi = (function () {
+    'use strict';
+
+    // Call Google Input Tools transliteration endpoint.
+    // Returns the best Hindi suggestion, or null on failure (offline, CORS, etc.)
+    async function googleTransliterate(word) {
+        try {
+            const url = 'https://inputtools.google.com/request?' +
+                'text=' + encodeURIComponent(word) +
+                '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8';
+            const res = await fetch(url);
+            if (!res.ok) return null;
+            const data = await res.json();
+            // Response: ["SUCCESS", [["word", ["suggestion", ...], ...]]]
+            if (data[0] === 'SUCCESS' && data[1]?.[0]?.[1]?.[0])
+                return data[1][0][1][0];
+        } catch (_) {}
+        return null;
+    }
+
+    // ── Attach / Detach ───────────────────────────────────────────────────
+    const _attached = new Map();
+
+    function attach(id) {
+        if (_attached.has(id)) return;
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        async function onKeydown(e) {
+            if (e.key !== ' ' && e.key !== 'Enter') return;
+
+            const val    = el.value;
+            const cursor = el.selectionStart;
+
+            // Find start of the current word
+            let start = cursor - 1;
+            while (start > 0 && val[start - 1] !== ' ' && val[start - 1] !== '\n') start--;
+
+            const word = val.substring(start, cursor).trim();
+            // Skip empty words or words already in Devanagari
+            if (!word || /[ऀ-ॿ]/.test(word)) return;
+
+            // Prevent default BEFORE the first await so the browser honours it
+            e.preventDefault();
+            const sep = e.key === 'Enter' ? '\n' : ' ';
+
+            const converted = await googleTransliterate(word) ?? word;
+
+            el.value = val.substring(0, start) + converted + sep + val.substring(cursor);
+            const newPos = start + converted.length + 1;
+            el.setSelectionRange(newPos, newPos);
+        }
+
+        el.addEventListener('keydown', onKeydown);
+        _attached.set(id, onKeydown);
+    }
+
+    function detach(id) {
+        const handler = _attached.get(id);
+        if (!handler) return;
+        const el = document.getElementById(id);
+        if (el) el.removeEventListener('keydown', handler);
+        _attached.delete(id);
+    }
+
+    return { attach, detach };
+})();
 
 // ── amCharts 5 Overview Charts ────────────────────────────────────────
 window.bdaCharts = (function () {
