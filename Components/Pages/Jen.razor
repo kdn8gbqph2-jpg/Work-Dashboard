@@ -850,17 +850,26 @@
                             @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
                             <div class="d-flex align-items-center justify-content-between mb-1">
                                 <span class="fw-semibold" style="font-size:0.82rem">Add Comment</span>
-                                <div class="form-check form-switch mb-0">
+                                <div class="form-check form-switch mb-0" title="@(HindiRemarkMode ? "Type phonetically: press Space to convert" : "Switch to Hindi input")">
                                     <input class="form-check-input" type="checkbox" id="chkHindiMode"
-                                           @bind="HindiRemarkMode" />
+                                           checked="@HindiRemarkMode"
+                                           @onchange="ToggleHindiMode" />
                                     <label class="form-check-label" for="chkHindiMode" style="font-size:0.75rem">
-                                        @(HindiRemarkMode ? "हिन्दी" : "English")
+                                        @(HindiRemarkMode ? "हिन्दी (Hindi)" : "English")
                                     </label>
                                 </div>
                             </div>
-                            <textarea class="form-control form-control-sm @(HindiRemarkMode ? "hindi-input" : "")" rows="2"
-                                      placeholder="@(HindiRemarkMode ? "टिप्पणी लिखें…" : "Add a comment…")"
-                                      @bind="NewRemarkText"></textarea>
+                            @if (HindiRemarkMode)
+                            {
+                                <small class="text-muted d-block mb-1" style="font-size:0.72rem">
+                                    <i class="bi bi-info-circle me-1"></i>Type phonetically (e.g. <em>namaste</em>) and press <kbd>Space</kbd> to convert to Hindi.
+                                </small>
+                            }
+                            <textarea id="hindi-remark-jen"
+                                      class="form-control form-control-sm @(HindiRemarkMode ? "hindi-input" : "")" rows="2"
+                                      placeholder="@(HindiRemarkMode ? "टिप्पणी लिखें… (Type & press Space)" : "Add a comment…")"
+                                      @bind="NewRemarkText"
+                                      @bind:event="oninput"></textarea>
                             <div class="d-flex justify-content-end mt-1">
                                 <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
                                     <i class="bi bi-send-fill me-1"></i>Add Comment
@@ -1181,6 +1190,16 @@
         RemarkError = "";
         EditingRemarkId = 0;
         EditingRemarkText = "";
+        HindiRemarkMode = false;
+    }
+
+    async Task ToggleHindiMode(ChangeEventArgs e)
+    {
+        HindiRemarkMode = (bool)(e.Value ?? false);
+        if (HindiRemarkMode)
+            await JS.InvokeVoidAsync("bdaHindi.attach", "hindi-remark-jen");
+        else
+            await JS.InvokeVoidAsync("bdaHindi.detach", "hindi-remark-jen");
     }
 
     async Task SaveEditWork()
