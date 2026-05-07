@@ -1797,6 +1797,11 @@
         { UserError = "Name and Username are required."; return; }
         if (EditingUser.EngineerId == 0 && string.IsNullOrWhiteSpace(UserPassword))
         { UserError = "Password is required for new users."; return; }
+        if (!string.IsNullOrWhiteSpace(EditingUser.Mobile) &&
+            !System.Text.RegularExpressions.Regex.IsMatch(EditingUser.Mobile.Trim(), @"^\d{10}$"))
+        { UserError = "Mobile number must be exactly 10 digits."; return; }
+        if (!string.IsNullOrWhiteSpace(EditingUser.Mobile))
+            EditingUser.Mobile = EditingUser.Mobile.Trim();
 
         try
         {
@@ -1905,6 +1910,11 @@
     async Task SaveWork()
     {
         if (string.IsNullOrWhiteSpace(EditingWork.WorkName)) { WorkError = "Work Name is required."; return; }
+        if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile) &&
+            !System.Text.RegularExpressions.Regex.IsMatch(EditingWork.ContractorMobile.Trim(), @"^\d{10}$"))
+        { WorkError = "Contractor mobile number must be exactly 10 digits."; return; }
+        if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile))
+            EditingWork.ContractorMobile = EditingWork.ContractorMobile.Trim();
         EditingWork.Status         = Enum.Parse<WorkStatus>(EditingWorkStatusStr);
         EditingWork.CategoryId     = string.IsNullOrEmpty(EditingWorkCategoryId)   ? null : int.Parse(EditingWorkCategoryId);
         EditingWork.FundSourceId   = string.IsNullOrEmpty(EditingWorkFundSourceId) ? null : int.Parse(EditingWorkFundSourceId);

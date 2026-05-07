@@ -1230,6 +1230,11 @@
         EditWorkError = "";
         if (string.IsNullOrWhiteSpace(EditingWork.WorkName))
         { EditWorkError = "Work name is required."; return; }
+        if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile) &&
+            !System.Text.RegularExpressions.Regex.IsMatch(EditingWork.ContractorMobile.Trim(), @"^\d{10}$"))
+        { EditWorkError = "Contractor mobile number must be exactly 10 digits."; return; }
+        if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile))
+            EditingWork.ContractorMobile = EditingWork.ContractorMobile.Trim();
 
         try
         {
@@ -1302,6 +1307,11 @@
         AddWorkError = "";
         if (string.IsNullOrWhiteSpace(NewWork.WorkName))
         { AddWorkError = "Work name is required."; return; }
+        if (!string.IsNullOrWhiteSpace(NewWork.ContractorMobile) &&
+            !System.Text.RegularExpressions.Regex.IsMatch(NewWork.ContractorMobile.Trim(), @"^\d{10}$"))
+        { AddWorkError = "Contractor mobile number must be exactly 10 digits."; return; }
+        if (!string.IsNullOrWhiteSpace(NewWork.ContractorMobile))
+            NewWork.ContractorMobile = NewWork.ContractorMobile.Trim();
 
         try
         {
