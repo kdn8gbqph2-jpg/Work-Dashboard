@@ -1206,13 +1206,23 @@
         HindiRemarkMode = false;
     }
 
-    async Task ToggleHindiMode(ChangeEventArgs e)
+    bool _hindiAttachPending = false;
+
+    void ToggleHindiMode(ChangeEventArgs e)
     {
         HindiRemarkMode = (bool)(e.Value ?? false);
-        if (HindiRemarkMode)
+        _hindiAttachPending = HindiRemarkMode; // attach after next render
+        if (!HindiRemarkMode)
+            _ = JS.InvokeVoidAsync("bdaHindi.detach", "hindi-remark-jen").AsTask();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_hindiAttachPending)
+        {
+            _hindiAttachPending = false;
             await JS.InvokeVoidAsync("bdaHindi.attach", "hindi-remark-jen");
-        else
-            await JS.InvokeVoidAsync("bdaHindi.detach", "hindi-remark-jen");
+        }
     }
 
     async Task SaveEditWork()

@@ -68,6 +68,12 @@ public partial class Admin
             _chartsReady = true;
             await RenderOverviewCharts();
         }
+
+        if (_adminHindiAttachPending)
+        {
+            _adminHindiAttachPending = false;
+            await JS.InvokeVoidAsync("bdaHindi.attach", "hindi-remark-admin");
+        }
     }
 
     private async Task SaveColSelection()

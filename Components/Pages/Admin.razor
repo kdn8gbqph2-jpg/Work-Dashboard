@@ -1983,13 +1983,14 @@
         EditingRemarkId = 0; EditingRemarkText = "";
     }
 
-    async Task ToggleAdminHindiMode(ChangeEventArgs e)
+    bool _adminHindiAttachPending = false;
+
+    void ToggleAdminHindiMode(ChangeEventArgs e)
     {
         AdminHindiRemarkMode = (bool)(e.Value ?? false);
-        if (AdminHindiRemarkMode)
-            await JS.InvokeVoidAsync("bdaHindi.attach", "hindi-remark-admin");
-        else
-            await JS.InvokeVoidAsync("bdaHindi.detach", "hindi-remark-admin");
+        _adminHindiAttachPending = AdminHindiRemarkMode;
+        if (!AdminHindiRemarkMode)
+            _ = JS.InvokeVoidAsync("bdaHindi.detach", "hindi-remark-admin").AsTask();
     }
 
     // ── Soft delete work ──────────────────────────────────────
