@@ -841,6 +841,7 @@
                             <option value="JEN">JEN (Junior Engineer)</option>
                             <option value="AEN">AEN (Asst. Engineer)</option>
                             <option value="XEN">XEN (Exec. Engineer)</option>
+                            <option value="ACCOUNTANT">ACCOUNTANT</option>
                             <option value="ADMIN">ADMIN</option>
                         </select>
                     </div>
@@ -1888,6 +1889,18 @@
         EditingWork.AssignedExenId = string.IsNullOrEmpty(EditingWorkXenId)        ? null : int.Parse(EditingWorkXenId);
 
         await using var db = await DbFactory.CreateDbContextAsync();
+
+        // Duplicate work-order number check
+        if (!string.IsNullOrWhiteSpace(EditingWork.WorkCode))
+        {
+            var duplicate = await db.Works.AnyAsync(w =>
+                w.WorkCode == EditingWork.WorkCode.Trim() &&
+                !w.IsDeleted &&
+                w.WorkId != EditingWork.WorkId);
+            if (duplicate) { WorkError = "Work Order Number already exists."; return; }
+            EditingWork.WorkCode = EditingWork.WorkCode.Trim();
+        }
+
         bool isNewWork = EditingWork.WorkId == 0;
         if (isNewWork) db.Works.Add(EditingWork);
         else
@@ -1945,9 +1958,11 @@
         var r = await db.WorkRemarks.FindAsync(EditingRemarkId);
         if (r is not null)
         {
-            r.Content = EditingRemarkText.Trim();
+            r.Content      = EditingRemarkText.Trim();
+            r.EditedByName = CurrentEngineerName;
+            r.EditedById   = CurrentEngineerId;
+            r.EditedAt     = DateTime.UtcNow;
             await db.SaveChangesAsync();
-            // Refresh list
             RemarksList = await db.WorkRemarks
                 .Where(x => x.WorkId == r.WorkId)
                 .OrderBy(x => x.CreatedAt)
