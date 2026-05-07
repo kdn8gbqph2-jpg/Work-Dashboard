@@ -50,11 +50,9 @@ window.bdaHindi = (function () {
         ['a', 'अ'],
     ];
 
-    const SPECIAL = {
-        'M':'ं','H':'ः','~':'ँ','.':'।',
-        '0':'०','1':'१','2':'२','3':'३','4':'४',
-        '5':'५','6':'६','7':'७','8':'८','9':'९',
-    };
+    // M = anusvara (ं), H = visarga (ः), ~ = chandrabindu (ँ), . = danda (।)
+    // Digits are intentionally excluded — numbers pass through unchanged.
+    const SPECIAL = { 'M': 'ं', 'H': 'ः', '~': 'ँ', '.': '।' };
 
     function matchAt(str, pos, table) {
         for (const [rom, dev] of table)
@@ -64,13 +62,13 @@ window.bdaHindi = (function () {
 
     function transliterate(word) {
         if (!word) return word;
-        let out = '', i = 0, prevCons = false;
+        let out = '', i = 0, prevCons = false, lastInherentA = false;
 
         while (i < word.length) {
             // Special symbols
             if (SPECIAL[word[i]]) {
                 out += SPECIAL[word[i]];
-                prevCons = false;
+                prevCons = false; lastInherentA = false;
                 i++;
                 continue;
             }
@@ -86,12 +84,17 @@ window.bdaHindi = (function () {
                 out += cDev;
 
                 if (vol) {
-                    out += vol[1]; // matra (empty string for inherent 'a')
+                    out += vol[1];
                     i = afterC + vol[0].length;
                     prevCons = false;
+                    // Track when inherent-a ('a'→'') was used so we can
+                    // write an explicit ā at word-end (fixes "kiya"→"किया",
+                    // "gaya"→"गया", "raha"→"रहा", "hoga"→"होगा" etc.)
+                    lastInherentA = (vol[1] === '');
                 } else {
                     i = afterC;
-                    prevCons = true; // next char will decide if halant is needed
+                    prevCons = true;
+                    lastInherentA = false;
                 }
                 continue;
             }
@@ -100,17 +103,22 @@ window.bdaHindi = (function () {
             const vol = matchAt(word, i, VOWELS);
             if (vol) {
                 out += prevCons
-                    ? (matchAt(word, i, MATRAS) || vol)[1]  // matra form
-                    : vol[1];                                 // standalone form
+                    ? (matchAt(word, i, MATRAS) || vol)[1]
+                    : vol[1];
                 i += vol[0].length;
-                prevCons = false;
+                prevCons = false; lastInherentA = false;
                 continue;
             }
 
-            // Passthrough (punctuation, unknown chars)
-            prevCons = false;
+            // Passthrough (punctuation, digits, unknown chars)
+            prevCons = false; lastInherentA = false;
             out += word[i++];
         }
+
+        // Word ends with consonant + inherent-a → write explicit ā matra.
+        // e.g. "kiya" k+i+ya → "किय" becomes "किया"
+        if (lastInherentA) out += 'ा';
+
         return out;
     }
 
