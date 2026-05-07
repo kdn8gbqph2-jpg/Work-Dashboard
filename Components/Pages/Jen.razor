@@ -117,7 +117,7 @@
                                     <i class="bi bi-file-earmark-pdf-fill"></i>
                                 </button>
                             </div>
-                            @if (CurrentRole == "XEN" || CurrentRole == "AEN")
+                            @if (CurrentRole == "XEN")
                             {
                                 <button class="btn btn-sm btn-primary px-3" @onclick="OpenAddWork">
                                     <i class="bi bi-plus-lg me-1"></i>Add Work
@@ -231,26 +231,15 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex gap-1 justify-content-center">
-                                            <button class="action-btn action-btn-view" title="View Details / Remarks"
+                                            <button class="action-btn action-btn-view" title="View Details"
                                                     @onclick="async () => await OpenDetail(w)">
                                                 <i class="bi bi-eye-fill"></i>
                                             </button>
                                             @if (CurrentRole == "XEN")
                                             {
-                                                <button class="action-btn action-btn-edit" title="Edit Work"
+                                                <button class="action-btn action-btn-edit" title="Edit Work / Add Comment"
                                                         @onclick="async () => await OpenEditWork(w)">
                                                     <i class="bi bi-pencil-fill"></i>
-                                                </button>
-                                                <button class="action-btn action-btn-delete" title="Delete Work"
-                                                        @onclick="() => { ConfirmDeleteWorkItem = w; ShowConfirmDeleteWork = true; }">
-                                                    <i class="bi bi-trash-fill"></i>
-                                                </button>
-                                            }
-                                            else if (CurrentRole == "AEN")
-                                            {
-                                                <button class="action-btn action-btn-delete" title="Delete Work"
-                                                        @onclick="() => { ConfirmDeleteWorkItem = w; ShowConfirmDeleteWork = true; }">
-                                                    <i class="bi bi-trash-fill"></i>
                                                 </button>
                                             }
                                         </div>
@@ -461,7 +450,7 @@
                     </div>
                 }
 
-                @* ── Remarks section ────────────────────────────── *@
+                @* ── Remarks section (read-only) ─────────────────── *@
                 <hr class="my-3" />
                 <p class="detail-section-title"><i class="bi bi-chat-dots me-1"></i>Remarks</p>
                 @if (RemarksList.Any())
@@ -469,18 +458,10 @@
                     <div class="remarks-scroll mb-2">
                         @foreach (var r in RemarksList)
                         {
-                            bool isLast = r == RemarksList.Last();
                             <div class="remark-entry">
                                 <div class="remark-meta">
                                     <i class="bi bi-person-circle me-1"></i>@r.AuthorName
                                     <span class="ms-2 text-muted" style="font-size:0.72rem">@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</span>
-                                    @if (isLast)
-                                    {
-                                        <button class="ms-auto btn-remark-edit" title="Edit this remark"
-                                                @onclick="() => { EditingRemarkId = r.RemarkId; EditingRemarkText = r.Content; }">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                    }
                                 </div>
                                 @if (r.EditedAt.HasValue)
                                 {
@@ -488,20 +469,7 @@
                                         <i class="bi bi-pencil-fill me-1"></i>Edited by @r.EditedByName · @r.EditedAt.Value.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
                                     </div>
                                 }
-                                @if (isLast && EditingRemarkId == r.RemarkId)
-                                {
-                                    <textarea class="form-control form-control-sm mt-1" rows="2" @bind="EditingRemarkText"></textarea>
-                                    <div class="d-flex gap-1 mt-1">
-                                        <button class="btn btn-sm btn-primary" @onclick="SaveEditRemark">
-                                            <i class="bi bi-check2 me-1"></i>Save
-                                        </button>
-                                        <button class="btn btn-sm btn-secondary" @onclick="() => EditingRemarkId = 0">Cancel</button>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="remark-content">@r.Content</div>
-                                }
+                                <div class="remark-content">@r.Content</div>
                             </div>
                         }
                     </div>
@@ -510,22 +478,32 @@
                 {
                     <p class="text-muted" style="font-size:0.82rem"><i class="bi bi-info-circle me-1"></i>No remarks yet.</p>
                 }
-                <div class="remark-add-box">
-                    @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
-                    <textarea class="form-control form-control-sm hindi-input" rows="2"
-                              placeholder="Add a remark…"
-                              @bind="NewRemarkText"
-                              @bind:event="oninput"></textarea>
-                    <div class="d-flex justify-content-end mt-1">
-                        <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
-                            <i class="bi bi-send-fill me-1"></i>Add Remark
-                        </button>
-                    </div>
-                </div>
+                @if (CurrentRole == "XEN")
+                {
+                    <p class="text-muted fst-italic" style="font-size:0.8rem">
+                        <i class="bi bi-pencil me-1"></i>Use the <strong>Edit</strong> button to add a remark.
+                    </p>
+                }
+
+                @* ── Running Bills / Payment History ─────────────── *@
+                <hr class="my-3" />
+                <Work_Dashboard.Components.Shared.WorkBillsPanel
+                    WorkId="@DetailWork.WorkId"
+                    AgreementAmount="@DetailWork.AgreementAmount"
+                    SanctionedAmount="@DetailWork.SanctionedAmount"
+                    CanEdit="@(CurrentRole == "XEN")"
+                    CurrentUserId="@(CurrentEngineerId == 0 ? null : (int?)CurrentEngineerId)"
+                    CurrentUserName="@CurrentEngineerName" />
 
             </div>
             <div class="modal-box-footer">
                 <button class="btn btn-secondary btn-sm" @onclick="CloseDetail">Close</button>
+                @if (CurrentRole == "XEN")
+                {
+                    <button class="btn btn-primary btn-sm" @onclick="async () => { var w = DetailWork; if (w != null) { CloseDetail(); await OpenEditWork(w); } }">
+                        <i class="bi bi-pencil me-1"></i>Edit / Add Comment
+                    </button>
+                }
             </div>
         </div>
     </div>
@@ -836,6 +814,69 @@
                             </div>
                         </div>
                     </div>
+
+                    @* ── Comments / Remarks ── *@
+                    <div class="col-12 mt-2">
+                        <hr class="my-2" />
+                        <p class="fw-semibold mb-2" style="font-size:0.85rem">
+                            <i class="bi bi-chat-dots me-1 text-primary"></i>Comments
+                        </p>
+                        @if (RemarksList.Any())
+                        {
+                            <div class="remarks-scroll mb-2">
+                                @foreach (var r in RemarksList)
+                                {
+                                    <div class="remark-entry">
+                                        <div class="remark-meta">
+                                            <i class="bi bi-person-circle me-1"></i>@r.AuthorName
+                                            <span class="ms-2 text-muted" style="font-size:0.72rem">@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</span>
+                                        </div>
+                                        @if (r.EditedAt.HasValue)
+                                        {
+                                            <div class="remark-edited-meta">
+                                                <i class="bi bi-pencil-fill me-1"></i>Edited by @r.EditedByName · @r.EditedAt.Value.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                            </div>
+                                        }
+                                        <div class="remark-content">@r.Content</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted" style="font-size:0.82rem"><i class="bi bi-info-circle me-1"></i>No comments yet.</p>
+                        }
+                        <div class="remark-add-box">
+                            @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="fw-semibold" style="font-size:0.82rem">Add Comment</span>
+                                <div class="form-check form-switch mb-0" title="@(HindiRemarkMode ? "Type phonetically: press Space to convert" : "Switch to Hindi input")">
+                                    <input class="form-check-input" type="checkbox" id="chkHindiMode"
+                                           checked="@HindiRemarkMode"
+                                           @onchange="ToggleHindiMode" />
+                                    <label class="form-check-label" for="chkHindiMode" style="font-size:0.75rem">
+                                        @(HindiRemarkMode ? "हिन्दी (Hindi)" : "English")
+                                    </label>
+                                </div>
+                            </div>
+                            @if (HindiRemarkMode)
+                            {
+                                <small class="text-muted d-block mb-1" style="font-size:0.72rem">
+                                    <i class="bi bi-info-circle me-1"></i>Type phonetically (e.g. <em>namaste</em>) and press <kbd>Space</kbd> to convert to Hindi.
+                                </small>
+                            }
+                            <textarea id="hindi-remark-jen"
+                                      class="form-control form-control-sm @(HindiRemarkMode ? "hindi-input" : "")" rows="2"
+                                      placeholder="@(HindiRemarkMode ? "टिप्पणी लिखें… (Type & press Space)" : "Add a comment…")"
+                                      @bind="NewRemarkText"
+                                      @bind:event="oninput"></textarea>
+                            <div class="d-flex justify-content-end mt-1">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
+                                    <i class="bi bi-send-fill me-1"></i>Add Comment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-box-footer">
@@ -861,8 +902,9 @@
     [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
 
     // Auth state
-    string CurrentRole       = "";
-    int    CurrentEngineerId = 0;
+    string CurrentRole         = "";
+    int    CurrentEngineerId   = 0;
+    string CurrentEngineerName = "";
 
     // Page state
     string SelectedFilter   = "ALL";
@@ -917,6 +959,9 @@
     HashSet<int> ExpandedWorkIds = new();
     void ToggleExpand(int workId) { if (!ExpandedWorkIds.Remove(workId)) ExpandedWorkIds.Add(workId); }
 
+    // Hindi toggle for comment textarea
+    bool HindiRemarkMode = false;
+
     // Edit Work modal (XEN only)
     bool   ShowEditWorkModal   = false;
     Work   EditingWork         = new();
@@ -964,8 +1009,9 @@
     {
         var auth  = await AuthState!;
         var idStr = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        CurrentEngineerId = idStr is not null && int.TryParse(idStr, out var pid) ? pid : 0;
-        CurrentRole = auth.User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+        CurrentEngineerId   = idStr is not null && int.TryParse(idStr, out var pid) ? pid : 0;
+        CurrentRole         = auth.User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+        CurrentEngineerName = auth.User.Identity?.Name ?? "";
 
         await using var db = await DbFactory.CreateDbContextAsync();
 
@@ -1118,11 +1164,43 @@
         EditWorkJenId        = w.AssignedJenId?.ToString() ?? "";
         EditWorkAenId        = w.AssignedAenId?.ToString() ?? "";
         EditWorkXenId        = w.AssignedExenId?.ToString() ?? "";
-        EditWorkError        = "";
-        ShowEditWorkModal    = true;
+        EditWorkError     = "";
+        NewRemarkText     = "";
+        RemarkError       = "";
+        EditingRemarkId   = 0;
+        EditingRemarkText = "";
+        HindiRemarkMode   = false;
+        RemarksWork       = w;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        RemarksList = await db.WorkRemarks
+            .Where(r => r.WorkId == w.WorkId)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+
+        ShowEditWorkModal = true;
     }
 
-    void CloseEditWorkModal() => ShowEditWorkModal = false;
+    void CloseEditWorkModal()
+    {
+        ShowEditWorkModal = false;
+        RemarksWork = null;
+        RemarksList = [];
+        NewRemarkText = "";
+        RemarkError = "";
+        EditingRemarkId = 0;
+        EditingRemarkText = "";
+        HindiRemarkMode = false;
+    }
+
+    async Task ToggleHindiMode(ChangeEventArgs e)
+    {
+        HindiRemarkMode = (bool)(e.Value ?? false);
+        if (HindiRemarkMode)
+            await JS.InvokeVoidAsync("bdaHindi.attach", "hindi-remark-jen");
+        else
+            await JS.InvokeVoidAsync("bdaHindi.detach", "hindi-remark-jen");
+    }
 
     async Task SaveEditWork()
     {
@@ -1133,6 +1211,18 @@
         try
         {
             await using var db = await DbFactory.CreateDbContextAsync();
+
+            // Duplicate work-order number check (exclude this work)
+            if (!string.IsNullOrWhiteSpace(EditingWork.WorkCode))
+            {
+                var dup = await db.Works.AnyAsync(x =>
+                    x.WorkCode == EditingWork.WorkCode.Trim() &&
+                    !x.IsDeleted &&
+                    x.WorkId != EditingWork.WorkId);
+                if (dup) { EditWorkError = "Work Order Number already exists."; return; }
+                EditingWork.WorkCode = EditingWork.WorkCode.Trim();
+            }
+
             var w = await db.Works.FindAsync(EditingWork.WorkId);
             if (w is null) { EditWorkError = "Work not found."; return; }
 
@@ -1202,6 +1292,15 @@
             if (!string.IsNullOrEmpty(NewWorkXenId)        && int.TryParse(NewWorkXenId,        out var xid)) NewWork.AssignedExenId = xid;
 
             await using var db = await DbFactory.CreateDbContextAsync();
+
+            // Duplicate work-order number check
+            if (!string.IsNullOrWhiteSpace(NewWork.WorkCode))
+            {
+                var dup = await db.Works.AnyAsync(x =>
+                    x.WorkCode == NewWork.WorkCode.Trim() && !x.IsDeleted);
+                if (dup) { AddWorkError = "Work Order Number already exists."; return; }
+                NewWork.WorkCode = NewWork.WorkCode.Trim();
+            }
             db.Works.Add(NewWork);
             await db.SaveChangesAsync();
             await AuditSvc.LogAsync(
@@ -1220,6 +1319,8 @@
 
     async Task SaveEditRemark()
     {
+        // Only Admin can modify existing comments
+        if (CurrentRole != "ADMIN") return;
         if (EditingRemarkId == 0 || string.IsNullOrWhiteSpace(EditingRemarkText)) return;
         var auth       = await AuthState!;
         var editorName = auth.User.Identity?.Name ?? "Unknown";
@@ -1248,6 +1349,8 @@
     async Task SoftDeleteWork()
     {
         if (ConfirmDeleteWorkItem is null) return;
+        if (CurrentRole != "ADMIN") { ShowConfirmDeleteWork = false; ConfirmDeleteWorkItem = null; return; }
+
         await using var db = await DbFactory.CreateDbContextAsync();
         var w = await db.Works.FindAsync(ConfirmDeleteWorkItem.WorkId);
         if (w is not null)
