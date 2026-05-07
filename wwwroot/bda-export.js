@@ -4,125 +4,30 @@ window.bdaGetItem  = function (key)        { return localStorage.getItem(key); }
 window.bdaSetItem  = function (key, value) { localStorage.setItem(key, value); };
 window.bdaGetValue = function (id)         { return document.getElementById(id)?.value ?? ''; };
 
-// ── Hindi Phonetic Transliteration ────────────────────────────────────────
-// Attach to a textarea by element-id; on Space/Enter the last typed word is
-// converted from phonetic Roman to Devanagari.  Fires a native 'input' event
-// afterwards so Blazor's @bind:event="oninput" picks up the new value.
+// ── Hindi Transliteration via Google Input Tools ─────────────────────────
+// On Space/Enter, the last typed Roman word is sent to Google Input Tools
+// and replaced with the best Devanagari suggestion.
 window.bdaHindi = (function () {
     'use strict';
 
-    const HALANT = '्'; // ् virama
-
-    // Consonants – longest patterns checked first (ORDER IS CRITICAL)
-    const CONSONANTS = [
-        ['ksh','क्ष'],['gya','ज्ञ'],['shr','श्र'],
-        ['chh','छ'], ['Ch', 'छ'],
-        ['kh', 'ख'],['gh', 'घ'],['ch', 'च'],['jh', 'झ'],
-        ['Th', 'ठ'],['Dh', 'ढ'],['th', 'थ'],['dh', 'ध'],
-        ['ph', 'फ'],['bh', 'भ'],['Sh', 'ष'],['sh', 'श'],
-        ['ng', 'ङ'],['nj', 'ञ'],
-        ['k',  'क'],['g',  'ग'],['c',  'च'],['j',  'ज'],
-        ['T',  'ट'],['D',  'ड'],['N',  'ण'],
-        ['t',  'त'],['d',  'द'],['n',  'न'],
-        ['p',  'प'],['b',  'ब'],['m',  'म'],
-        ['y',  'य'],['R',  'ड़'],['r',  'र'],
-        ['L',  'ळ'],['l',  'ल'],
-        ['v',  'व'],['w',  'व'],
-        ['s',  'स'],['h',  'ह'],
-        ['f',  'फ'],['z',  'ज'],['q',  'क'],
-    ];
-
-    // Vowel matras (after a consonant) – longest first
-    const MATRAS = [
-        ['aa','ा'],['ee','ी'],['ii','ी'],['oo','ू'],['uu','ू'],
-        ['ai','ै'],['au','ौ'],['ao','ौ'],['ae','ै'],
-        ['A', 'ा'],['E', 'े'],['I', 'ी'],['O', 'ो'],['U', 'ू'],
-        ['e', 'े'],['i', 'ि'],['o', 'ो'],['u', 'ु'],
-        ['a', ''],   // inherent 'a' → no matra symbol
-    ];
-
-    // Standalone vowels (at word start or after another vowel)
-    const VOWELS = [
-        ['aa','आ'],['ee','ई'],['ii','ई'],['oo','ऊ'],['uu','ऊ'],
-        ['ai','ऐ'],['au','औ'],['ao','औ'],['ae','ऐ'],
-        ['A', 'आ'],['E', 'ए'],['I', 'ई'],['O', 'ओ'],['U', 'ऊ'],
-        ['e', 'ए'],['i', 'इ'],['o', 'ओ'],['u', 'उ'],
-        ['a', 'अ'],
-    ];
-
-    // M = anusvara (ं), H = visarga (ः), ~ = chandrabindu (ँ), . = danda (।)
-    // Digits are intentionally excluded — numbers pass through unchanged.
-    const SPECIAL = { 'M': 'ं', 'H': 'ः', '~': 'ँ', '.': '।' };
-
-    function matchAt(str, pos, table) {
-        for (const [rom, dev] of table)
-            if (str.startsWith(rom, pos)) return [rom, dev];
+    // Call Google Input Tools transliteration endpoint.
+    // Returns the best Hindi suggestion, or null on failure (offline, CORS, etc.)
+    async function googleTransliterate(word) {
+        try {
+            const url = 'https://inputtools.google.com/request?' +
+                'text=' + encodeURIComponent(word) +
+                '&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8';
+            const res = await fetch(url);
+            if (!res.ok) return null;
+            const data = await res.json();
+            // Response: ["SUCCESS", [["word", ["suggestion", ...], ...]]]
+            if (data[0] === 'SUCCESS' && data[1]?.[0]?.[1]?.[0])
+                return data[1][0][1][0];
+        } catch (_) {}
         return null;
     }
 
-    function transliterate(word) {
-        if (!word) return word;
-        let out = '', i = 0, prevCons = false, lastInherentA = false;
-
-        while (i < word.length) {
-            // Special symbols
-            if (SPECIAL[word[i]]) {
-                out += SPECIAL[word[i]];
-                prevCons = false; lastInherentA = false;
-                i++;
-                continue;
-            }
-
-            // Try consonant
-            const cons = matchAt(word, i, CONSONANTS);
-            if (cons) {
-                const [cRom, cDev] = cons;
-                const afterC = i + cRom.length;
-                const vol = matchAt(word, afterC, MATRAS);
-
-                if (prevCons) out += HALANT;
-                out += cDev;
-
-                if (vol) {
-                    out += vol[1];
-                    i = afterC + vol[0].length;
-                    prevCons = false;
-                    // Track when inherent-a ('a'→'') was used so we can
-                    // write an explicit ā at word-end (fixes "kiya"→"किया",
-                    // "gaya"→"गया", "raha"→"रहा", "hoga"→"होगा" etc.)
-                    lastInherentA = (vol[1] === '');
-                } else {
-                    i = afterC;
-                    prevCons = true;
-                    lastInherentA = false;
-                }
-                continue;
-            }
-
-            // Try standalone vowel
-            const vol = matchAt(word, i, VOWELS);
-            if (vol) {
-                out += prevCons
-                    ? (matchAt(word, i, MATRAS) || vol)[1]
-                    : vol[1];
-                i += vol[0].length;
-                prevCons = false; lastInherentA = false;
-                continue;
-            }
-
-            // Passthrough (punctuation, digits, unknown chars)
-            prevCons = false; lastInherentA = false;
-            out += word[i++];
-        }
-
-        // Word ends with consonant + inherent-a → write explicit ā matra.
-        // e.g. "kiya" k+i+ya → "किय" becomes "किया"
-        if (lastInherentA) out += 'ा';
-
-        return out;
-    }
-
-    // ── Attach / Detach ────────────────────────────────────────────────────
+    // ── Attach / Detach ───────────────────────────────────────────────────
     const _attached = new Map();
 
     function attach(id) {
@@ -130,28 +35,29 @@ window.bdaHindi = (function () {
         const el = document.getElementById(id);
         if (!el) return;
 
-        function onKeydown(e) {
+        async function onKeydown(e) {
             if (e.key !== ' ' && e.key !== 'Enter') return;
-            const val = el.value;
+
+            const val    = el.value;
             const cursor = el.selectionStart;
 
-            // Walk back to find the start of the current word
+            // Find start of the current word
             let start = cursor - 1;
             while (start > 0 && val[start - 1] !== ' ' && val[start - 1] !== '\n') start--;
 
-            const word = val.substring(start, cursor);
-            if (!word.trim()) return;
+            const word = val.substring(start, cursor).trim();
+            // Skip empty words or words already in Devanagari
+            if (!word || /[ऀ-ॿ]/.test(word)) return;
 
-            const converted = transliterate(word);
-            if (converted === word) return;
-
+            // Prevent default BEFORE the first await so the browser honours it
             e.preventDefault();
             const sep = e.key === 'Enter' ? '\n' : ' ';
+
+            const converted = await googleTransliterate(word) ?? word;
+
             el.value = val.substring(0, start) + converted + sep + val.substring(cursor);
             const newPos = start + converted.length + 1;
             el.setSelectionRange(newPos, newPos);
-            // Notify Blazor
-            el.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         el.addEventListener('keydown', onKeydown);
@@ -166,7 +72,7 @@ window.bdaHindi = (function () {
         _attached.delete(id);
     }
 
-    return { attach, detach, transliterate };
+    return { attach, detach };
 })();
 
 // ── amCharts 5 Overview Charts ────────────────────────────────────────
