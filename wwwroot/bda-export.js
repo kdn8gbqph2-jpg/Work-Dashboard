@@ -1,7 +1,165 @@
 // BDA Export Helpers
 
-window.bdaGetItem = function (key) { return localStorage.getItem(key); };
-window.bdaSetItem = function (key, value) { localStorage.setItem(key, value); };
+window.bdaGetItem  = function (key)        { return localStorage.getItem(key); };
+window.bdaSetItem  = function (key, value) { localStorage.setItem(key, value); };
+window.bdaGetValue = function (id)         { return document.getElementById(id)?.value ?? ''; };
+
+// ── Hindi Phonetic Transliteration ────────────────────────────────────────
+// Attach to a textarea by element-id; on Space/Enter the last typed word is
+// converted from phonetic Roman to Devanagari.  Fires a native 'input' event
+// afterwards so Blazor's @bind:event="oninput" picks up the new value.
+window.bdaHindi = (function () {
+    'use strict';
+
+    const HALANT = '्'; // ् virama
+
+    // Consonants – longest patterns checked first (ORDER IS CRITICAL)
+    const CONSONANTS = [
+        ['ksh','क्ष'],['gya','ज्ञ'],['shr','श्र'],
+        ['chh','छ'], ['Ch', 'छ'],
+        ['kh', 'ख'],['gh', 'घ'],['ch', 'च'],['jh', 'झ'],
+        ['Th', 'ठ'],['Dh', 'ढ'],['th', 'थ'],['dh', 'ध'],
+        ['ph', 'फ'],['bh', 'भ'],['Sh', 'ष'],['sh', 'श'],
+        ['ng', 'ङ'],['nj', 'ञ'],
+        ['k',  'क'],['g',  'ग'],['c',  'च'],['j',  'ज'],
+        ['T',  'ट'],['D',  'ड'],['N',  'ण'],
+        ['t',  'त'],['d',  'द'],['n',  'न'],
+        ['p',  'प'],['b',  'ब'],['m',  'म'],
+        ['y',  'य'],['R',  'ड़'],['r',  'र'],
+        ['L',  'ळ'],['l',  'ल'],
+        ['v',  'व'],['w',  'व'],
+        ['s',  'स'],['h',  'ह'],
+        ['f',  'फ'],['z',  'ज'],['q',  'क'],
+    ];
+
+    // Vowel matras (after a consonant) – longest first
+    const MATRAS = [
+        ['aa','ा'],['ee','ी'],['ii','ी'],['oo','ू'],['uu','ू'],
+        ['ai','ै'],['au','ौ'],['ao','ौ'],['ae','ै'],
+        ['A', 'ा'],['E', 'े'],['I', 'ी'],['O', 'ो'],['U', 'ू'],
+        ['e', 'े'],['i', 'ि'],['o', 'ो'],['u', 'ु'],
+        ['a', ''],   // inherent 'a' → no matra symbol
+    ];
+
+    // Standalone vowels (at word start or after another vowel)
+    const VOWELS = [
+        ['aa','आ'],['ee','ई'],['ii','ई'],['oo','ऊ'],['uu','ऊ'],
+        ['ai','ऐ'],['au','औ'],['ao','औ'],['ae','ऐ'],
+        ['A', 'आ'],['E', 'ए'],['I', 'ई'],['O', 'ओ'],['U', 'ऊ'],
+        ['e', 'ए'],['i', 'इ'],['o', 'ओ'],['u', 'उ'],
+        ['a', 'अ'],
+    ];
+
+    const SPECIAL = {
+        'M':'ं','H':'ः','~':'ँ','.':'।',
+        '0':'०','1':'१','2':'२','3':'३','4':'४',
+        '5':'५','6':'६','7':'७','8':'८','9':'९',
+    };
+
+    function matchAt(str, pos, table) {
+        for (const [rom, dev] of table)
+            if (str.startsWith(rom, pos)) return [rom, dev];
+        return null;
+    }
+
+    function transliterate(word) {
+        if (!word) return word;
+        let out = '', i = 0, prevCons = false;
+
+        while (i < word.length) {
+            // Special symbols
+            if (SPECIAL[word[i]]) {
+                out += SPECIAL[word[i]];
+                prevCons = false;
+                i++;
+                continue;
+            }
+
+            // Try consonant
+            const cons = matchAt(word, i, CONSONANTS);
+            if (cons) {
+                const [cRom, cDev] = cons;
+                const afterC = i + cRom.length;
+                const vol = matchAt(word, afterC, MATRAS);
+
+                if (prevCons) out += HALANT;
+                out += cDev;
+
+                if (vol) {
+                    out += vol[1]; // matra (empty string for inherent 'a')
+                    i = afterC + vol[0].length;
+                    prevCons = false;
+                } else {
+                    i = afterC;
+                    prevCons = true; // next char will decide if halant is needed
+                }
+                continue;
+            }
+
+            // Try standalone vowel
+            const vol = matchAt(word, i, VOWELS);
+            if (vol) {
+                out += prevCons
+                    ? (matchAt(word, i, MATRAS) || vol)[1]  // matra form
+                    : vol[1];                                 // standalone form
+                i += vol[0].length;
+                prevCons = false;
+                continue;
+            }
+
+            // Passthrough (punctuation, unknown chars)
+            prevCons = false;
+            out += word[i++];
+        }
+        return out;
+    }
+
+    // ── Attach / Detach ────────────────────────────────────────────────────
+    const _attached = new Map();
+
+    function attach(id) {
+        if (_attached.has(id)) return;
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        function onKeydown(e) {
+            if (e.key !== ' ' && e.key !== 'Enter') return;
+            const val = el.value;
+            const cursor = el.selectionStart;
+
+            // Walk back to find the start of the current word
+            let start = cursor - 1;
+            while (start > 0 && val[start - 1] !== ' ' && val[start - 1] !== '\n') start--;
+
+            const word = val.substring(start, cursor);
+            if (!word.trim()) return;
+
+            const converted = transliterate(word);
+            if (converted === word) return;
+
+            e.preventDefault();
+            const sep = e.key === 'Enter' ? '\n' : ' ';
+            el.value = val.substring(0, start) + converted + sep + val.substring(cursor);
+            const newPos = start + converted.length + 1;
+            el.setSelectionRange(newPos, newPos);
+            // Notify Blazor
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        el.addEventListener('keydown', onKeydown);
+        _attached.set(id, onKeydown);
+    }
+
+    function detach(id) {
+        const handler = _attached.get(id);
+        if (!handler) return;
+        const el = document.getElementById(id);
+        if (el) el.removeEventListener('keydown', handler);
+        _attached.delete(id);
+    }
+
+    return { attach, detach, transliterate };
+})();
 
 // ── amCharts 5 Overview Charts ────────────────────────────────────────
 window.bdaCharts = (function () {

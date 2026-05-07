@@ -1143,12 +1143,18 @@
                                 @if (AdminHindiRemarkMode)
                                 {
                                     <p class="text-muted mb-1" style="font-size:0.75rem"><i class="bi bi-info-circle me-1"></i>Type phonetically and press <kbd>Space</kbd> to convert.</p>
+                                    @* No Blazor binding — JS owns the value; read via bdaGetValue on submit *@
+                                    <textarea id="hindi-remark-admin"
+                                              class="form-control form-control-sm hindi-input" rows="2"
+                                              placeholder="टिप्पणी लिखें… (Type & press Space)"></textarea>
                                 }
-                                <textarea id="hindi-remark-admin"
-                                          class="form-control form-control-sm @(AdminHindiRemarkMode ? "hindi-input" : "")" rows="2"
-                                          placeholder="@(AdminHindiRemarkMode ? "टिप्पणी लिखें… (Type & press Space)" : "Add a remark…")"
-                                          @bind="NewRemarkText"
-                                          @bind:event="oninput"></textarea>
+                                else
+                                {
+                                    <textarea class="form-control form-control-sm" rows="2"
+                                              placeholder="Add a remark…"
+                                              @bind="NewRemarkText"
+                                              @bind:event="oninput"></textarea>
+                                }
                                 <div class="d-flex justify-content-end mt-1">
                                     <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
                                         <i class="bi bi-send-fill me-1"></i>Add Remark
@@ -1926,6 +1932,8 @@
     // ── Remarks (inline in edit modal) ────────────────────────
     async Task AddRemark()
     {
+        if (AdminHindiRemarkMode)
+            NewRemarkText = await JS.InvokeAsync<string>("bdaGetValue", "hindi-remark-admin");
         if (string.IsNullOrWhiteSpace(NewRemarkText)) { RemarkError = "Remark cannot be empty."; return; }
         if (RemarksWork is null) return;
 
@@ -1942,6 +1950,8 @@
         });
         await db.SaveChangesAsync();
         NewRemarkText = ""; RemarkError = "";
+        if (AdminHindiRemarkMode)
+            await JS.InvokeVoidAsync("eval", "var el=document.getElementById('hindi-remark-admin');if(el)el.value='';");
         RemarksList = await db.WorkRemarks
             .Where(r => r.WorkId == RemarksWork.WorkId)
             .OrderBy(r => r.CreatedAt)
