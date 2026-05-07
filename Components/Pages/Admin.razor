@@ -1109,9 +1109,26 @@
                             }
                             <div class="remark-add-box">
                                 @if (!string.IsNullOrEmpty(RemarkError)) { <div class="alert alert-danger py-1 mb-2" style="font-size:0.82rem">@RemarkError</div> }
-                                <textarea class="form-control form-control-sm" rows="2"
-                                          placeholder="Add a remark…"
-                                          @bind="NewRemarkText"></textarea>
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="fw-semibold" style="font-size:0.82rem">Add Remark</span>
+                                    <div class="form-check form-switch mb-0" title="@(AdminHindiRemarkMode ? "Type phonetically: press Space to convert" : "Switch to Hindi input")">
+                                        <input class="form-check-input" type="checkbox" id="chkAdminHindiMode"
+                                               checked="@AdminHindiRemarkMode"
+                                               @onchange="ToggleAdminHindiMode" />
+                                        <label class="form-check-label" for="chkAdminHindiMode" style="font-size:0.75rem">
+                                            @(AdminHindiRemarkMode ? "हिन्दी (Hindi)" : "English")
+                                        </label>
+                                    </div>
+                                </div>
+                                @if (AdminHindiRemarkMode)
+                                {
+                                    <p class="text-muted mb-1" style="font-size:0.75rem"><i class="bi bi-info-circle me-1"></i>Type phonetically and press <kbd>Space</kbd> to convert.</p>
+                                }
+                                <textarea id="hindi-remark-admin"
+                                          class="form-control form-control-sm @(AdminHindiRemarkMode ? "hindi-input" : "")" rows="2"
+                                          placeholder="@(AdminHindiRemarkMode ? "टिप्पणी लिखें… (Type & press Space)" : "Add a remark…")"
+                                          @bind="NewRemarkText"
+                                          @bind:event="oninput"></textarea>
                                 <div class="d-flex justify-content-end mt-1">
                                     <button class="btn btn-sm btn-outline-primary" @onclick="AddRemark">
                                         <i class="bi bi-send-fill me-1"></i>Add Remark
@@ -1564,6 +1581,7 @@
     string           RemarkError      = "";
     int              EditingRemarkId  = 0;
     string           EditingRemarkText = "";
+    bool             AdminHindiRemarkMode = false;
 
     // ── Settings – Categories panel ───────────────────────────
     bool   ShowCatsPanel    = false;
@@ -1876,7 +1894,7 @@
         ShowWorkModal = true;
     }
 
-    void CloseWorkModal() { ShowWorkModal = false; RemarksWork = null; RemarksList = []; }
+    void CloseWorkModal() { ShowWorkModal = false; RemarksWork = null; RemarksList = []; AdminHindiRemarkMode = false; }
 
     async Task SaveWork()
     {
@@ -1971,6 +1989,15 @@
                 LatestRemarksMap[r.WorkId] = RemarksList.Last();
         }
         EditingRemarkId = 0; EditingRemarkText = "";
+    }
+
+    async Task ToggleAdminHindiMode(ChangeEventArgs e)
+    {
+        AdminHindiRemarkMode = (bool)(e.Value ?? false);
+        if (AdminHindiRemarkMode)
+            await JS.InvokeVoidAsync("bdaHindi.attach", "hindi-remark-admin");
+        else
+            await JS.InvokeVoidAsync("bdaHindi.detach", "hindi-remark-admin");
     }
 
     // ── Soft delete work ──────────────────────────────────────
