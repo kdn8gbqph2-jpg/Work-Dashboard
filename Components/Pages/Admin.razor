@@ -1170,6 +1170,18 @@
                                 </div>
                             </div>
                         </div>
+
+                        @* ── Running Bills / Payment History ── *@
+                        <div class="col-12 mt-2">
+                            <hr class="my-2" />
+                            <Work_Dashboard.Components.Shared.WorkBillsPanel
+                                WorkId="@EditingWork.WorkId"
+                                AgreementAmount="@EditingWork.AgreementAmount"
+                                SanctionedAmount="@EditingWork.SanctionedAmount"
+                                CanEdit="@(CurrentEngineerRole == "ADMIN" || CurrentEngineerRole == "ACCOUNTANT")"
+                                CurrentUserId="@CurrentEngineerId"
+                                CurrentUserName="@CurrentEngineerName" />
+                        </div>
                     }
                 </div>
             </div>
@@ -1344,16 +1356,6 @@
                         <div class="remark-content" style="white-space:pre-wrap">@DetailWork.Remarks</div>
                     </div>
                 }
-
-                @* ── Running Bills ── *@
-                <hr class="my-3" />
-                <Work_Dashboard.Components.Shared.WorkBillsPanel
-                    WorkId="@DetailWork.WorkId"
-                    AgreementAmount="@DetailWork.AgreementAmount"
-                    SanctionedAmount="@DetailWork.SanctionedAmount"
-                    CanEdit="@(CurrentEngineerRole == "ADMIN" || CurrentEngineerRole == "ACCOUNTANT")"
-                    CurrentUserId="@CurrentEngineerId"
-                    CurrentUserName="@CurrentEngineerName" />
 
             </div>
             <div class="modal-box-footer">
