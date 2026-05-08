@@ -1351,7 +1351,7 @@
                     WorkId="@DetailWork.WorkId"
                     AgreementAmount="@DetailWork.AgreementAmount"
                     SanctionedAmount="@DetailWork.SanctionedAmount"
-                    CanEdit="@(CurrentEngineerRole != "XEN")"
+                    CanEdit="@(CurrentEngineerRole == "ADMIN" || CurrentEngineerRole == "ACCOUNTANT")"
                     CurrentUserId="@CurrentEngineerId"
                     CurrentUserName="@CurrentEngineerName" />
 

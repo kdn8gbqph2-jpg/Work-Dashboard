@@ -491,7 +491,7 @@
                     WorkId="@DetailWork.WorkId"
                     AgreementAmount="@DetailWork.AgreementAmount"
                     SanctionedAmount="@DetailWork.SanctionedAmount"
-                    CanEdit="@(CurrentRole != "XEN")"
+                    CanEdit="@(CurrentRole == "ADMIN" || CurrentRole == "ACCOUNTANT")"
                     CurrentUserId="@(CurrentEngineerId == 0 ? null : (int?)CurrentEngineerId)"
                     CurrentUserName="@CurrentEngineerName" />
 
