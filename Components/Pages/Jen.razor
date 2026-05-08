@@ -282,8 +282,28 @@
                                                         <div class="expand-val">@(w.FinancialProgressPercent.HasValue ? $"{w.FinancialProgressPercent}%" : "—")</div>
                                                     </div>
                                                     <div class="expand-item">
-                                                        <div class="expand-label">Workorder Amount</div>
+                                                        <div class="expand-label">A&amp;F Amount</div>
+                                                        <div class="expand-val">@(w.SanctionedAmount.HasValue ? $"₹ {w.SanctionedAmount:N2} L" : "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">A&amp;F No.</div>
+                                                        <div class="expand-val">@(w.AnfNo ?? "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">A&amp;F Date</div>
+                                                        <div class="expand-val">@(w.AnfDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Work Order Amount</div>
                                                         <div class="expand-val">@(w.AgreementAmount.HasValue ? $"₹ {w.AgreementAmount:N2} L" : "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Work Order No.</div>
+                                                        <div class="expand-val">@(w.WorkOrderNo ?? "—")</div>
+                                                    </div>
+                                                    <div class="expand-item">
+                                                        <div class="expand-label">Work Order Date</div>
+                                                        <div class="expand-val">@(w.WorkOrderDate?.ToString("dd/MM/yyyy") ?? "—")</div>
                                                     </div>
                                                     <div class="expand-item">
                                                         <div class="expand-label">Contractor</div>
@@ -406,12 +426,28 @@
                 <p class="detail-section-title">Financial</p>
                 <div class="detail-grid">
                     <div>
-                        <div class="detail-label">Sanctioned Amount (लाखों)</div>
+                        <div class="detail-label">A&amp;F Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Workorder Amount (लाखों)</div>
+                        <div class="detail-label">A&amp;F No.</div>
+                        <div class="detail-val">@(DetailWork.AnfNo ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">A&amp;F Date</div>
+                        <div class="detail-val">@(DetailWork.AnfDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Work Order Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Work Order No.</div>
+                        <div class="detail-val">@(DetailWork.WorkOrderNo ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Work Order Date</div>
+                        <div class="detail-val">@(DetailWork.WorkOrderDate?.ToString("dd/MM/yyyy") ?? "—")</div>
                     </div>
                     <div>
                         <div class="detail-label">Expenditure (लाखों)</div>
@@ -637,12 +673,28 @@
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Sanctioned Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">A&amp;F Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="NewWork.SanctionedAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Workorder Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">A&amp;F No.</label>
+                        <input type="text" class="form-control" placeholder="e.g. ANF/2024/001" @bind="NewWork.AnfNo" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">A&amp;F Date</label>
+                        <input type="date" class="form-control" @bind="NewWork.AnfDate" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="NewWork.AgreementAmount" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order No.</label>
+                        <input type="text" class="form-control" placeholder="e.g. WO/2024/001" @bind="NewWork.WorkOrderNo" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order Date</label>
+                        <input type="date" class="form-control" @bind="NewWork.WorkOrderDate" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Contractor Name</label>
@@ -830,12 +882,28 @@
                         }
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Sanctioned Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">A&amp;F Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.SanctionedAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Workorder Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">A&amp;F No.</label>
+                        <input type="text" class="form-control" placeholder="e.g. ANF/2024/001" @bind="EditingWork.AnfNo" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">A&amp;F Date</label>
+                        <input type="date" class="form-control" @bind="EditingWork.AnfDate" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.AgreementAmount" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order No.</label>
+                        <input type="text" class="form-control" placeholder="e.g. WO/2024/001" @bind="EditingWork.WorkOrderNo" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order Date</label>
+                        <input type="date" class="form-control" @bind="EditingWork.WorkOrderDate" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Stipulated Work Start Date</label>
@@ -1245,7 +1313,11 @@
             ContractorName          = w.ContractorName,
             ContractorMobile        = w.ContractorMobile,
             SanctionedAmount        = w.SanctionedAmount,
+            AnfNo                   = w.AnfNo,
+            AnfDate                 = w.AnfDate,
             AgreementAmount         = w.AgreementAmount,
+            WorkOrderNo             = w.WorkOrderNo,
+            WorkOrderDate           = w.WorkOrderDate,
             ProgressPercent         = w.ProgressPercent,
             FinancialProgressPercent = w.FinancialProgressPercent,
             StartDate               = w.StartDate,
@@ -1360,7 +1432,11 @@
             w.ContractorName         = EditingWork.ContractorName;
             w.ContractorMobile       = EditingWork.ContractorMobile;
             w.SanctionedAmount       = EditingWork.SanctionedAmount;
+            w.AnfNo                  = string.IsNullOrWhiteSpace(EditingWork.AnfNo) ? null : EditingWork.AnfNo.Trim();
+            w.AnfDate                = EditingWork.AnfDate;
             w.AgreementAmount        = EditingWork.AgreementAmount;
+            w.WorkOrderNo            = string.IsNullOrWhiteSpace(EditingWork.WorkOrderNo) ? null : EditingWork.WorkOrderNo.Trim();
+            w.WorkOrderDate          = EditingWork.WorkOrderDate;
             w.ProgressPercent        = EditingWork.ProgressPercent;
             w.FinancialProgressPercent = EditingWork.FinancialProgressPercent;
             w.StartDate              = EditingWork.StartDate;
