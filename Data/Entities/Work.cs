@@ -29,9 +29,11 @@ public class Work
     public bool IsAnnualContract { get; set; } = false;
     public bool IsScheme { get; set; } = false;
     public bool IsCmBudget { get; set; } = false;
-    public DateOnly? StartDate { get; set; }
-    public DateOnly? ExpectedCompletion { get; set; }
-    public DateOnly? ActualCompletion { get; set; }
+    public DateOnly? StartDate { get; set; }              // Stipulated Work Start Date
+    public DateOnly? ExpectedCompletion { get; set; }     // Stipulated Work Completion Date
+    public DateOnly? ActualStartDate { get; set; }        // Actual Work Start Date
+    public DateOnly? ActualCompletion { get; set; }       // Actual Work Completion Date
+    public string?   FinancialYear { get; set; }          // e.g. "2024-25"
     public string? Location { get; set; }
     public string? WardNumber { get; set; }
     public string? Remarks { get; set; }

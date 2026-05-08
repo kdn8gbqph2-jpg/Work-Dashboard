@@ -89,7 +89,13 @@ public class BdaDbContext(DbContextOptions<BdaDbContext> options) : DbContext(op
             e.Property(x => x.IsCmBudget).HasColumnName("is_cm_budget");
             e.Property(x => x.StartDate).HasColumnName("start_date");
             e.Property(x => x.ExpectedCompletion).HasColumnName("expected_completion");
+            e.Property(x => x.ActualStartDate).HasColumnName("actual_start_date");
             e.Property(x => x.ActualCompletion).HasColumnName("actual_completion");
+            e.Property(x => x.FinancialYear).HasColumnName("financial_year").HasMaxLength(10);
+            e.Property(x => x.AnfNo).HasColumnName("anf_no").HasMaxLength(100);
+            e.Property(x => x.AnfDate).HasColumnName("anf_date");
+            e.Property(x => x.WorkOrderNo).HasColumnName("work_order_no").HasMaxLength(100);
+            e.Property(x => x.WorkOrderDate).HasColumnName("work_order_date");
             e.Property(x => x.Location).HasColumnName("location").HasMaxLength(200);
             e.Property(x => x.WardNumber).HasColumnName("ward_number").HasMaxLength(20);
             e.Property(x => x.Remarks).HasColumnName("remarks");

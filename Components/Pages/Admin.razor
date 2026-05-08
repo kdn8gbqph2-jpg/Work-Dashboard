@@ -532,12 +532,24 @@
                                                             <div class="expand-val">@(w.ContractorName ?? "—")</div>
                                                         </div>
                                                         <div class="expand-item">
-                                                            <div class="expand-label">Start Date</div>
+                                                            <div class="expand-label">Stipulated Start</div>
                                                             <div class="expand-val">@(w.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
                                                         </div>
                                                         <div class="expand-item">
-                                                            <div class="expand-label">Expected Completion</div>
+                                                            <div class="expand-label">Stipulated Completion</div>
                                                             <div class="expand-val">@(w.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Actual Start</div>
+                                                            <div class="expand-val">@(w.ActualStartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Actual Completion</div>
+                                                            <div class="expand-val">@(w.ActualCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                                                        </div>
+                                                        <div class="expand-item">
+                                                            <div class="expand-label">Financial Year</div>
+                                                            <div class="expand-val">@(w.FinancialYear ?? "—")</div>
                                                         </div>
                                                         <div class="expand-item">
                                                             <div class="expand-label">Category</div>
@@ -1051,12 +1063,30 @@
                         <input type="date" class="form-control" @bind="EditingWork.WorkOrderDate" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Start Date</label>
+                        <label class="form-label fw-semibold">Stipulated Work Start Date</label>
                         <input type="date" class="form-control" @bind="EditingWork.StartDate" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Expected Completion</label>
+                        <label class="form-label fw-semibold">Stipulated Work Completion Date</label>
                         <input type="date" class="form-control" @bind="EditingWork.ExpectedCompletion" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Actual Work Start Date</label>
+                        <input type="date" class="form-control" @bind="EditingWork.ActualStartDate" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Actual Work Completion Date</label>
+                        <input type="date" class="form-control" @bind="EditingWork.ActualCompletion" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Financial Year</label>
+                        <select class="form-select" @bind="EditingWork.FinancialYear">
+                            <option value="">— Auto (from Start Date) —</option>
+                            @foreach (var y in WorkYears)
+                            {
+                                <option value="@y">@y</option>
+                            }
+                        </select>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Physical Progress %</label>
@@ -1309,12 +1339,20 @@
                 <p class="detail-section-title">Progress &amp; Dates</p>
                 <div class="detail-grid">
                     <div>
-                        <div class="detail-label">Start Date</div>
+                        <div class="detail-label">Stipulated Work Start Date</div>
                         <div class="detail-val">@(DetailWork.StartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Expected Completion</div>
+                        <div class="detail-label">Stipulated Work Completion Date</div>
                         <div class="detail-val">@(DetailWork.ExpectedCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Actual Work Start Date</div>
+                        <div class="detail-val">@(DetailWork.ActualStartDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Financial Year</div>
+                        <div class="detail-val">@(DetailWork.FinancialYear ?? "—")</div>
                     </div>
                     <div>
                         <div class="detail-label">Physical Progress</div>
@@ -1335,7 +1373,7 @@
                         <div class="detail-val">@(DetailWork.FinancialProgressPercent.HasValue ? $"{DetailWork.FinancialProgressPercent}%" : "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Actual Completion</div>
+                        <div class="detail-label">Actual Work Completion Date</div>
                         <div class="detail-val">@(DetailWork.ActualCompletion?.ToString("dd/MM/yyyy") ?? "—")</div>
                     </div>
                 </div>
@@ -1501,12 +1539,14 @@
     string WorkFundFilter      = "";
     string WorkFlagFilter      = "";
 
+    // Returns financial years from stored FinancialYear column, falling back to derived from StartDate.
     List<string> WorkYears => AllWorks
-        .Where(w => w.StartDate.HasValue)
-        .Select(w => FinYear(w.StartDate!.Value))
+        .Select(w => !string.IsNullOrEmpty(w.FinancialYear) ? w.FinancialYear
+                     : (w.StartDate.HasValue ? FinYear(w.StartDate.Value) : null))
+        .Where(y => !string.IsNullOrEmpty(y))
         .Distinct()
         .OrderByDescending(y => y)
-        .ToList();
+        .ToList()!;
 
     void SetWorkTab(string tab) { WorkTab = tab; FilterWorks(); }
 
@@ -1797,7 +1837,9 @@
 
         // Financial year filter
         if (!string.IsNullOrEmpty(WorkYearFilter))
-            q = q.Where(w => w.StartDate.HasValue && FinYear(w.StartDate!.Value) == WorkYearFilter);
+            q = q.Where(w =>
+                (!string.IsNullOrEmpty(w.FinancialYear) && w.FinancialYear == WorkYearFilter) ||
+                (string.IsNullOrEmpty(w.FinancialYear) && w.StartDate.HasValue && FinYear(w.StartDate!.Value) == WorkYearFilter));
 
         // Category filter
         if (!string.IsNullOrEmpty(WorkCategoryFilter))
@@ -1991,6 +2033,8 @@
         if (!string.IsNullOrWhiteSpace(EditingWork.ContractorMobile))
             EditingWork.ContractorMobile = EditingWork.ContractorMobile.Trim();
         EditingWork.Status         = Enum.Parse<WorkStatus>(EditingWorkStatusStr);
+        if (string.IsNullOrWhiteSpace(EditingWork.FinancialYear) && EditingWork.StartDate.HasValue)
+            EditingWork.FinancialYear = FinYear(EditingWork.StartDate.Value);
         EditingWork.CategoryId     = string.IsNullOrEmpty(EditingWorkCategoryId)   ? null : int.Parse(EditingWorkCategoryId);
         EditingWork.FundSourceId   = string.IsNullOrEmpty(EditingWorkFundSourceId) ? null : int.Parse(EditingWorkFundSourceId);
         EditingWork.AssignedJenId  = string.IsNullOrEmpty(EditingWorkJenId)        ? null : int.Parse(EditingWorkJenId);
