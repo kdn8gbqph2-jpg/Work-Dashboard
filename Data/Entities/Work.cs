@@ -15,8 +15,12 @@ public class Work
     public int? AssignedExenId { get; set; }
     public string? ContractorName { get; set; }
     public string? ContractorMobile { get; set; }
-    public decimal? SanctionedAmount { get; set; }
-    public decimal? AgreementAmount { get; set; }
+    public decimal? SanctionedAmount { get; set; }   // A&F Amount
+    public string?  AnfNo   { get; set; }
+    public DateOnly? AnfDate { get; set; }
+    public decimal? AgreementAmount { get; set; }     // Work Order Amount
+    public string?  WorkOrderNo   { get; set; }
+    public DateOnly? WorkOrderDate { get; set; }
     public decimal? Expenditure { get; set; }
     public decimal? ProgressPercent { get; set; }
     public decimal? FinancialProgressPercent { get; set; }

@@ -502,7 +502,7 @@
                                                             <div class="expand-val">@(w.FinancialProgressPercent.HasValue ? $"{w.FinancialProgressPercent}%" : "—")</div>
                                                         </div>
                                                         <div class="expand-item">
-                                                            <div class="expand-label">Agreement Amount</div>
+                                                            <div class="expand-label">Work Order Amount</div>
                                                             <div class="expand-val">@(w.AgreementAmount.HasValue ? $"₹ {w.AgreementAmount:N2} L" : "—")</div>
                                                         </div>
                                                         @{
@@ -1024,12 +1024,28 @@
                         }
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Sanctioned Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">A&amp;F Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.SanctionedAmount" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Agreement Amount (लाखों)</label>
+                        <label class="form-label fw-semibold">A&amp;F No.</label>
+                        <input type="text" class="form-control" placeholder="e.g. ANF/2024/001" @bind="EditingWork.AnfNo" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">A&amp;F Date</label>
+                        <input type="date" class="form-control" @bind="EditingWork.AnfDate" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order Amount (लाखों)</label>
                         <input type="number" step="0.01" class="form-control" @bind="EditingWork.AgreementAmount" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order No.</label>
+                        <input type="text" class="form-control" placeholder="e.g. WO/2024/001" @bind="EditingWork.WorkOrderNo" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Work Order Date</label>
+                        <input type="date" class="form-control" @bind="EditingWork.WorkOrderDate" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Start Date</label>
@@ -1246,12 +1262,28 @@
                 <p class="detail-section-title">Financial</p>
                 <div class="detail-grid">
                     <div>
-                        <div class="detail-label">Sanctioned Amount (लाखों)</div>
+                        <div class="detail-label">A&amp;F Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.SanctionedAmount?.ToString("N2") ?? "—")</div>
                     </div>
                     <div>
-                        <div class="detail-label">Agreement Amount (लाखों)</div>
+                        <div class="detail-label">A&amp;F No.</div>
+                        <div class="detail-val">@(DetailWork.AnfNo ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">A&amp;F Date</div>
+                        <div class="detail-val">@(DetailWork.AnfDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Work Order Amount (लाखों)</div>
                         <div class="detail-val">@(DetailWork.AgreementAmount?.ToString("N2") ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Work Order No.</div>
+                        <div class="detail-val">@(DetailWork.WorkOrderNo ?? "—")</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Work Order Date</div>
+                        <div class="detail-val">@(DetailWork.WorkOrderDate?.ToString("dd/MM/yyyy") ?? "—")</div>
                     </div>
                     <div>
                         <div class="detail-label">Expenditure (लाखों)</div>
@@ -1319,7 +1351,7 @@
                     WorkId="@DetailWork.WorkId"
                     AgreementAmount="@DetailWork.AgreementAmount"
                     SanctionedAmount="@DetailWork.SanctionedAmount"
-                    CanEdit="true"
+                    CanEdit="@(CurrentEngineerRole != "XEN")"
                     CurrentUserId="@CurrentEngineerId"
                     CurrentUserName="@CurrentEngineerName" />
 
@@ -1419,6 +1451,7 @@
     bool   IsLoading            = true;
     int?   CurrentEngineerId    = null;
     string CurrentEngineerName  = "";
+    string CurrentEngineerRole  = "";
 
     // ── Data ──────────────────────────────────────────────────
     List<Work>         AllWorks      = [];
@@ -1667,6 +1700,7 @@
         if (idStr is not null && int.TryParse(idStr, out var id))
             CurrentEngineerId = id;
         CurrentEngineerName = auth.User.Identity?.Name ?? "";
+        CurrentEngineerRole = auth.User.FindFirst(ClaimTypes.Role)?.Value ?? "";
 
         await LoadAll();
         IsLoading = false;
