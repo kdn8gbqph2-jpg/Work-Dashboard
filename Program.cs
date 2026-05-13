@@ -55,6 +55,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<Work_Dashboard.Services.FileUploadService>();
+builder.Services.AddSingleton<CaptchaService>();
 
 // Allow larger SignalR messages so InputFile can stream files up to 25 MB
 builder.Services.Configure<Microsoft.AspNetCore.SignalR.HubOptions>(o =>
@@ -112,10 +113,16 @@ app.UseAntiforgery();
 app.MapPost("/account/login", async (
     HttpContext        ctx,
     IAuthService       authService,
+    CaptchaService     captchaService,
     [FromForm] string  username,
     [FromForm] string  password,
+    [FromForm] string? captcha,
+    [FromForm] string? captchaToken,
     [FromForm] string? returnUrl) =>
 {
+    if (!captchaService.Validate(captchaToken, captcha))
+        return Results.Redirect("/login?error=captcha");
+
     var engineer = await authService.ValidateAsync(username, password);
     if (engineer is null) return Results.Redirect("/login?error=1");
 

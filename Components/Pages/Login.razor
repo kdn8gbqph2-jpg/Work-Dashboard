@@ -1,5 +1,6 @@
 @page "/login"
 @attribute [AllowAnonymous]
+@inject CaptchaService Captcha
 
 <PageTitle>Login — BDA Work Dashboard</PageTitle>
 
@@ -19,13 +20,14 @@
         {
             <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <span>Invalid username or password. Please try again.</span>
+                <span>@ErrorMessage</span>
             </div>
         }
 
         @* Login Form *@
         <form method="post" action="/account/login">
             <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+            <input type="hidden" name="captchaToken" value="@CaptchaToken" />
 
             <div class="mb-3">
                 <label for="username" class="form-label fw-semibold">
@@ -40,7 +42,7 @@
                        required autofocus />
             </div>
 
-            <div class="mb-4">
+            <div class="mb-3">
                 <label for="password" class="form-label fw-semibold">
                     <i class="bi bi-lock me-1"></i>Password
                 </label>
@@ -51,6 +53,24 @@
                        placeholder="Enter password"
                        autocomplete="current-password"
                        required />
+            </div>
+
+            <div class="mb-4">
+                <label for="captcha" class="form-label fw-semibold">
+                    <i class="bi bi-shield-check me-1"></i>Security Check
+                </label>
+                <div class="captcha-row">
+                    <span class="captcha-question" aria-label="Captcha question">@CaptchaQuestion =</span>
+                    <input id="captcha"
+                           name="captcha"
+                           type="text"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           class="form-control form-control-lg captcha-input"
+                           placeholder="Answer"
+                           autocomplete="off"
+                           required />
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-lg w-100">
@@ -80,5 +100,21 @@
     [SupplyParameterFromQuery(Name = "returnUrl")]
     public string? ReturnUrl { get; set; }
 
-    private bool ShowError => Error == "1";
+    private string CaptchaQuestion = "";
+    private string CaptchaToken = "";
+
+    private bool ShowError => !string.IsNullOrEmpty(Error);
+
+    private string ErrorMessage => Error switch
+    {
+        "captcha" => "Incorrect captcha answer. Please try again.",
+        _         => "Invalid username or password. Please try again."
+    };
+
+    protected override void OnInitialized()
+    {
+        var (question, token) = Captcha.Generate();
+        CaptchaQuestion = question;
+        CaptchaToken = token;
+    }
 }

@@ -434,6 +434,35 @@ h1:focus {
     transition: background-color 0.2s;
 }
 
+.captcha-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.6rem;
+}
+
+.captcha-question {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a3a5c;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 0.08em;
+    padding: 0 1rem;
+    border-radius: 8px;
+    min-width: 110px;
+    font-family: 'Courier New', monospace;
+    user-select: none;
+    text-decoration: line-through;
+    text-decoration-color: rgba(255,255,255,0.35);
+    text-decoration-thickness: 1px;
+}
+
+.captcha-input {
+    flex: 1;
+}
+
 /* ── Settings sub-nav ────────────────────────────────────── */
 .settings-subnav {
     display: flex;
