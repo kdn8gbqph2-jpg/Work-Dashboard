@@ -1728,3 +1728,166 @@ h1:focus {
 }
 
 .detail-section-title:first-child { margin-top: 0; }
+
+/* ══ Mobile / Responsive ═════════════════════════════════════════════ */
+
+/* Hamburger button — hidden on desktop, shown at <= 992px */
+.mobile-nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid #d1d5db;
+    color: #1a3a5c;
+    border-radius: 8px;
+    padding: 0.3rem 0.55rem;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.mobile-nav-toggle:hover { background: #f3f4f6; }
+.mobile-nav-toggle:focus-visible {
+    outline: 2px solid #f97316;
+    outline-offset: 2px;
+}
+
+.topbar-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+    flex: 1;
+}
+.topbar-title-group > div { min-width: 0; }
+
+.mobile-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1040;
+}
+
+/* ── ≤ 992px (tablet / phone): off-canvas sidebar ─────────────────── */
+@media (max-width: 992px) {
+    .mobile-nav-toggle { display: inline-flex; }
+
+    .jen-shell { display: block; }
+
+    .jen-sidebar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        height: 100vh !important;
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 82vw;
+        z-index: 1050;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: 2px 0 14px rgba(0,0,0,0.2);
+        overflow-y: auto;
+    }
+    body.sidebar-open .jen-sidebar { transform: translateX(0); }
+    body.sidebar-open .mobile-sidebar-backdrop { display: block; }
+    body.sidebar-open { overflow: hidden; }
+
+    .jen-main {
+        width: 100%;
+        min-width: 0;
+        padding: 0.9rem 1rem;
+        gap: 0.85rem;
+    }
+    .jen-topbar { padding: 0.7rem 1rem; }
+
+    /* Modals never overflow viewport */
+    .modal-box,
+    .modal-box-lg {
+        max-width: 95vw !important;
+        width: 100%;
+    }
+
+    /* Stacked grids in WorkBillsPanel */
+    .bill-summary-grid,
+    .bill-amounts {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Filter search input shrinks */
+    .filter-search-input {
+        min-width: 0 !important;
+        flex: 1 1 180px;
+    }
+
+    /* Reference panels lose min-width */
+    .ref-panel { min-width: 0 !important; }
+
+    /* Table sticky-body height reclaims topbar space */
+    .table-scroll-body {
+        max-height: calc(100vh - 200px);
+    }
+}
+
+/* ── ≤ 576px (small phone) ────────────────────────────────────────── */
+@media (max-width: 576px) {
+    .jen-main { padding: 0.7rem 0.7rem; }
+
+    .jen-topbar {
+        padding: 0.55rem 0.7rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .jen-topbar h5 { font-size: 0.98rem; }
+    .jen-topbar small { font-size: 0.7rem; }
+    .topbar-user { font-size: 0.78rem; }
+
+    /* Stat cards tighter */
+    .stat-card { padding: 0.85rem 0.95rem; }
+    .stat-value { font-size: 1.55rem; }
+    .stat-label { font-size: 0.72rem; }
+
+    /* Login card breathes on phones */
+    .login-card { padding: 1.6rem 1.2rem; max-width: 100%; }
+    .login-header { margin-bottom: 1.4rem; }
+    .login-logo { width: 72px; }
+    .org-name { font-size: 0.98rem; }
+
+    /* Captcha row stays inline but compact */
+    .captcha-question {
+        min-width: 88px;
+        font-size: 1.02rem;
+        padding: 0 0.7rem;
+        letter-spacing: 0.05em;
+    }
+
+    /* Smaller table cells so more fits */
+    table.table > :where(thead, tbody) > tr > :where(th, td) {
+        padding: 0.45rem 0.55rem !important;
+        font-size: 0.84rem;
+    }
+
+    /* Allow long Hindi/English work names to wrap better */
+    .work-name-cell,
+    .remarks-cell { max-width: 72vw !important; }
+
+    /* Modal interior padding tighter */
+    .modal-box,
+    .modal-box-lg {
+        padding: 1rem 1rem 1.25rem !important;
+        border-radius: 12px !important;
+    }
+    .modal-overlay { padding: 0.5rem; }
+
+    /* Export button group wraps */
+    .export-btn-group { flex-wrap: wrap; }
+    .export-btn-group .btn { padding: 0.3rem 0.55rem; font-size: 0.85rem; }
+
+    /* Settings sub-nav scrolls horizontally instead of overflowing */
+    .settings-subnav {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .settings-subnav::-webkit-scrollbar { display: none; }
+    .settings-tab { flex-shrink: 0; }
+}

@@ -293,3 +293,82 @@ window.bdaExportPdf = function (title, subtitle, headers, rows) {
     win.focus();
     setTimeout(() => win.print(), 800);
 };
+
+// ── Mobile nav (hamburger off-canvas sidebar) ───────────────────────────
+// Injects a hamburger toggle into every .jen-topbar that appears in the DOM.
+// CSS controls visibility (hidden on desktop, shown <= 992px).
+(function () {
+    'use strict';
+
+    function inject(topbar) {
+        if (!topbar || topbar.dataset.mobileNavReady === '1') return;
+        topbar.dataset.mobileNavReady = '1';
+
+        const firstChild = topbar.firstElementChild;
+        if (!firstChild) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'mobile-nav-toggle';
+        btn.setAttribute('aria-label', 'Toggle navigation');
+        btn.innerHTML = '<i class="bi bi-list"></i>';
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            document.body.classList.toggle('sidebar-open');
+        });
+
+        const wrap = document.createElement('div');
+        wrap.className = 'topbar-title-group';
+        topbar.insertBefore(wrap, firstChild);
+        wrap.appendChild(btn);
+        wrap.appendChild(firstChild);
+
+        if (!document.querySelector('.mobile-sidebar-backdrop')) {
+            const bd = document.createElement('div');
+            bd.className = 'mobile-sidebar-backdrop';
+            bd.addEventListener('click', function () {
+                document.body.classList.remove('sidebar-open');
+            });
+            document.body.appendChild(bd);
+        }
+    }
+
+    function scan(root) {
+        (root || document).querySelectorAll('.jen-topbar').forEach(inject);
+    }
+
+    function init() {
+        scan();
+        const obs = new MutationObserver(function (mutations) {
+            for (const m of mutations) {
+                for (const n of m.addedNodes) {
+                    if (n.nodeType !== 1) continue;
+                    if (n.matches && n.matches('.jen-topbar')) inject(n);
+                    if (n.querySelectorAll) n.querySelectorAll('.jen-topbar').forEach(inject);
+                }
+            }
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+
+        // Close sidebar when a nav item is tapped on mobile
+        document.addEventListener('click', function (e) {
+            const navItem = e.target.closest('.jen-sidebar .nav-item');
+            if (navItem && document.body.classList.contains('sidebar-open')) {
+                document.body.classList.remove('sidebar-open');
+            }
+        });
+
+        // Close on Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+                document.body.classList.remove('sidebar-open');
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
