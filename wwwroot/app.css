@@ -580,6 +580,18 @@ h1:focus {
     text-decoration: underline;
 }
 
+.login-credit {
+    font-size: 0.72rem;
+    color: #6c757d;
+    line-height: 1.4;
+    padding-top: 0.65rem;
+    border-top: 1px solid #f1f3f5;
+}
+.login-credit strong {
+    color: #1a3a5c;
+    font-weight: 600;
+}
+
 /* ── Files cell (works table) ─────────────────────────────── */
 .files-badge-cell {
     display: inline-flex;
