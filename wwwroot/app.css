@@ -1898,6 +1898,21 @@ h1:focus {
     .table-scroll-body {
         max-height: calc(100vh - 200px);
     }
+
+    /* Works tab bar scrolls horizontally instead of being clipped */
+    .works-tab-bar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .works-tab-bar::-webkit-scrollbar { display: none; }
+    .works-tab { flex-shrink: 0; padding: 0.75rem 0.9rem; }
+
+    /* Category multi-select panel never overflows the viewport */
+    .filter-ms-panel {
+        max-width: calc(100vw - 1.5rem);
+        right: auto;
+    }
 }
 
 /* ── ≤ 576px (small phone) ────────────────────────────────────────── */
@@ -1962,4 +1977,69 @@ h1:focus {
     }
     .settings-subnav::-webkit-scrollbar { display: none; }
     .settings-tab { flex-shrink: 0; }
+
+    /* ── Works table → stacked cards on phones ────────────────── */
+    .table-scroll-body:has(.works-cards) {
+        max-height: none;
+        overflow: visible;
+    }
+    .works-cards { min-width: 0 !important; }
+    .works-cards thead { display: none; }
+    .works-cards,
+    .works-cards tbody { display: block; width: 100%; }
+
+    .works-cards tbody tr {
+        display: block;
+        background: #fff;
+        border: 1px solid #fed7aa;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        padding: 0.7rem 0.85rem;
+        margin-bottom: 0.7rem;
+    }
+    /* Expanded quick-view row sits flush under its card */
+    .works-cards tbody tr.work-expand-row {
+        border: 1px solid #fed7aa;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        margin-top: -0.85rem;
+        padding: 0;
+        background: #fffaf4;
+    }
+    .works-cards tbody tr.work-expand-row > td { display: block; padding: 0.6rem 0.85rem; }
+
+    .works-cards td {
+        display: block;
+        border: none !important;
+        padding: 0.3rem 0;
+        max-width: none !important;
+    }
+    .works-cards td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #94a3b8;
+        margin-bottom: 0.15rem;
+    }
+    /* Hide serial; title acts as the card header */
+    .works-cards td.wc-serial { display: none; }
+    .works-cards td.wc-title {
+        border-bottom: 1px solid #f4ebe3 !important;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+    .works-cards td.wc-title .work-name-cell { max-width: none !important; }
+    /* Action buttons left-aligned under their label */
+    .works-cards td.wc-actions .d-flex { justify-content: flex-start !important; }
+    .works-cards td.wc-actions .action-btn { width: 38px; height: 38px; }
+    /* Empty-state row stays a simple centered block */
+    .works-cards tbody tr:has(td[colspan]) {
+        border: none;
+        box-shadow: none;
+        background: transparent;
+        padding: 0;
+    }
 }

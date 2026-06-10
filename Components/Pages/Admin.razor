@@ -393,7 +393,7 @@
 
                     @* ── Works Table ── *@
                     <div class="table-responsive table-scroll-body">
-                        <table class="table table-hover bda-table mb-0">
+                        <table class="table table-hover bda-table mb-0 works-cards">
                             <thead class="thead-sticky">
                                 <tr>
                                     <th style="width:44px">#</th>
@@ -417,8 +417,8 @@
                                     var remarkText = lr?.Content ?? (string.IsNullOrWhiteSpace(w.Remarks) ? null : w.Remarks);
                                     bool isExpanded = ExpandedWorkIds.Contains(w.WorkId);
                                     <tr class="@(isExpanded ? "work-row-expanded" : "")">
-                                        <td class="text-muted fw-medium">@(wi++)</td>
-                                        <td>
+                                        <td class="text-muted fw-medium wc-serial">@(wi++)</td>
+                                        <td class="wc-title">
                                             <div class="d-flex align-items-start gap-1">
                                                 <div class="flex-grow-1 min-w-0">
                                                     <div class="fw-semibold work-name-cell">@w.WorkName</div>
@@ -439,12 +439,12 @@
                                                 </button>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-label="Status">
                                             <span class="status-pill status-pill-@w.Status.ToString().ToLower()">
                                                 <span class="status-dot"></span>@StatusLabel(w.Status)
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-label="Progress">
                                             @if (w.ProgressPercent.HasValue)
                                             {
                                                 <div class="mini-prog-wrap">
@@ -457,7 +457,7 @@
                                             }
                                             else { <span class="text-muted">—</span> }
                                         </td>
-                                        <td>
+                                        <td data-label="Latest Remark">
                                             @if (remarkText != null)
                                             {
                                                 <div class="remark-preview">@remarkText</div>
@@ -468,7 +468,7 @@
                                                 <span class="text-muted">—</span>
                                             }
                                         </td>
-                                        <td>
+                                        <td data-label="Files">
                                             @{
                                                 var pdfCount   = FileCounts.GetValueOrDefault(w.WorkId).pdfs;
                                                 var photoCount = FileCounts.GetValueOrDefault(w.WorkId).photos;
@@ -482,7 +482,7 @@
                                                 </span>
                                             </span>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="text-center wc-actions" data-label="Actions">
                                             <div class="d-flex gap-1 justify-content-center">
                                                 <button class="action-btn action-btn-view" title="View Details"
                                                         @onclick="() => OpenDetail(w)">
