@@ -329,7 +329,7 @@
                                             <label class="filter-ms-item">
                                                 <input type="checkbox" checked="@WorkCategoryFilters.Contains(code)"
                                                        @onchange="e => ToggleCategory(code, (bool)e.Value!)" />
-                                                <span>@c.CategoryCode</span>
+                                                <span>@(string.IsNullOrWhiteSpace(c.CategoryName) ? c.CategoryCode : c.CategoryName)</span>
                                             </label>
                                         }
                                     </div>
