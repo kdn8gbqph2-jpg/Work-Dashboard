@@ -226,9 +226,10 @@
                 @* ── Tab Bar ── *@
                 <div class="content-card p-0 mb-3">
                     <div class="works-tab-bar">
-                        <span class="works-tab-total">
-                            <i class="bi bi-briefcase-fill me-1"></i>Total <strong>@AllWorks.Count</strong>
-                        </span>
+                        <button class="works-tab tab-total @(WorkTab == "ALL" ? "active" : "")" @onclick='() => SetWorkTab("ALL")'>
+                            <i class="bi bi-briefcase-fill me-1"></i>Total
+                            <span class="works-tab-count">@AllWorks.Count</span>
+                        </button>
                         <button class="works-tab tab-ongoing @(WorkTab == "ONGOING"   ? "active" : "")" @onclick='() => SetWorkTab("ONGOING")'>
                             <i class="bi bi-hourglass-split me-1"></i>Ongoing
                             <span class="works-tab-count">@AllWorks.Count(w => w.Status == WorkStatus.ONGOING && !w.IsAnnualContract)</span>
@@ -305,15 +306,34 @@
                                 </select>
                             </div>
 
-                            @* Category Filter *@
-                            <div class="filter-group">
+                            @* Category Filter (multi-select checkboxes) *@
+                            <div class="filter-group filter-multiselect">
                                 <span class="filter-group-label">Category</span>
-                                <select class="filter-select-sm"
-                                        @bind="WorkCategoryFilter" @bind:after="FilterWorks">
-                                    <option value="">All</option>
-                                    @foreach (var c in Categories)
-                                    { <option value="@c.CategoryCode">@c.CategoryCode</option> }
-                                </select>
+                                <button type="button" class="filter-select-sm filter-ms-btn"
+                                        @onclick="() => ShowCategoryDropdown = !ShowCategoryDropdown">
+                                    @(WorkCategoryFilters.Count == 0 ? "All" : $"{WorkCategoryFilters.Count} selected")
+                                    <i class="bi bi-chevron-down filter-ms-caret"></i>
+                                </button>
+                                @if (ShowCategoryDropdown)
+                                {
+                                    <div class="filter-ms-backdrop" @onclick="() => ShowCategoryDropdown = false"></div>
+                                    <div class="filter-ms-panel" @onclick:stopPropagation>
+                                        <label class="filter-ms-item filter-ms-all">
+                                            <input type="checkbox" checked="@(WorkCategoryFilters.Count == 0)"
+                                                   @onchange="ClearCategoryFilter" />
+                                            <span>All categories</span>
+                                        </label>
+                                        @foreach (var c in Categories)
+                                        {
+                                            var code = c.CategoryCode;
+                                            <label class="filter-ms-item">
+                                                <input type="checkbox" checked="@WorkCategoryFilters.Contains(code)"
+                                                       @onchange="e => ToggleCategory(code, (bool)e.Value!)" />
+                                                <span>@c.CategoryCode</span>
+                                            </label>
+                                        }
+                                    </div>
+                                }
                             </div>
 
                             @* Fund Source Filter *@
@@ -1535,7 +1555,8 @@
     string WorkJenFilter       = "";
     string WorkAenFilter       = "";
     string WorkXenFilter       = "";
-    string WorkCategoryFilter  = "";
+    HashSet<string> WorkCategoryFilters = new();
+    bool   ShowCategoryDropdown = false;
     string WorkFundFilter      = "";
     string WorkFlagFilter      = "";
 
@@ -1549,6 +1570,20 @@
         .ToList()!;
 
     void SetWorkTab(string tab) { WorkTab = tab; FilterWorks(); }
+
+    // ── Category multi-select helpers ─────────────────────────
+    void ToggleCategory(string code, bool on)
+    {
+        if (on) WorkCategoryFilters.Add(code);
+        else    WorkCategoryFilters.Remove(code);
+        FilterWorks();
+    }
+
+    void ClearCategoryFilter()
+    {
+        WorkCategoryFilters.Clear();
+        FilterWorks();
+    }
 
     static string FinYear(DateOnly d) => Work_Dashboard.Services.WorkHelpers.FinYear(d);
 
@@ -1841,9 +1876,9 @@
                 (!string.IsNullOrEmpty(w.FinancialYear) && w.FinancialYear == WorkYearFilter) ||
                 (string.IsNullOrEmpty(w.FinancialYear) && w.StartDate.HasValue && FinYear(w.StartDate!.Value) == WorkYearFilter));
 
-        // Category filter
-        if (!string.IsNullOrEmpty(WorkCategoryFilter))
-            q = q.Where(w => (w.Category?.CategoryCode ?? "N/A") == WorkCategoryFilter);
+        // Category filter (multi-select — match any selected)
+        if (WorkCategoryFilters.Count > 0)
+            q = q.Where(w => WorkCategoryFilters.Contains(w.Category?.CategoryCode ?? "N/A"));
 
         // Fund source filter
         if (!string.IsNullOrEmpty(WorkFundFilter))
@@ -1861,7 +1896,8 @@
         WorkYearFilter = "";
         WorkSearchText = "";
         WorkJenFilter = WorkAenFilter = WorkXenFilter = "";
-        WorkCategoryFilter = WorkFundFilter = WorkFlagFilter = "";
+        WorkCategoryFilters.Clear();
+        WorkFundFilter = WorkFlagFilter = "";
         FilterWorks();
     }
 

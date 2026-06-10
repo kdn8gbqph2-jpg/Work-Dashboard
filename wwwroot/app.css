@@ -827,6 +827,7 @@ h1:focus {
     white-space: nowrap;
 }
 .works-tab { --tab-color: #6c757d; --tab-bg: #f8f9fa; }
+.works-tab.tab-total     { --tab-color: #f97316; --tab-bg: #fff7ed; }
 .works-tab.tab-ongoing   { --tab-color: #3b82f6; --tab-bg: #eff6ff; }
 .works-tab.tab-completed { --tab-color: #16a34a; --tab-bg: #f0fdf4; }
 .works-tab.tab-stalled   { --tab-color: #dc2626; --tab-bg: #fef2f2; }
@@ -1303,6 +1304,65 @@ h1:focus {
 
 .filter-select-sm:focus {
     outline: 2px solid #f97316 !important;
+}
+
+/* ── Multi-select filter dropdown (Category) ──────────────── */
+.filter-multiselect { position: relative; }
+
+.filter-ms-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.15rem;
+    min-width: 80px;
+    background: transparent !important;
+    border: none !important;
+    text-align: left;
+}
+.filter-ms-caret { font-size: 0.7rem; color: #64748b; }
+
+.filter-ms-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background: transparent;
+}
+
+.filter-ms-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 1045;
+    min-width: 200px;
+    max-height: 280px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    padding: 0.35rem;
+}
+
+.filter-ms-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.83rem;
+    color: #1e293b;
+    cursor: pointer;
+    white-space: nowrap;
+    margin: 0;
+}
+.filter-ms-item:hover { background: #fff7ed; }
+.filter-ms-item input { cursor: pointer; accent-color: #f97316; }
+
+.filter-ms-all {
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 6px 6px 0 0;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
 }
 
 .filter-daterange {
